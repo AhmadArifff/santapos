@@ -216,6 +216,29 @@ create table if not exists stock_request_audit (
   created_at timestamptz default now()
 );
 
+create table if not exists stock_issues (
+  id bigserial primary key,
+  issue_code varchar(50) unique not null,
+  branch_id bigint not null references branches(id) on delete restrict,
+  stock_item_id bigint not null references stock_items(id) on delete restrict,
+  qty numeric(10,2) not null,
+  unit varchar(20) not null,
+  reason varchar(20) not null default 'other' check (reason in ('expired','damaged','lost','other')),
+  description text null,
+  comments text null,
+  reported_by bigint not null references users(id) on delete restrict,
+  reported_at timestamptz default now(),
+  status varchar(20) not null default 'reported' check (status in ('reported','resolved','rejected')),
+  resolved boolean not null default false,
+  resolved_by bigint null references users(id) on delete set null,
+  resolved_at timestamptz null,
+  resolution_notes text null,
+  related_main_stock_id bigint null references main_stock(id) on delete set null,
+  metadata jsonb null,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
 create table if not exists dining_tables (
   id bigserial primary key,
   table_number varchar(30) not null,
@@ -451,6 +474,12 @@ create index if not exists idx_website_settings_setting_key on website_settings(
 create index if not exists idx_stock_request_audit_request_id on stock_request_audit(request_id);
 create index if not exists idx_stock_request_audit_action on stock_request_audit(action);
 create index if not exists idx_stock_request_audit_created_at on stock_request_audit(created_at);
+create index if not exists idx_stock_issues_branch on stock_issues(branch_id);
+create index if not exists idx_stock_issues_stock_item on stock_issues(stock_item_id);
+create index if not exists idx_stock_issues_reason on stock_issues(reason);
+create index if not exists idx_stock_issues_status on stock_issues(status);
+create index if not exists idx_stock_issues_reported_at on stock_issues(reported_at desc);
+create index if not exists idx_stock_issues_branch_status_reason on stock_issues(branch_id, status, reason);
 create index if not exists idx_dining_tables_status on dining_tables(status);
 create index if not exists idx_dining_tables_branch on dining_tables(branch_id);
 create index if not exists idx_dining_tables_branch_status on dining_tables(branch_id, status);

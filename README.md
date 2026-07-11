@@ -149,7 +149,9 @@ Catatan:
 - `OPENROUTER_MODEL` opsional untuk model utama pertama.
 - `OPENROUTER_MODEL_FALLBACKS` berisi daftar model gratis dipisahkan koma. Jika model utama terkena rate limit/quota/provider error/timeout, backend otomatis mencoba model berikutnya.
 - `OPENROUTER_FREE_MODELS` adalah alias tambahan jika ingin memisahkan daftar model gratis dari fallback utama.
-- Jangan commit file `.env`.
+- Untuk pengembangan lokal, backend default menggunakan MySQL lokal. Pastikan MySQL/MariaDB berjalan di `localhost:3306` dan database `kebab_pos` tersedia.
+- Deployment Vercel menggunakan `DB_CLIENT=postgres` dan `DATABASE_URL`/`SUPABASE_DATABASE_URL` Supabase. Jangan pakai kredensial Vercel langsung di `.env` lokal kecuali Anda yakin ingin terhubung ke database produksi.
+- File `.env` backend diabaikan oleh `.gitignore`, jadi perubahan lokal tidak akan tersinkron ke Vercel.
 
 ## Cara Install dan Menjalankan
 
@@ -208,6 +210,7 @@ Migration yang tersedia:
 - website_settings
 - stock request approval notes
 - stock request audit
+- stock issues (tracking expired, damaged, lost stock)
 
 Command migration:
 
@@ -298,6 +301,52 @@ Peringatan: `migrate:fresh` menghapus database lama dan membuat ulang dari awal.
 - `GET /api/stock-requests/my`
 - `PUT /api/stock-requests/:id/approve`
 - `PUT /api/stock-requests/:id/resubmit`
+
+### Stock Issues
+
+Mengelola stok yang bermasalah: expired, rusak/damaged, hilang/lost, atau alasan lainnya.
+
+**Fitur:**
+- Laporkan isu stok baru dengan kategori (expired, damaged, lost, other)
+- Lihat daftar isu per branch dengan filter status/reason
+- Lihat detail isu dengan metadata fleksibel
+- Resolve isu dengan catatan resolusi dan link ke penyesuaian stok (main_stock)
+- Reject isu jika tidak valid
+- Dashboard summary isu stok per branch
+
+**Endpoints:**
+- `POST /api/stock-issues` - Lapor isu stok baru
+- `GET /api/stock-issues` - Daftar isu dengan filter (status, reason, resolved)
+- `GET /api/stock-issues/summary` - Dashboard ringkasan isu
+- `GET /api/stock-issues/:id` - Detail isu
+- `PUT /api/stock-issues/:id/resolve` - Resolve isu (admin)
+- `PUT /api/stock-issues/:id/reject` - Reject isu (admin)
+
+**Migrasi:**
+Tabel `stock_issues` dibuat di migration `027_create_stock_issues.js` saat menjalankan:
+```bash
+npm run migrate
+```
+
+**Model Tabel:**
+```
+stock_issues
+├── id (PK)
+├── issue_code (unique)
+├── branch_id (FK)
+├── stock_item_id (FK)
+├── qty, unit
+├── reason (enum: expired, damaged, lost, other)
+├── description, comments
+├── reported_by (FK user), reported_at
+├── status (enum: reported, resolved, rejected)
+├── resolved, resolved_by (FK user), resolved_at
+├── resolution_notes
+├── related_main_stock_id (FK, optional adjustment link)
+├── metadata (JSON, flexible extra data)
+├── created_at, updated_at
+└── indexes untuk branch, status, reason, reported_at
+```
 
 ### Reports
 

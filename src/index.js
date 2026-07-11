@@ -43,6 +43,7 @@ app.use('/api/reports', require('./routes/reports'));
 app.use('/api/attendance', require('./routes/attendance'));
 app.use('/api/main-stock', require('./routes/mainStock'));
 app.use('/api/stock-requests', require('./routes/stockRequests'));
+app.use('/api/stock-issues', require('./routes/stockIssues'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/branches', require('./routes/branches'));
 app.use('/api/discounts', require('./routes/discounts'));
