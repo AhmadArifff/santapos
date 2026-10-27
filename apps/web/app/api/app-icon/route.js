@@ -3,7 +3,7 @@ import { ImageResponse } from 'next/og';
 export const runtime = 'edge';
 
 const DEFAULT_SETTINGS = {
-  store_name: 'Sultan Kebab',
+  store_name: 'Santapos Restaurant',
   favicon_url: '/images/assets/logo.png',
   gold: '#C9A84C',
   dark: '#0D0A06',
@@ -15,12 +15,20 @@ const getApiBaseUrl = () => {
   return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
 };
 
-const getSettings = async () => {
+const getSettings = async (request) => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 1800);
 
+  const tenantSlug = request?.headers?.get('x-tenant-slug') || '';
+  const host = request?.headers?.get('x-forwarded-host') || request?.headers?.get('host') || '';
+
   try {
+    const fetchHeaders = {};
+    if (tenantSlug) fetchHeaders['x-tenant-slug'] = tenantSlug;
+    if (host) fetchHeaders['x-forwarded-host'] = host;
+
     const response = await fetch(`${getApiBaseUrl()}/settings`, {
+      headers: fetchHeaders,
       cache: 'no-store',
       next: { revalidate: 0 },
       signal: controller.signal,
@@ -45,7 +53,7 @@ export async function GET(request) {
   const requestUrl = new URL(request.url);
   const requestedSize = Number(requestUrl.searchParams.get('size') || 512);
   const size = [180, 192, 512].includes(requestedSize) ? requestedSize : 512;
-  const settings = await getSettings();
+  const settings = await getSettings(request);
   const iconUrl = absolutize(settings.favicon_url, request.url);
   const background = settings.dark || DEFAULT_SETTINGS.dark;
   const initials = String(settings.store_name || DEFAULT_SETTINGS.store_name).slice(0, 2).toUpperCase();

@@ -129,7 +129,7 @@ export default function LoginPage() {
   } = useLoginPageSettingsStore();
   const router      = useRouter();
   const logoSrc     = resolveAssetUrl(settings?.logo_url, '/images/assets/logo.png');
-  const storeName   = settings?.store_name || 'Sultan Kebab';
+  const storeName   = settings?.store_name || 'Santapos Restaurant';
   const loginMedia  = loginPageSettings.media || {};
   const loginHero   = loginPageSettings.hero || {};
   const loginBrand  = loginPageSettings.brand || {};
@@ -470,7 +470,7 @@ export default function LoginPage() {
           {mediaEnabled && (
             <img
               src={loginMedia.backgroundImage || 'https://images.unsplash.com/photo-1544025162-d76694265947?w=1200&q=85'}
-              alt="Sultan Kebab"
+              alt={storeName}
               style={{
                 position:   'absolute',
                 inset:      0,
@@ -557,7 +557,7 @@ export default function LoginPage() {
               marginBottom:   '1.5rem',
             }}>
               <span style={{ width:'6px', height:'6px', borderRadius:'50%', background:'var(--gold)', display:'inline-block', animation:'goldPulse 2s infinite' }} />
-              {loginHero.badge || 'Sultan Kebab Admin Panel'}
+              {loginHero.badge || `${storeName} Admin Panel`}
             </div>
 
             {/* Title */}
@@ -581,7 +581,7 @@ export default function LoginPage() {
               maxWidth:     '380px',
               marginBottom: '2rem',
             }}>
-              {loginHero.description || 'Panel admin eksklusif untuk mengelola menu, pesanan, stok, dan laporan Sultan Kebab secara real-time.'}
+              {loginHero.description || `Panel admin eksklusif untuk mengelola menu, pesanan, stok, dan laporan ${storeName} secara real-time.`}
             </p>
 
             {/* Stats */}
@@ -869,7 +869,7 @@ export default function LoginPage() {
                   onMouseLeave={e=>{e.currentTarget.style.color='var(--text-muted)';}}
                 >
                   <ArrowLeft />
-                  {loginForm.backLinkLabel || 'Halaman Utama Sultan Kebab'}
+                  {loginForm.backLinkLabel || `Halaman Utama ${storeName}`}
                 </Link>
 
               </div>
@@ -897,7 +897,7 @@ export default function LoginPage() {
               opacity:    mounted ? undefined : 0,
             }}>
               <p style={{ fontSize:'0.75rem', color:'var(--text-muted)', lineHeight:1.7 }}>
-                {loginFooter.text || '2024 Sultan Kebab. Hak cipta dilindungi.'}<br />
+                {loginFooter.text || `© ${new Date().getFullYear()} ${storeName}. Hak cipta dilindungi.`}<br />
                 {loginFooter.version || 'Sistem POS & Admin Panel v2.0'}
               </p>
             </div>

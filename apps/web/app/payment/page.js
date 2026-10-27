@@ -41,7 +41,7 @@ function PaymentTutorialDemo() {
       name: 'QRIS Tutorial',
       provider_name: 'QRIS',
       account_number: '0895353025503',
-      account_name: 'Sultan Kebab',
+      account_name: 'Santapos Resto',
       instructions: 'Scan QRIS, pastikan nominal sesuai total bayar, lalu upload bukti pembayaran.',
       payment_timeout_minutes: 15,
     },
@@ -52,7 +52,7 @@ function PaymentTutorialDemo() {
       name: 'Transfer Tutorial',
       provider_name: 'Bank',
       account_number: '123123112327',
-      account_name: 'Sultan Kebab',
+      account_name: 'Santapos Resto',
       instructions: 'Transfer sesuai total bayar, lalu upload bukti pembayaran.',
       payment_timeout_minutes: 15,
     },
@@ -134,9 +134,9 @@ export default function PaymentManagementPage() {
   const previewMethod = useMemo(() => ({
     ...form,
     id: editing?.id || 'preview',
-    name: form.name || (form.type === 'transfer' ? 'Transfer Bank' : 'QRIS Sultan Kebab'),
+    name: form.name || (form.type === 'transfer' ? 'Transfer Bank' : 'QRIS Pembayaran'),
     provider_name: form.provider_name || (form.type === 'transfer' ? 'Bank' : 'QRIS'),
-    account_name: form.account_name || 'Sultan Kebab',
+    account_name: form.account_name || 'Santapos Resto',
     account_number: form.account_number || (form.type === 'transfer' ? '0000000000' : '0895353025503'),
     qr_image_url: form.type === 'qris'
       ? (qrPreviewUrl || (form.remove_qr === '1' ? '' : editing?.qr_image_url || ''))

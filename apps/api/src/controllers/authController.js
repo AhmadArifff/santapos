@@ -118,8 +118,8 @@ exports.login = async (req, res) => {
     } catch (_) {}
 
     const tenantId = Number(tenantInfo?.id || user.tenant_id || 1);
-    const tenantSlug = tenantInfo?.slug || 'sultan-kebab';
-    const tenantName = tenantInfo?.name || 'Sultan Kebab';
+    const tenantSlug = tenantInfo?.slug || (tenantId === 1 ? 'sultan-kebab' : `tenant-${tenantId}`);
+    const tenantName = tenantInfo?.name || (tenantId === 1 ? 'Sultan Kebab (Demo)' : 'Santapos Restaurant');
     const planCode = tenantInfo?.plan_code || 'franchise';
 
     const token = jwt.sign(
@@ -235,11 +235,12 @@ exports.getMe = async (req, res) => {
       tenantInfo = tRows?.[0] || null;
     } catch (_) {}
 
+    const tenantId = Number(tenantInfo?.id || user.tenant_id || 1);
     res.json({
       ...user,
-      tenant_id: Number(tenantInfo?.id || user.tenant_id || 1),
-      tenant_name: tenantInfo?.name || 'Sultan Kebab',
-      tenant_slug: tenantInfo?.slug || 'sultan-kebab',
+      tenant_id: tenantId,
+      tenant_name: tenantInfo?.name || (tenantId === 1 ? 'Sultan Kebab (Demo)' : 'Santapos Restaurant'),
+      tenant_slug: tenantInfo?.slug || (tenantId === 1 ? 'sultan-kebab' : `tenant-${tenantId}`),
       plan_code: tenantInfo?.plan_code || 'franchise',
       plan_capabilities: tenantInfo?.plan_capabilities || {},
     });

@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 
 const DEFAULT_MANIFEST = {
-  name: 'Sultan Kebab',
-  short_name: 'Sultan Kebab',
-  description: 'Kebab premium, shawarma, menu Timur Tengah, dan pemesanan online Sultan Kebab.',
+  name: 'Santapos Restaurant',
+  short_name: 'Santapos',
+  description: 'Smart POS & Self-Order QR Platform by Santapos',
   icon: '/images/assets/logo.png',
-  theme_color: '#C9A84C',
-  background_color: '#0D0A06',
+  theme_color: '#4F46E5',
+  background_color: '#0F172A',
 };
 
 const getApiBaseUrl = () => {
@@ -52,13 +52,21 @@ const buildManifest = (settings = {}) => {
   };
 };
 
-export async function GET() {
+export async function GET(request) {
   let settings = {};
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 2000);
 
+  const tenantSlug = request?.headers?.get('x-tenant-slug') || request?.cookies?.get('santapos_tenant')?.value || '';
+  const host = request?.headers?.get('x-forwarded-host') || request?.headers?.get('host') || '';
+
   try {
+    const fetchHeaders = {};
+    if (tenantSlug) fetchHeaders['x-tenant-slug'] = tenantSlug;
+    if (host) fetchHeaders['x-forwarded-host'] = host;
+
     const response = await fetch(`${getApiBaseUrl()}/settings`, {
+      headers: fetchHeaders,
       cache: 'no-store',
       next: { revalidate: 0 },
       signal: controller.signal,

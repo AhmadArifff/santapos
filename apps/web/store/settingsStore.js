@@ -17,9 +17,9 @@ export const DEFAULT_THEME_COLORS = {
 };
 
 export const DEFAULT_SETTINGS = {
-  store_name: 'Sultan Kebab',
-  browser_title: 'Sultan Kebab POS',
-  store_description: 'Point of Sale System - Sultan Kebab',
+  store_name: 'Santapos Restaurant',
+  browser_title: 'Santapos Smart POS',
+  store_description: 'Point of Sale & Self-Order System',
   logo_url: '/images/assets/logo.png',
   favicon_url: '/images/assets/logo.png',
   ...DEFAULT_THEME_COLORS,
