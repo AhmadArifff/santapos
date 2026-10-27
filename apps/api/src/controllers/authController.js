@@ -481,3 +481,156 @@ exports.deleteCashierSchedule = async (req, res) => {
     res.status(500).json({ message: 'Gagal menghapus jadwal kasir' });
   }
 };
+
+exports.onboardTenant = async (req, res) => {
+  const {
+    restaurant_name,
+    slug,
+    owner_name,
+    owner_email,
+    password,
+    phone,
+    plan_code = 'starter',
+    branch_name = 'Cabang Utama',
+    branch_address = '',
+    table_count = 5,
+    first_category_name = 'Makanan & Minuman',
+    first_product_name = 'Menu Spesial',
+    first_product_price = 25000,
+  } = req.body;
+
+  if (!restaurant_name || !owner_email || !password || !owner_name) {
+    return res.status(400).json({ message: 'Nama restoran, nama pemilik, email, dan password wajib diisi' });
+  }
+
+  let cleanSlug = (slug || restaurant_name)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  if (!cleanSlug) cleanSlug = `resto-${Date.now().toString(36)}`;
+
+  try {
+    const [existingUsers] = await db.query('SELECT id FROM users WHERE email = ? LIMIT 1', [owner_email]);
+    if (existingUsers?.length > 0) {
+      return res.status(400).json({ message: 'Email sudah terdaftar. Silakan gunakan email lain atau login.' });
+    }
+
+    const [existingTenants] = await db.query('SELECT id FROM tenants WHERE slug = ? LIMIT 1', [cleanSlug]);
+    if (existingTenants?.length > 0) {
+      cleanSlug = `${cleanSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+
+    const branding = JSON.stringify({
+      primary_color: '#C9A84C',
+      accent_color: '#E0C068',
+      store_name: restaurant_name,
+    });
+    const settings = JSON.stringify({
+      store_name: restaurant_name,
+      phone: phone || '',
+      address: branch_address || '',
+    });
+
+    const [tenantResult] = await db.query(`
+      INSERT INTO tenants (name, slug, plan_code, status, branding, settings)
+      VALUES (?, ?, ?, 'active', ?, ?)
+    `, [restaurant_name, cleanSlug, plan_code, branding, settings]);
+
+    const tenantId = tenantResult.insertId;
+
+    const [branchResult] = await db.query(`
+      INSERT INTO branches (tenant_id, name, address, phone, is_main, status)
+      VALUES (?, ?, ?, ?, true, 'active')
+    `, [tenantId, branch_name, branch_address, phone || '']);
+
+    const branchId = branchResult.insertId;
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const [userResult] = await db.query(`
+      INSERT INTO users (tenant_id, name, email, password, role, default_branch_id)
+      VALUES (?, ?, ?, ?, 'admin', ?)
+    `, [tenantId, owner_name, owner_email, hashedPassword, branchId]);
+
+    const userId = userResult.insertId;
+
+    const tablesNum = Math.min(Math.max(Number(table_count) || 5, 1), 50);
+    for (let i = 1; i <= tablesNum; i++) {
+      const tableNumber = `Meja ${String(i).padStart(2, '0')}`;
+      const token = `${cleanSlug}-t${i}-${Math.random().toString(36).substring(2, 8)}`;
+      await db.query(`
+        INSERT INTO dining_tables
+          (table_number, table_name, capacity, qr_token, status, branch_id, tenant_id, created_by)
+        VALUES (?, ?, ?, ?, 'active', ?, ?, ?)
+      `, [tableNumber, tableNumber, 4, token, branchId, tenantId, userId]);
+    }
+
+    let categoryId = null;
+    if (first_category_name) {
+      const [catResult] = await db.query(`
+        INSERT INTO categories (tenant_id, name, sort_order)
+        VALUES (?, ?, 1)
+      `, [tenantId, first_category_name]);
+      categoryId = catResult.insertId;
+    }
+
+    if (first_product_name) {
+      await db.query(`
+        INSERT INTO products (tenant_id, category_id, name, price, status)
+        VALUES (?, ?, ?, ?, 'active')
+      `, [tenantId, categoryId, first_product_name, Number(first_product_price) || 25000]);
+    }
+
+    try {
+      await db.query(`
+        INSERT INTO payment_methods
+          (tenant_id, method_key, name, type, provider_name, account_name, instructions, status, sort_order)
+        VALUES
+          (?, 'qris', 'QRIS', 'qris', 'QRIS', ?, 'Scan QRIS dan upload bukti bayar.', 'active', 1),
+          (?, 'cash', 'Tunai di Kasir', 'cash', 'Kasir', ?, 'Bayar langsung di meja kasir.', 'active', 2)
+      `, [tenantId, restaurant_name, tenantId, restaurant_name]);
+    } catch (_) {}
+
+    const token = jwt.sign(
+      {
+        id: userId,
+        role: 'admin',
+        branch_id: branchId,
+        tenant_id: tenantId,
+        tenant_slug: cleanSlug,
+        plan_code: plan_code,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: 'Selamat! Restoran Anda berhasil didaftarkan ke Santapos.',
+      token,
+      user: {
+        id: userId,
+        name: owner_name,
+        email: owner_email,
+        role: 'admin',
+        tenant_id: tenantId,
+        tenant_name: restaurant_name,
+        tenant_slug: cleanSlug,
+        plan_code: plan_code,
+        default_branch_id: branchId,
+        branch_name: branch_name,
+      },
+      tenant: {
+        id: tenantId,
+        name: restaurant_name,
+        slug: cleanSlug,
+        plan_code: plan_code,
+      }
+    });
+  } catch (err) {
+    console.error('[onboardTenant error]:', err);
+    return res.status(500).json({ message: 'Gagal melakukan onboarding: ' + err.message });
+  }
+};
+

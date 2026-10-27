@@ -30,6 +30,7 @@ const menus = [
   { href: '/admin/landing-page-settings', label: 'Landing Page', roles: ['admin'],        anim: 'bounce' },
   { href: '/admin/login-page-settings', label: 'Login Page',   roles: ['admin'],          anim: 'slide'  },
   { href: '/admin/settings',            label: 'Pengaturan',   roles: ['admin'],          anim: 'spin'   },
+  { href: '/superadmin',                label: 'SaaS Superadmin', roles: ['superadmin'],  anim: 'bounce' },
 ];
 
 // ── Unique SVG icons ──────────────────────────────────────────
@@ -265,6 +266,16 @@ function BranchSelector({ collapsed, branches, selectedBranchId, onChange }) {
   );
 }
 
+function SuperadminIcon({ active }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke={active ? '#fff' : 'currentColor'} strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+    </svg>
+  );
+}
+
 // Map href ke icon component
 const iconMap = {
   '/pos':                         PosIcon,
@@ -280,6 +291,7 @@ const iconMap = {
   '/admin/settings':              SettingsIcon,
   '/admin/landing-page-settings': LandingIcon,
   '/admin/login-page-settings':   LoginPageIcon,
+  '/superadmin':                  SuperadminIcon,
 };
 
 // ── Global keyframes (inject sekali) ─────────────────────────
@@ -433,7 +445,7 @@ function SidebarContent({ collapsed, noLogo, pathname, user, settings, visible,
               </div>
               <div className="min-w-0" style={{ animation: 'sidebarLabelIn 0.2s ease-out' }}>
                 <p className="text-white font-bold text-sm leading-tight truncate">
-                  {settings?.store_name || 'Kebab POS'}
+                  {settings?.store_name || 'Santapos POS'}
                 </p>
                 <p className="text-white/40 text-xs">Admin Dashboard</p>
               </div>

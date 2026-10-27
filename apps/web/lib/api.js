@@ -180,3 +180,12 @@ export const updateDiningTable = (id, data) => api.put(`/customer/tables/${id}`,
 export const deleteDiningTable = (id) => api.delete(`/customer/tables/${id}`);
 export const getCustomerOrders = (params) => api.get('/customer/orders', { params });
 export const updateCustomerOrderStatus = (id, data, config = {}) => api.put(`/customer/orders/${id}/status`, data, config);
+
+// SaaS Multi-Tenant & Superadmin
+export const onboardTenant = (data) => api.post('/auth/onboard', data);
+export const getSuperadminStats = () => api.get('/superadmin/stats');
+export const getSuperadminTenants = () => api.get('/superadmin/tenants');
+export const updateSuperadminTenantPlan = (id, plan_code) => api.patch(`/superadmin/tenants/${id}/plan`, { plan_code });
+export const updateSuperadminTenantStatus = (id, status) => api.patch(`/superadmin/tenants/${id}/status`, { status });
+export const getFranchiseHqReport = () => api.get('/reports/franchise-hq');
+

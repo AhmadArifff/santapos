@@ -34,6 +34,14 @@ export function middleware(request) {
   }
   requestHeaders.set('x-forwarded-host', host);
 
+  if (isSuperAdminPortal && request.nextUrl.pathname === '/') {
+    return NextResponse.rewrite(new URL('/superadmin', request.url), {
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  }
+
   const response = NextResponse.next({
     request: {
       headers: requestHeaders,

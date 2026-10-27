@@ -10,11 +10,13 @@ const {
   createCashierSchedule,
   updateCashierSchedule,
   deleteCashierSchedule,
+  onboardTenant,
 } =
   require('../controllers/authController');
 const { authenticate, isAdmin } = require('../middleware/auth');
 
 router.post('/login',    login);
+router.post('/onboard',  onboardTenant);
 router.post('/logout',   authenticate, logout);
 router.get('/me',        authenticate, getMe);
 router.post('/register', authenticate, isAdmin, register);

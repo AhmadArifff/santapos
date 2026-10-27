@@ -12,5 +12,6 @@ router.get('/years', authenticate, c.getTransactionYears);
 router.get('/sales-by-product', authenticate, isAdmin, c.salesByProduct);
 router.get('/business-analysis', authenticate, isAdmin, c.businessAnalysis);
 router.get('/business-analysis/pdf', authenticate, isAdmin, c.businessAnalysisPdf);
+router.get('/franchise-hq', authenticate, isAdmin, c.franchiseHqReport);
 
 module.exports = router;
