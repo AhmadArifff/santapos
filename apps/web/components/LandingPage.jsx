@@ -47,9 +47,9 @@ const writeLandingContentCache = (content) => {
 function LandingContentShell() {
   return (
     <div className="landing-page min-h-screen bg-[var(--dark)]">
-      <div className="landing-loading-shell" aria-label="Memuat Sultan Kebab">
+      <div className="landing-loading-shell" aria-label="Memuat Santapos Resto">
         <div className="landing-loading-card">
-          <p>Sultan Kebab</p>
+          <p>Santapos Resto</p>
           <div />
         </div>
       </div>

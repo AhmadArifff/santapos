@@ -1,7 +1,7 @@
 {
-  "name": "Sultan Kebab",
-  "short_name": "Sultan Kebab",
-  "description": "Kebab premium, shawarma, menu Timur Tengah, dan pemesanan online Sultan Kebab.",
+  "name": "Santapos Restaurant",
+  "short_name": "Santapos",
+  "description": "Smart POS & Self-Order QR Restaurant Platform by Santapos.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

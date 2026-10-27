@@ -23,7 +23,7 @@ export default function PaymentMethodCard({
   const qrUrl = rawQrUrl ? resolveAssetUrl(rawQrUrl) : '';
   const label = method.name || (isTransfer ? 'Transfer Bank' : 'QRIS');
   const provider = method.provider_name || (isTransfer ? 'Bank' : 'QRIS');
-  const accountName = method.account_name || 'Sultan Kebab';
+  const accountName = method.account_name || 'Santapos Resto';
   const accountNumber = maskAccount(method.account_number);
   const timeout = Number(method.payment_timeout_minutes || 0);
   const Wrapper = onClick ? 'button' : 'div';

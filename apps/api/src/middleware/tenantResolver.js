@@ -82,7 +82,7 @@ const resolveTenantFromDb = async ({ slug, id, customDomain }) => {
     console.warn('[tenantResolver] DB lookup failed, falling back to default:', err.message);
     return {
       id: 1,
-      name: 'Sultan Kebab',
+      name: 'Santapos Demo (Sultan Kebab)',
       slug: 'sultan-kebab',
       plan_code: 'franchise',
       plan_capabilities: {},

@@ -255,10 +255,10 @@ const loadImage = (src) => new Promise((resolve, reject) => {
   img.src = src;
 });
 
-function ReviewVoucherCard({ voucher, order, onClose, storeLogoUrl, storeName = 'Sultan Kebab' }) {
+function ReviewVoucherCard({ voucher, order, onClose, storeLogoUrl, storeName = 'Santapos Restaurant' }) {
   const [qrDataUrl, setQrDataUrl] = useState('');
   const discountText = getReviewVoucherDiscountText(voucher);
-  const customerName = voucher?.customer_name || order?.customer_name || 'Pelanggan Sultan';
+  const customerName = voucher?.customer_name || order?.customer_name || 'Pelanggan Setia';
   const orderDate = voucher?.source_order_date || voucher?.issued_at || order?.created_at;
   const payload = getReviewVoucherPayload(voucher);
   const logoUrl = resolveAssetUrl(storeLogoUrl, '/images/assets/logo.png');
@@ -294,7 +294,7 @@ function ReviewVoucherCard({ voucher, order, onClose, storeLogoUrl, storeName = 
 
     ctx.fillStyle = '#C9A84C';
     ctx.font = '700 34px Arial';
-    ctx.fillText('SULTAN KEBAB', 80, 112);
+    ctx.fillText(String(storeName || 'Santapos Restaurant').toUpperCase(), 80, 112);
     ctx.font = '900 82px Arial';
     ctx.fillText(`${discountText} OFF`, 80, 230);
 
@@ -711,7 +711,7 @@ export default function CustomerOrderPage() {
     : statusSteps;
   const canOrderAgain = order?.status === 'cancelled' || order?.status === 'completed';
   const tableBusy = !order && Number(table?.active_orders || 0) > 0;
-  const branchLabel = table?.branch_name || 'Cabang Sultan Kebab';
+  const branchLabel = table?.branch_name || 'Cabang Utama';
   const branchArea = table?.branch_area || table?.branch_address || '';
   const reviewRewardText = reviewRewardProgram
     ? `Review semua menu dan dapatkan voucher diskon ${
@@ -1737,6 +1737,18 @@ export default function CustomerOrderPage() {
           </AnimatePresence>
         </aside>
       </div>
+
+      <footer className="mt-8 border-t border-white/5 py-6 text-center">
+        <a
+          href="https://santapos.id"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs text-[#EDE0C4]/40 transition hover:text-[#C9A84C]"
+        >
+          <span>Powered by</span>
+          <span className="font-bold tracking-wide text-[#EDE0C4]/70">Santapos</span>
+        </a>
+      </footer>
       {!order && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#C9A84C]/20 bg-[#0D0A06]/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur lg:hidden">
           <button

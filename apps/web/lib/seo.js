@@ -2,10 +2,10 @@ import { heroContent } from '@/data/landing/heroContent';
 import { locationsContent } from '@/data/landing/locationsContent';
 import { menuContent } from '@/data/landing/menuContent';
 
-const DEFAULT_SITE_URL = 'https://restaurant-pos.dev';
-const DEFAULT_STORE_NAME = 'Sultan Kebab';
+const DEFAULT_SITE_URL = 'https://santapos.id';
+const DEFAULT_STORE_NAME = 'Santapos Restaurant';
 const DEFAULT_DESCRIPTION =
-  'Sultan Kebab menyajikan kebab premium, shawarma, menu Timur Tengah, paket spesial, dan pemesanan online dari cabang terdekat.';
+  'Santapos menyajikan solusi Smart POS kasir, Self-Order QR meja, manajemen stok, dan laporan bisnis modern untuk restoran dan cafe.';
 
 const normalizeSiteUrl = (value) => {
   const raw = String(value || '').trim();

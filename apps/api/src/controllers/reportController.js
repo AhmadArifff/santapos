@@ -1057,7 +1057,7 @@ exports.businessAnalysisPdf = async (req, res) => {
       .fillColor('#64748B')
       .font('Helvetica')
       .fontSize(10)
-      .text(`Sultan Kebab POS - ${data.range.label}`, 42, 70)
+      .text(`${req.tenant?.name || 'Santapos'} POS - ${data.range.label}`, 42, 70)
       .text(`Dibuat: ${new Date(data.generated_at).toLocaleString('id-ID')}`, 42, 86);
 
     doc
