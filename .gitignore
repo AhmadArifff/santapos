@@ -37,3 +37,8 @@ public/sw.js
 public/workbox-*.js
 public/sw.js.map
 public/workbox-*.js.map
+
+# Legacy standalone repos (preserved as reference)
+restaurant-pos.dev/
+restaurant-pos-back.dev/
+
