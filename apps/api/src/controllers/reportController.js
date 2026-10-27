@@ -2,6 +2,7 @@ const PDFDocument = require('pdfkit');
 const db = require('../config/db');
 const { getRequestBranchId } = require('../utils/branchContext');
 const { ensureAttendanceAutomationSchema } = require('../services/attendanceKeepaliveService');
+const { getTenantId } = require('../utils/tenantContext');
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
@@ -1203,3 +1204,84 @@ exports.businessAnalysisPdf = async (req, res) => {
     }
   }
 };
+
+exports.franchiseHqReport = async (req, res) => {
+  try {
+    const tenantId = getTenantId(req);
+
+    // 1. Fetch branch performance
+    const [branchRows] = await db.query(`
+      SELECT
+        b.id AS branch_id,
+        b.name AS branch_name,
+        b.is_main,
+        b.address,
+        b.status,
+        COUNT(t.id) AS total_orders,
+        COALESCE(SUM(t.grand_total), 0) AS total_revenue,
+        COALESCE(AVG(t.grand_total), 0) AS avg_ticket
+      FROM branches b
+      LEFT JOIN transactions t ON t.branch_id = b.id AND t.tenant_id = b.tenant_id
+      WHERE b.tenant_id = ?
+      GROUP BY b.id, b.name, b.is_main, b.address, b.status
+      ORDER BY total_revenue DESC
+    `, [tenantId]);
+
+    // 2. Fetch top products across all branches
+    let topProducts = [];
+    try {
+      const [productRows] = await db.query(`
+        SELECT
+          p.id,
+          p.name,
+          COALESCE(c.name, 'Umum') AS category_name,
+          SUM(ti.qty) AS total_sold,
+          SUM(ti.subtotal) AS total_sales
+        FROM transaction_items ti
+        JOIN transactions t ON ti.transaction_id = t.id
+        JOIN products p ON ti.product_id = p.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE t.tenant_id = ?
+        GROUP BY p.id, p.name, c.name
+        ORDER BY total_sold DESC
+        LIMIT 5
+      `, [tenantId]);
+      topProducts = productRows;
+    } catch (_) {}
+
+    // 3. Platform aggregates for this tenant
+    const branches = branchRows.map(b => ({
+      ...b,
+      total_orders: Number(b.total_orders || 0),
+      total_revenue: Number(b.total_revenue || 0),
+      avg_ticket: Math.round(Number(b.avg_ticket || 0)),
+    }));
+
+    const totalRevenue = branches.reduce((acc, b) => acc + b.total_revenue, 0);
+    const totalOrders = branches.reduce((acc, b) => acc + b.total_orders, 0);
+    const topBranch = branches[0] || null;
+
+    res.json({
+      success: true,
+      data: {
+        summary: {
+          total_branches: branches.length,
+          total_revenue: totalRevenue,
+          total_orders: totalOrders,
+          avg_ticket: totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0,
+          top_branch: topBranch ? { id: topBranch.branch_id, name: topBranch.branch_name, revenue: topBranch.total_revenue } : null,
+        },
+        branches,
+        top_products: topProducts.map(p => ({
+          ...p,
+          total_sold: Number(p.total_sold || 0),
+          total_sales: Number(p.total_sales || 0),
+        }))
+      }
+    });
+  } catch (err) {
+    console.error('[franchiseHqReport error]:', err);
+    res.status(500).json({ message: 'Gagal mengambil data Franchise HQ: ' + err.message });
+  }
+};
+

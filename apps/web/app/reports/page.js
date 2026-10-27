@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { downloadBusinessAnalysisPdf, getBusinessAnalysis, getTransactionYears } from '@/lib/api';
 import SectionSkeleton from '@/components/ui/SectionSkeleton';
+import FranchiseHqOverview from '@/components/reports/FranchiseHqOverview';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
@@ -203,6 +204,7 @@ function AnimatedLineChart({ rows = [] }) {
 
 export default function ReportsPage() {
   const [analysis, setAnalysis] = useState(null);
+  const [viewMode, setViewMode] = useState('branch');
   const [period, setPeriod] = useState('daily');
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
@@ -273,12 +275,41 @@ export default function ReportsPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         <div data-tour="reports-header" className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-yellow-400 text-xs uppercase tracking-[0.22em] font-bold">Business Intelligence</p>
-            <h1 className="text-white text-2xl font-bold mt-2">Laporan & Evaluasi Bisnis</h1>
+            <div className="flex items-center gap-3">
+              <p className="text-yellow-400 text-xs uppercase tracking-[0.22em] font-bold">Business Intelligence</p>
+              <div className="flex rounded-xl overflow-hidden border border-slate-700 bg-slate-900 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('branch')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
+                    viewMode === 'branch' ? 'bg-amber-400 text-black shadow' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Outlet Ini
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('hq')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                    viewMode === 'hq' ? 'bg-amber-400 text-black shadow' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span>Kantor Pusat HQ</span>
+                  <span className="text-[10px] px-1 rounded bg-amber-500/20 text-amber-300">Franchise</span>
+                </button>
+              </div>
+            </div>
+            <h1 className="text-white text-2xl font-bold mt-2">
+              {viewMode === 'hq' ? 'Konsolidasi Seluruh Cabang' : 'Laporan & Evaluasi Bisnis'}
+            </h1>
             <p className="text-slate-400 text-sm mt-1">
-              Ringkasan omzet, profit, stok, karyawan, dan rekomendasi untuk admin, owner, dan investor.
+              {viewMode === 'hq'
+                ? 'Agregasi omzet, cabang terlaris, dan kinerja produk di seluruh jaringan outlet Santapos.'
+                : 'Ringkasan omzet, profit, stok, karyawan, dan rekomendasi untuk admin, owner, dan investor.'}
             </p>
           </div>
+
+          {viewMode === 'branch' && (
 
           <div data-tour="reports-controls" className="flex flex-wrap gap-2">
             {refreshing && (
@@ -320,9 +351,14 @@ export default function ReportsPage() {
               {pdfLoading ? 'Membuat PDF...' : 'Export PDF'}
             </button>
           </div>
+          )}
         </div>
 
-        {error && <div className="p-4 bg-red-500/15 border border-red-500/30 text-red-200 rounded-lg text-sm">{error}</div>}
+        {viewMode === 'hq' ? (
+          <FranchiseHqOverview />
+        ) : (
+          <>
+            {error && <div className="p-4 bg-red-500/15 border border-red-500/30 text-red-200 rounded-lg text-sm">{error}</div>}
 
         {loading && !analysis ? (
           <SectionSkeleton />
@@ -481,6 +517,8 @@ export default function ReportsPage() {
             </div>
           </>
         ) : null}
+          </>
+        )}
       </div>
     </AdminLayout>
   );

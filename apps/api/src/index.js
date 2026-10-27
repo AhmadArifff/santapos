@@ -58,6 +58,7 @@ app.use('/api/payments', require('./routes/payments'));
 app.use('/api/ai-chat', require('./routes/aiChat'));
 app.use('/api/ai', require('./routes/aiData'));
 app.use('/api/customer', require('./routes/customerOrders'));
+app.use('/api/superadmin', require('./routes/superadmin'));
 app.use('/api/cron', require('./routes/cron'));
 
 app.use((req, res) => res.status(404).json({ message: 'Endpoint tidak ditemukan' }));
