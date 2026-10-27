@@ -1,0 +1,48 @@
+{
+  "branches": [
+    {
+      "id": 1,
+      "name": "Kebab Bang Han - Pusat",
+      "address": "Jl. Merdeka No. 123, Jakarta Pusat",
+      "phone": "+62 812-3456-7890",
+      "email": "pusat@banghan.com",
+      "latitude": -6.1751,
+      "longitude": 106.8650,
+      "hours": "10:00 - 22:00",
+      "image": "/images/assets/branch-1.jpg"
+    },
+    {
+      "id": 2,
+      "name": "Kebab Bang Han - Cabang Sudirman",
+      "address": "Jl. Sudirman No. 456, Jakarta Selatan",
+      "phone": "+62 812-3456-7891",
+      "email": "sudirman@banghan.com",
+      "latitude": -6.2119,
+      "longitude": 106.8000,
+      "hours": "10:00 - 23:00",
+      "image": "/images/assets/branch-2.jpg"
+    },
+    {
+      "id": 3,
+      "name": "Kebab Bang Han - Cabang Bintaro",
+      "address": "Jl. Bintaro No. 789, Tangerang Selatan",
+      "phone": "+62 812-3456-7892",
+      "email": "bintaro@banghan.com",
+      "latitude": -6.3157,
+      "longitude": 106.7428,
+      "hours": "11:00 - 22:00",
+      "image": "/images/assets/branch-3.jpg"
+    },
+    {
+      "id": 4,
+      "name": "Kebab Bang Han - Cabang Cibubur",
+      "address": "Jl. Cibubur No. 321, Jakarta Timur",
+      "phone": "+62 812-3456-7893",
+      "email": "cibubur@banghan.com",
+      "latitude": -6.3456,
+      "longitude": 106.8900,
+      "hours": "10:00 - 22:00",
+      "image": "/images/assets/branch-4.jpg"
+    }
+  ]
+}
