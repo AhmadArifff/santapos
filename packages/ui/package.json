@@ -1,0 +1,14 @@
+{
+  "name": "@santapos/ui",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./tailwind-preset": "./tailwind.preset.js"
+  },
+  "dependencies": {
+    "@santapos/config": "workspace:*",
+    "@santapos/shared": "workspace:*"
+  }
+}

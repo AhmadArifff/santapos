@@ -1,0 +1,16 @@
+{
+  "name": "santapos",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@12.10.1",
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=@santapos/web",
+    "dev:api": "turbo run dev --filter=@santapos/api",
+    "build": "turbo run build",
+    "lint": "turbo run lint"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.4"
+  }
+}

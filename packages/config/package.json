@@ -1,0 +1,11 @@
+{
+  "name": "@santapos/config",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./eslint": "./eslint.config.js",
+    "./tailwind": "./tailwind.preset.js"
+  }
+}
