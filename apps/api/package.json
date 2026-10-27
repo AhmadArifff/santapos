@@ -1,0 +1,39 @@
+{
+  "name": "kebab-pos-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js",
+    "migrate": "node src/migrate.js",
+    "migrate:fresh": "node src/migrate.js --fresh",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "schema:supabase": "node scripts/apply-supabase-schema.js",
+    "migrate:supabase": "node scripts/migrate-mysql-to-supabase.js",
+    "reset:supabase:test": "node scripts/reset-supabase-test-data.js",
+    "reset:supabase:operational": "node scripts/reset-operational-data-preserve-stock-master.js",
+    "storage:supabase": "node scripts/upload-assets-to-supabase.js",
+    "storage:supabase:update-db": "node scripts/upload-assets-to-supabase.js --update-db"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.106.1",
+    "axios": "^1.16.1",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "express-validator": "^7.3.1",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1",
+    "mysql2": "^3.19.1",
+    "pdfkit": "^0.18.0",
+    "pg": "^8.21.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
