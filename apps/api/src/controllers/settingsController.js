@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const db = require('../config/db');
+const { getTenantId, isSuperAdmin } = require('../utils/tenantContext');
 const {
   isSupabaseStorageEnabled,
   uploadImageBuffer,
@@ -93,32 +94,45 @@ const deleteSettingAssets = async (urls) => {
   }
 };
 
-const upsertSetting = async ({ settingKey, settingValue, dataType = 'string', updatedBy }) => {
+const upsertSetting = async ({ settingKey, settingValue, dataType = 'string', updatedBy, tenantId = 1 }) => {
   const safeType = normalizeDataType(dataType);
   const safeValue = normalizeSettingValue(settingValue);
 
   if (isPostgres()) {
-    await db.query(
-      `INSERT INTO website_settings (setting_key, setting_value, data_type, updated_by)
-       VALUES (?, ?, ?, ?)
-       ON CONFLICT (setting_key) DO UPDATE SET
-         setting_value = EXCLUDED.setting_value,
-         data_type = EXCLUDED.data_type,
-         updated_by = EXCLUDED.updated_by,
-         updated_at = NOW()`,
-      [settingKey, safeValue, safeType, updatedBy],
-    );
+    try {
+      await db.query(
+        `INSERT INTO website_settings (setting_key, setting_value, data_type, updated_by, tenant_id)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT (tenant_id, setting_key) DO UPDATE SET
+           setting_value = EXCLUDED.setting_value,
+           data_type = EXCLUDED.data_type,
+           updated_by = EXCLUDED.updated_by,
+           updated_at = NOW()`,
+        [settingKey, safeValue, safeType, updatedBy, tenantId],
+      );
+    } catch (_) {
+      await db.query(
+        `INSERT INTO website_settings (setting_key, setting_value, data_type, updated_by)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT (setting_key) DO UPDATE SET
+           setting_value = EXCLUDED.setting_value,
+           data_type = EXCLUDED.data_type,
+           updated_by = EXCLUDED.updated_by,
+           updated_at = NOW()`,
+        [settingKey, safeValue, safeType, updatedBy],
+      );
+    }
     return { safeType, safeValue };
   }
 
   await db.query(
-    `INSERT INTO website_settings (setting_key, setting_value, data_type, updated_by)
-     VALUES (?, ?, ?, ?)
+    `INSERT INTO website_settings (setting_key, setting_value, data_type, updated_by, tenant_id)
+     VALUES (?, ?, ?, ?, ?)
      ON DUPLICATE KEY UPDATE
        setting_value = VALUES(setting_value),
        data_type = VALUES(data_type),
        updated_by = VALUES(updated_by)`,
-    [settingKey, safeValue, safeType, updatedBy],
+    [settingKey, safeValue, safeType, updatedBy, tenantId],
   );
   return { safeType, safeValue };
 };
@@ -178,8 +192,11 @@ module.exports = {
   getAll: async (req, res) => {
     try {
       await ensureTableExists();
+      const tenantId = getTenantId(req);
+      const isSuper = isSuperAdmin(req);
       const [rows] = await db.query(
-        'SELECT setting_key, setting_value FROM website_settings ORDER BY setting_key',
+        'SELECT setting_key, setting_value FROM website_settings WHERE (? = true OR tenant_id = ? OR tenant_id IS NULL) ORDER BY setting_key',
+        [isSuper, tenantId],
       );
 
       const settings = {};
@@ -201,9 +218,11 @@ module.exports = {
     try {
       await ensureTableExists();
       const { key } = req.params;
+      const tenantId = getTenantId(req);
+      const isSuper = isSuperAdmin(req);
       const [rows] = await db.query(
-        'SELECT setting_value FROM website_settings WHERE setting_key = ?',
-        [key],
+        'SELECT setting_value FROM website_settings WHERE setting_key = ? AND (? = true OR tenant_id = ? OR tenant_id IS NULL)',
+        [key, isSuper, tenantId],
       );
 
       if (!Array.isArray(rows) || rows.length === 0) {
@@ -232,6 +251,7 @@ module.exports = {
       }
 
       const updatedBy = req.user?.id || 1;
+      const tenantId = getTenantId(req);
       const safeValue = normalizeSettingValue(setting_value);
       const staleAssetUrls = await getUnusedSettingAssetUrls({ [setting_key]: safeValue });
 
@@ -240,6 +260,7 @@ module.exports = {
         settingValue: safeValue,
         dataType: data_type,
         updatedBy,
+        tenantId,
       });
       await deleteSettingAssets(staleAssetUrls);
 
@@ -316,12 +337,14 @@ module.exports = {
       }
 
       const updatedBy = req.user?.id || 1;
+      const tenantId = getTenantId(req);
 
       await upsertSetting({
         settingKey: setting_key,
         settingValue,
         dataType: 'string',
         updatedBy,
+        tenantId,
       });
 
       res.json({
@@ -401,6 +424,7 @@ module.exports = {
       }
 
       const updatedBy = req.user?.id || 1;
+      const tenantId = getTenantId(req);
       const nextSettingsByKey = {};
 
       for (const setting of settings) {
@@ -430,6 +454,7 @@ module.exports = {
           settingValue: setting_value,
           dataType: data_type,
           updatedBy,
+          tenantId,
         });
       }
 

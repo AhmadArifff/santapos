@@ -1,10 +1,9 @@
 const crypto = require('crypto');
 const db = require('../config/db');
+const { getTenantId, isSuperAdmin } = require('../utils/tenantContext');
 
 const DEFAULT_BRANCHES = [
-  { branch_key: 'bandung', name: 'Sultan Kebab Dago', area: 'Bandung Kota' },
-  { branch_key: 'jakarta', name: 'Sultan Kebab SCBD', area: 'Jakarta Selatan' },
-  { branch_key: 'surabaya', name: 'Sultan Kebab Pakuwon', area: 'Surabaya Barat' },
+  { branch_key: 'main', name: 'Cabang Utama', area: 'Pusat' },
 ];
 
 const normalizeKey = (value) => String(value || '')
@@ -112,12 +111,14 @@ const syncLandingBranches = async ({ pruneMissing = false } = {}) => {
 exports.list = async (req, res) => {
   try {
     await ensureDefaultBranches();
+    const tenantId = getTenantId(req);
+    const isSuper = isSuperAdmin(req);
     const [rows] = await db.query(`
       SELECT id, branch_key, name, area, address, phone, status, created_at, updated_at
       FROM branches
-      WHERE status = 'active'
+      WHERE status = 'active' AND (? = true OR tenant_id = ? OR tenant_id IS NULL)
       ORDER BY id ASC
-    `);
+    `, [isSuper, tenantId]);
     res.json(rows);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -137,8 +138,13 @@ exports.setMyBranch = async (req, res) => {
   try {
     const branchId = Number(req.body.branch_id);
     if (!branchId) return res.status(400).json({ message: 'Cabang wajib dipilih' });
+    const tenantId = getTenantId(req);
+    const isSuper = isSuperAdmin(req);
 
-    const [branches] = await db.query("SELECT id FROM branches WHERE id = ? AND status = 'active'", [branchId]);
+    const [branches] = await db.query(
+      "SELECT id FROM branches WHERE id = ? AND status = 'active' AND (? = true OR tenant_id = ? OR tenant_id IS NULL)",
+      [branchId, isSuper, tenantId]
+    );
     if (!branches.length) return res.status(404).json({ message: 'Cabang tidak ditemukan' });
 
     await db.query('UPDATE users SET default_branch_id = ? WHERE id = ?', [branchId, req.user.id]);

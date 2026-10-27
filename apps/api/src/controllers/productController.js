@@ -11,6 +11,7 @@ const {
   getUserIngredientBalances,
 } = require('../services/stockAllocationService');
 const { getRequestBranchId } = require('../utils/branchContext');
+const { getTenantId, isSuperAdmin } = require('../utils/tenantContext');
 
 let ensureProductImageSchemaPromise = null;
 
@@ -146,13 +147,16 @@ exports.getAll = async (req, res) => {
     await ensureProductImageSchema();
     const { category_id, search } = req.query;
     const branchId = getRequestBranchId(req) || req.user?.branch_id || null;
+    const tenantId = getTenantId(req);
+    const isSuper = isSuperAdmin(req);
+
     let sql = `
       SELECT p.*, c.name AS category_name
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
-      WHERE 1=1
+      WHERE (? = true OR p.tenant_id = ?)
     `;
-    const params = [];
+    const params = [isSuper, tenantId];
     if (category_id) { sql += ' AND p.category_id = ?'; params.push(category_id); }
     if (search)       { sql += ' AND p.name LIKE ?';    params.push(`%${search}%`); }
     sql += ' ORDER BY p.name ASC';
@@ -185,6 +189,7 @@ exports.create = async (req, res) => {
   try {
     await ensureProductImageSchema();
     const { name, price, category_id, ingredients } = req.body;
+    const tenantId = getTenantId(req);
     const image_url = req.file
       ? await getUploadedProductImageUrl(req.file)
       : normalizeProductImageUrl(req.body.image_url);
@@ -193,8 +198,8 @@ exports.create = async (req, res) => {
       return res.status(400).json({ message: 'Nama dan harga wajib diisi' });
 
     const [result] = await db.query(
-      'INSERT INTO products (name, price, category_id, image_url) VALUES (?, ?, ?, ?)',
-      [name, price, category_id || null, image_url]
+      'INSERT INTO products (name, price, category_id, image_url, tenant_id) VALUES (?, ?, ?, ?, ?)',
+      [name, price, category_id || null, image_url, tenantId]
     );
     const productId = result.insertId;
 
@@ -212,9 +217,13 @@ exports.update = async (req, res) => {
     await ensureProductImageSchema();
     const { name, price, category_id, ingredients } = req.body;
     const { id } = req.params;
+    const tenantId = getTenantId(req);
+    const isSuper = isSuperAdmin(req);
 
     // Ambil data lama untuk hapus gambar lama jika ada gambar baru
-    const [old] = await db.query('SELECT image_url FROM products WHERE id = ?', [id]);
+    const [old] = await db.query('SELECT image_url FROM products WHERE id = ? AND (? = true OR tenant_id = ?)', [id, isSuper, tenantId]);
+    if (!old.length) return res.status(404).json({ message: 'Produk tidak ditemukan' });
+
     let image_url = old[0]?.image_url;
     const oldImageUrl = image_url;
 
@@ -227,8 +236,8 @@ exports.update = async (req, res) => {
     }
 
     await db.query(
-      'UPDATE products SET name=?, price=?, category_id=?, image_url=? WHERE id=?',
-      [name, price, category_id || null, image_url, id]
+      'UPDATE products SET name=?, price=?, category_id=?, image_url=? WHERE id=? AND (? = true OR tenant_id = ?)',
+      [name, price, category_id || null, image_url, id, isSuper, tenantId]
     );
 
     // Update ingredients — hapus lama, insert baru
@@ -250,11 +259,15 @@ exports.update = async (req, res) => {
 
 exports.remove = async (req, res) => {
   try {
-    const [old] = await db.query('SELECT image_url FROM products WHERE id = ?', [req.params.id]);
+    const tenantId = getTenantId(req);
+    const isSuper = isSuperAdmin(req);
+    const [old] = await db.query('SELECT image_url FROM products WHERE id = ? AND (? = true OR tenant_id = ?)', [req.params.id, isSuper, tenantId]);
+    if (!old.length) return res.status(404).json({ message: 'Produk tidak ditemukan' });
+
     if (old[0]?.image_url) {
       await deleteProductImage(old[0].image_url);
     }
-    const [result] = await db.query('DELETE FROM products WHERE id = ?', [req.params.id]);
+    const [result] = await db.query('DELETE FROM products WHERE id = ? AND (? = true OR tenant_id = ?)', [req.params.id, isSuper, tenantId]);
     if (!result.affectedRows)
       return res.status(404).json({ message: 'Produk tidak ditemukan' });
     res.json({ message: 'Produk berhasil dihapus' });
@@ -266,13 +279,16 @@ exports.remove = async (req, res) => {
 exports.getMyStock = async (req, res) => {
   try {
     const branchId = getRequestBranchId(req) || req.user?.branch_id || null;
+    const tenantId = getTenantId(req);
+    const isSuper = isSuperAdmin(req);
 
     const [products] = await db.query(`
       SELECT p.*, c.name AS category_name
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
+      WHERE (? = true OR p.tenant_id = ?)
       ORDER BY p.name ASC
-    `);
+    `, [isSuper, tenantId]);
     const ingredientsByProductId = await fetchIngredientsByProductIds(toProductIds(products));
     const userBalances = await getUserIngredientBalances(
       db,

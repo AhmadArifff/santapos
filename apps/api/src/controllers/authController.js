@@ -4,6 +4,7 @@ const db = require('../config/db');
 const { ensureDefaultBranches } = require('./branchController');
 const { getRequestBranchId } = require('../utils/branchContext');
 const { ensureAttendanceAutomationSchema } = require('../services/attendanceKeepaliveService');
+const { getTenantId } = require('../utils/tenantContext');
 
 let ensureCashierScheduleTablePromise = null;
 
@@ -102,10 +103,36 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: 'Password salah' });
 
     const user = rows[0];
+
+    // Fetch tenant and plan metadata
+    let tenantInfo = null;
+    try {
+      const [tRows] = await db.query(`
+        SELECT t.id, t.name, t.slug, t.custom_domain, t.status,
+               p.code AS plan_code, p.name AS plan_name, p.capabilities AS plan_capabilities
+        FROM tenants t
+        JOIN plans p ON p.id = t.plan_id
+        WHERE t.id = ?
+      `, [user.tenant_id || 1]);
+      tenantInfo = tRows?.[0] || null;
+    } catch (_) {}
+
+    const tenantId = Number(tenantInfo?.id || user.tenant_id || 1);
+    const tenantSlug = tenantInfo?.slug || 'sultan-kebab';
+    const tenantName = tenantInfo?.name || 'Sultan Kebab';
+    const planCode = tenantInfo?.plan_code || 'franchise';
+
     const token = jwt.sign(
-      { id: user.id, role: user.role, branch_id: user.default_branch_id || null },
+      {
+        id: user.id,
+        role: user.role,
+        branch_id: user.default_branch_id || null,
+        tenant_id: tenantId,
+        tenant_slug: tenantSlug,
+        plan_code: planCode,
+      },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES }
+      { expiresIn: process.env.JWT_EXPIRES || '7d' }
     );
 
     // ── Catat kehadiran ──
@@ -127,9 +154,6 @@ exports.login = async (req, res) => {
         [user.id, today]
       );
     }
-    // Auto-buat draft pengajuan stok saat kasir login
-    // const { autoRequestOnLogin } = require('./stockRequestController');
-    // await autoRequestOnLogin(user.id, db);
 
     res.json({
       token,
@@ -138,6 +162,11 @@ exports.login = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        tenant_id: tenantId,
+        tenant_name: tenantName,
+        tenant_slug: tenantSlug,
+        plan_code: planCode,
+        plan_capabilities: tenantInfo?.plan_capabilities || {},
         default_branch_id: user.default_branch_id || null,
         branch_name: user.branch_name || null,
         branch_key: user.branch_key || null,
@@ -184,14 +213,36 @@ exports.getActiveUsers = async (req, res) => {
 exports.getMe = async (req, res) => {
   try {
     const [rows] = await db.query(
-      `SELECT u.id, u.name, u.email, u.role, u.default_branch_id, b.name AS branch_name, b.branch_key, u.created_at
+      `SELECT u.id, u.name, u.email, u.role, u.default_branch_id, u.tenant_id,
+              b.name AS branch_name, b.branch_key, u.created_at
        FROM users u
        LEFT JOIN branches b ON b.id = u.default_branch_id
        WHERE u.id = ?`,
       [req.user.id]
     );
     if (!rows.length) return res.status(404).json({ message: 'User tidak ditemukan' });
-    res.json(rows[0]);
+    const user = rows[0];
+
+    let tenantInfo = null;
+    try {
+      const [tRows] = await db.query(`
+        SELECT t.id, t.name, t.slug, t.custom_domain, t.status,
+               p.code AS plan_code, p.name AS plan_name, p.capabilities AS plan_capabilities
+        FROM tenants t
+        JOIN plans p ON p.id = t.plan_id
+        WHERE t.id = ?
+      `, [user.tenant_id || req.user.tenant_id || 1]);
+      tenantInfo = tRows?.[0] || null;
+    } catch (_) {}
+
+    res.json({
+      ...user,
+      tenant_id: Number(tenantInfo?.id || user.tenant_id || 1),
+      tenant_name: tenantInfo?.name || 'Sultan Kebab',
+      tenant_slug: tenantInfo?.slug || 'sultan-kebab',
+      plan_code: tenantInfo?.plan_code || 'franchise',
+      plan_capabilities: tenantInfo?.plan_capabilities || {},
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -209,9 +260,11 @@ exports.register = async (req, res) => {
 
     const hash = await bcrypt.hash(password, 10);
     const branchId = getRequestBranchId(req) || req.user.branch_id || req.body.default_branch_id || null;
+    const tenantId = getTenantId(req);
+
     const [result] = await db.query(
-      "INSERT INTO users (name, email, password, role, default_branch_id) VALUES (?, ?, ?, ?, ?)",
-      [name, email, hash, role || 'kasir', branchId]
+      "INSERT INTO users (name, email, password, role, default_branch_id, tenant_id) VALUES (?, ?, ?, ?, ?, ?)",
+      [name, email, hash, role || 'kasir', branchId, tenantId]
     );
 
     res.status(201).json({ message: 'User berhasil dibuat', id: result.insertId });
@@ -222,11 +275,16 @@ exports.register = async (req, res) => {
 
 exports.getAllUsers = async (req, res) => {
   try {
+    const tenantId = getTenantId(req);
+    const isSuper = req.user?.role === 'superadmin';
     const [rows] = await db.query(
-      `SELECT u.id, u.name, u.email, u.role, u.default_branch_id, b.name AS branch_name, u.created_at
+      `SELECT u.id, u.name, u.email, u.role, u.default_branch_id, u.tenant_id,
+              b.name AS branch_name, u.created_at
        FROM users u
        LEFT JOIN branches b ON b.id = u.default_branch_id
-       ORDER BY u.created_at DESC`
+       WHERE (? = true OR u.tenant_id = ?)
+       ORDER BY u.created_at DESC`,
+      [isSuper, tenantId]
     );
     res.json(rows);
   } catch (err) {

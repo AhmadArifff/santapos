@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
@@ -29,7 +29,14 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-app.get('/', (req, res) => res.json({ message: 'Kebab POS API Running' }));
+// Multi-tenant resolver middleware
+app.use(require('./middleware/tenantResolver'));
+
+app.get('/', (req, res) => res.json({
+  message: 'Santapos Multi-Tenant SaaS API Running',
+  tenant: req.tenant?.slug || 'default',
+  plan: req.tenant?.plan_code || 'franchise',
+}));
 
 // Serve local images for development/local storage mode.
 app.use('/images', express.static(path.join(process.cwd(), 'public/images')));

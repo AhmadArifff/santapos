@@ -65,6 +65,12 @@ api.interceptors.request.use((config) => {
       if (state?.token) {
         config.headers.Authorization = `Bearer ${state.token}`;
       }
+      if (state?.user?.tenant_slug) {
+        config.headers['X-Tenant-Slug'] = state.user.tenant_slug;
+      }
+      if (state?.user?.tenant_id) {
+        config.headers['X-Tenant-Id'] = String(state.user.tenant_id);
+      }
       const branchId = state?.selectedBranchId || state?.user?.default_branch_id || state?.user?.branch_id;
       if (branchId) {
         config.headers['X-Branch-Id'] = String(branchId);
@@ -73,6 +79,18 @@ api.interceptors.request.use((config) => {
       // Fallback ke token langsung (backward compat)
       const token = localStorage.getItem('token');
       if (token) config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    // Fallback: jika belum ada X-Tenant-Slug, deteksi dari host browser
+    if (typeof window !== 'undefined' && !config.headers['X-Tenant-Slug']) {
+      const hostname = window.location.hostname;
+      if (hostname.endsWith('.santapos.id')) {
+        const parts = hostname.replace('.santapos.id', '').split('.');
+        const sub = parts[parts.length - 1];
+        if (sub && sub !== 'app' && sub !== 'api') {
+          config.headers['X-Tenant-Slug'] = sub;
+        }
+      }
     }
   } catch (_) {}
   return config;

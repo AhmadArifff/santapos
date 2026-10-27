@@ -3,6 +3,7 @@ const db = require('../config/db');
 const { createTransaction } = require('../services/transactionService');
 const { getUserIngredientBalances } = require('../services/stockAllocationService');
 const { getRequestBranchId } = require('../utils/branchContext');
+const { getTenantId, isSuperAdmin } = require('../utils/tenantContext');
 const {
   createReviewVoucher,
   ensureReviewVoucherSchema,
@@ -467,17 +468,19 @@ const calculateCanMake = (ingredients, balances) => {
   }));
 };
 
-const buildPublicMenu = async (branchId = null) => {
+const buildPublicMenu = async (branchId = null, tenantId = 1) => {
   const [stockUsers] = await db.query(
-    "SELECT id, name, role FROM users WHERE role IN ('kasir', 'admin') ORDER BY role DESC, name ASC"
+    "SELECT id, name, role FROM users WHERE role IN ('kasir', 'admin') AND (tenant_id = ? OR tenant_id IS NULL) ORDER BY role DESC, name ASC",
+    [tenantId]
   );
 
   const [products] = await db.query(`
     SELECT p.*, c.name AS category_name
     FROM products p
     LEFT JOIN categories c ON p.category_id = c.id
+    WHERE (p.tenant_id = ? OR p.tenant_id IS NULL)
     ORDER BY c.name ASC, p.name ASC
-  `);
+  `, [tenantId]);
   const productIds = products.map((product) => Number(product.id)).filter(Boolean);
   const ingredientsByProductId = {};
 
@@ -668,12 +671,14 @@ const resolveFulfillmentTransaction = async ({ order, actorUserId, requestedSour
 exports.listPublicTables = async (req, res) => {
   try {
     const branchId = getRequestBranchId(req);
+    const tenantId = getTenantId(req);
     await ensureReviewHoldColumn();
     await ensureTableSlotTables();
     await expireTableSessions();
     await expireOverduePaymentOrders(db, { branchId });
     const branchWhere = branchId ? 'AND dt.branch_id = ?' : '';
-    const params = branchId ? [branchId] : [];
+    const params = [tenantId];
+    if (branchId) params.push(branchId);
     const orderBy = db.isPostgres
       ? 'table_number ASC'
       : 'CAST(table_number AS UNSIGNED), table_number';
@@ -707,7 +712,7 @@ exports.listPublicTables = async (req, res) => {
       LEFT JOIN customer_table_sessions cts ON cts.table_id = dt.id
         AND cts.status = 'active'
         AND cts.expires_at > ${nowSql()}
-      WHERE dt.status = 'active'
+      WHERE dt.status = 'active' AND (dt.tenant_id = ? OR dt.tenant_id IS NULL)
         ${branchWhere}
       GROUP BY dt.id, dt.table_number, dt.table_name, dt.capacity, dt.qr_token, dt.status, dt.branch_id, b.name, b.area, b.address
       ORDER BY ${orderBy}
@@ -781,7 +786,8 @@ exports.getPublicTableByToken = async (req, res) => {
 
 exports.getPublicMenu = async (req, res) => {
   try {
-    const products = await buildPublicMenu(getRequestBranchId(req));
+    const tenantId = getTenantId(req);
+    const products = await buildPublicMenu(getRequestBranchId(req), tenantId);
     res.json(products);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -1067,16 +1073,18 @@ exports.createOrder = async (req, res) => {
     const paymentFields = buildPaymentOrderFields(paymentMethod);
     const orderCode = makeOrderCode();
     const paymentDueSql = paymentFields.paymentDueAtSql || 'NULL';
+    const tenantId = tables[0].tenant_id || getTenantId(req);
     const [orderResult] = await conn.query(`
       INSERT INTO customer_orders
-        (order_code, table_id, branch_id, customer_name, customer_phone, subtotal, discount_rate,
+        (order_code, table_id, branch_id, tenant_id, customer_name, customer_phone, subtotal, discount_rate,
          discount_amount, final_total, discount_label, discount_program_id, voucher_code, note,
          payment_method_id, payment_method_key, payment_method_name, payment_due_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${paymentDueSql})
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${paymentDueSql})
     `, [
       orderCode,
       tables[0].id,
       tables[0].branch_id || null,
+      tenantId,
       customer_name ? String(customer_name).trim() : null,
       customer_phone ? String(customer_phone).trim() : null,
       subtotal,
@@ -1370,10 +1378,13 @@ exports.skipReview = async (req, res) => {
 exports.listManagedTables = async (req, res) => {
   try {
     const branchId = getRequestBranchId(req) || req.user.branch_id || null;
+    const tenantId = getTenantId(req);
+    const isSuper = isSuperAdmin(req);
     await ensureReviewHoldColumn();
     await expireOverduePaymentOrders(db, { branchId });
-    const branchWhere = branchId ? 'WHERE dt.branch_id = ?' : '';
-    const params = branchId ? [branchId] : [];
+    const branchWhere = branchId ? 'AND dt.branch_id = ?' : '';
+    const params = [isSuper, tenantId];
+    if (branchId) params.push(branchId);
     const [rows] = await db.query(`
       SELECT
         dt.id,
@@ -1393,6 +1404,7 @@ exports.listManagedTables = async (req, res) => {
       FROM dining_tables dt
       LEFT JOIN branches b ON b.id = dt.branch_id
       LEFT JOIN customer_orders co ON co.table_id = dt.id
+      WHERE (? = true OR dt.tenant_id = ?)
       ${branchWhere}
       GROUP BY dt.id, dt.table_number, dt.table_name, dt.capacity, dt.qr_token, dt.status, dt.branch_id, b.name, dt.note, dt.created_by, dt.created_at, dt.updated_at
       ORDER BY dt.table_number ASC
@@ -1407,11 +1419,12 @@ exports.createTable = async (req, res) => {
   try {
     const payload = normalizeTablePayload(req.body);
     if (!payload.table_number) return res.status(400).json({ message: 'Nomor meja wajib diisi' });
+    const tenantId = getTenantId(req);
 
     const [result] = await db.query(`
       INSERT INTO dining_tables
-        (table_number, table_name, capacity, qr_token, status, note, branch_id, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        (table_number, table_name, capacity, qr_token, status, note, branch_id, tenant_id, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       payload.table_number,
       payload.table_name,
@@ -1420,6 +1433,7 @@ exports.createTable = async (req, res) => {
       payload.status,
       payload.note,
       payload.branch_id || getRequestBranchId(req) || req.user.branch_id || null,
+      tenantId,
       req.user?.id || null,
     ]);
 
@@ -1478,9 +1492,11 @@ exports.listOrders = async (req, res) => {
   try {
     const { status, limit = 80, date_from, date_to, search } = req.query;
     const branchId = getRequestBranchId(req) || req.user.branch_id || null;
+    const tenantId = getTenantId(req);
+    const isSuper = isSuperAdmin(req);
     await expireOverduePaymentOrders(db, { branchId });
-    const params = [];
-    let where = 'WHERE 1=1';
+    const params = [isSuper, tenantId];
+    let where = 'WHERE (? = true OR co.tenant_id = ?)';
 
     if (status && VALID_ORDER_STATUSES.includes(status)) {
       where += ' AND co.status = ?';
