@@ -1,0 +1,35 @@
+{
+  "project_name": "Santapos",
+  "primary_goal": "Pembangunan Platform SaaS White-Label Multi-Tenant Restaurant POS & Self-Order (Santapos)",
+  "tech_stack": "Next.js 16 (App Router), Express.js 5 API, PostgreSQL / Supabase, Turborepo, pnpm workspaces, Tailwind CSS v3",
+  "primary_builder_role": "fullstack-architect",
+  "established_constraints": [
+    {
+      "id": "C-01",
+      "category": "database",
+      "constraint": "Database PostgreSQL murni dengan Row Level Security (RLS) dan filter service-layer wajib di setiap kueri",
+      "locked": true
+    },
+    {
+      "id": "C-02",
+      "category": "styling",
+      "constraint": "Tailwind CSS v3 (bukan v4), warna runtime lewat CSS variable yang disuntik sebagai inline style di root",
+      "locked": true
+    },
+    {
+      "id": "C-03",
+      "category": "branding",
+      "constraint": "Dilarang hardcode brand Sultan Kebab di seluruh codebase; Sultan Kebab hanya demo tenant pertama",
+      "locked": true
+    },
+    {
+      "id": "C-04",
+      "category": "security",
+      "constraint": "Pencegahan data leak: tenant A dilarang keras dapat membaca atau memutasi data tenant B",
+      "locked": true
+    }
+  ],
+  "git_autopush_enabled": true,
+  "database": "supabase",
+  "architecture_standard": "repository"
+}

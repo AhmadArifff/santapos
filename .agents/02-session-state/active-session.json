@@ -1,0 +1,48 @@
+{
+  "$schema": "./schema.yaml",
+  "session_id": "sess-santapos-monorepo-saas",
+  "project_name": "Santapos",
+  "exported_at": "2026-10-27T11:00:00Z",
+  "primary_goal": "Pembangunan Platform SaaS White-Label Multi-Tenant Restaurant POS & Self-Order (Santapos)",
+  "current_stage": "building",
+  "tech_stack": "Next.js 16 (App Router), Express.js 5 API, PostgreSQL / Supabase, Turborepo, pnpm workspaces, Tailwind CSS v3",
+  "locked_constraints": [
+    "Database PostgreSQL murni dengan Row Level Security (RLS) dan filter service-layer wajib di setiap kueri",
+    "Tailwind CSS v3 (bukan v4), warna runtime lewat CSS variable yang disuntik sebagai inline style di root",
+    "Responsif 3 breakpoint mobile-first: default (<768px), md: (768-1023px), lg: (>=1024px)",
+    "Dilarang hardcode brand Sultan Kebab di seluruh codebase; Sultan Kebab hanya demo tenant pertama",
+    "Separation of concerns 4-tier: Controller -> Service -> Repository -> Model / Schemas",
+    "Pemisahan independen peran Builder dan Reviewer (anti echo-chamber hallucination)",
+    "Pencegahan data leak: tenant A dilarang keras dapat membaca atau memutasi data tenant B"
+  ],
+  "subtasks": [
+    {
+      "id": "task-001",
+      "title": "Tahap A: Fondasi Monorepo (pnpm workspaces + Turborepo + packages/shared, ui, config)",
+      "owner_role": "fullstack-architect",
+      "status": "done",
+      "rework_iteration_count": 0
+    },
+    {
+      "id": "task-002",
+      "title": "Tahap B: Multi-Tenant Engine (migrasi schema tenants, outlets, plans, tenant resolver middleware, data isolation test)",
+      "owner_role": "backend-engineer",
+      "status": "in_progress",
+      "rework_iteration_count": 0
+    },
+    {
+      "id": "task-003",
+      "title": "Tahap C: White-Label Branding (dynamic CSS variables theme, dynamic manifest.json, conditional powered-by)",
+      "owner_role": "frontend-engineer",
+      "status": "pending",
+      "rework_iteration_count": 0
+    },
+    {
+      "id": "task-004",
+      "title": "Tahap D: Kesiapan Jual & Onboarding (UMKM onboarding wizard, super admin panel, franchise aggregate overview)",
+      "owner_role": "product-manager",
+      "status": "pending",
+      "rework_iteration_count": 0
+    }
+  ]
+}

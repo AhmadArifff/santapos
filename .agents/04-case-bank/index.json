@@ -1,0 +1,589 @@
+{
+  "version": "1.3.0",
+  "updated_at": "2026-10-16T21:50:00.000Z",
+  "total_cases": 31,
+  "categories": {
+    "pattern": 30,
+    "anti_pattern": 1
+  },
+  "cases": [
+    {
+      "case_id": "case-20260903-httponly-cookie-auth",
+      "title": "Autentikasi Aman Sesi Web Menggunakan Cookie HttpOnly SameSite Strict",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/sample-case.yaml",
+      "domain_tags": [
+        "backend",
+        "security",
+        "auth",
+        "frontend"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20260907-cross-device-autonomous-bootstrap",
+      "title": "Penyediaan & Pemasangan Mandiri Skill Lintas-Perangkat (Zero-Config Autonomous Bootstrap)",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20260907-cross-device-autonomous-bootstrap.yaml",
+      "domain_tags": [
+        "orchestration",
+        "devops",
+        "cross-platform",
+        "automation",
+        "qa"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20260907-relative-path-portability",
+      "title": "Portabilitas Dokumentasi & Tautan Skill Menggunakan Path Relatif Standar",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20260907-relative-path-portability.yaml",
+      "domain_tags": [
+        "orchestration",
+        "documentation",
+        "github",
+        "portability",
+        "governance"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20260907-redis-atomic-lock-concurrency",
+      "title": "Distributed Lock Atomik & Beacon Teardown Menggunakan Redis SET NX PX dan Script Lua",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20260907-redis-atomic-lock-concurrency.yaml",
+      "domain_tags": [
+        "backend",
+        "database",
+        "concurrency",
+        "redis",
+        "performance"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20260907-resilient-websocket-dual-ecosystem",
+      "title": "Resiliensi Real-Time WebSocket dengan Jittered Exponential Backoff & Offline Queue (Next.js & Vue 3)",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20260907-resilient-websocket-dual-ecosystem.yaml",
+      "domain_tags": [
+        "frontend",
+        "backend",
+        "realtime",
+        "vue",
+        "nextjs",
+        "network"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20260907-circuit-breaker-rework-loop",
+      "title": "Pencegahan Infinite Rework Loop Multi-Agent Menggunakan Circuit Breaker & Human Escalation",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20260907-circuit-breaker-rework-loop.yaml",
+      "domain_tags": [
+        "orchestration",
+        "governance",
+        "lifecycle",
+        "circuit-breaker",
+        "human-in-the-loop"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20260907-anti-pattern-hardcoded-credentials",
+      "title": "Larangan Keras Meletakkan Kredensial & Secret Token Langsung di Kode Sumber (Hardcoded Secrets Anti-Pattern)",
+      "status": "verified_case",
+      "category": "anti_pattern",
+      "file": "cases/case-20260907-anti-pattern-hardcoded-credentials.yaml",
+      "domain_tags": [
+        "security",
+        "backend",
+        "frontend",
+        "governance",
+        "git"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20260914-session-state-consistency-goal-tracking",
+      "title": "Konsistensi Session State & Goal Tracking untuk Eliminasi Context Drift pada Percakapan Panjang",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20260914-session-state-consistency-goal-tracking.yaml",
+      "domain_tags": [
+        "orchestration",
+        "session",
+        "governance",
+        "goal-tracking",
+        "memory"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20260914-single-door-triage-routing",
+      "title": "Single Door Policy & Routing Semantik Instruksi Alami Multi-Agent",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20260914-single-door-triage-routing.yaml",
+      "domain_tags": [
+        "orchestration",
+        "triage",
+        "routing",
+        "ux",
+        "natural-language"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20260914-reviewer-independence-anti-hallucination",
+      "title": "Pemisahan Independen Peran Builder dan Reviewer Guna Mencegah Echo-Chamber Hallucination",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20260914-reviewer-independence-anti-hallucination.yaml",
+      "domain_tags": [
+        "governance",
+        "qa",
+        "security",
+        "tech-critic",
+        "anti-hallucination"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20260914-ml-cv-edge-web-inference-pipeline",
+      "title": "Pipeline Inferensi Machine Learning & Computer Vision: Hybrid Backend FastAPI vs In-Browser ONNX WebGPU",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20260914-ml-cv-edge-web-inference-pipeline.yaml",
+      "domain_tags": [
+        "machine-learning",
+        "deep-learning",
+        "computer-vision",
+        "fastapi",
+        "onnx",
+        "webgpu",
+        "mobile"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20261002-3d-interactive-prosthesis-configurator",
+      "title": "Konfigurator & Simulator Biomekanik Prostesis 3D Berbasis WebGL, Three.js, dan Kompresi Draco",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20261002-3d-interactive-prosthesis-configurator.yaml",
+      "domain_tags": [
+        "Three.js",
+        "WebGL",
+        "3D",
+        "Simulator",
+        "Configurator",
+        "Prosthesis",
+        "Interactive",
+        "Draco",
+        "HTML"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20261002-softdelete-credential-regeneration",
+      "title": "Pemulihan Akun Karyawan Soft-Deleted dengan Regenerasi Kredensial Otomatis",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20261002-softdelete-credential-regeneration.yaml",
+      "domain_tags": [
+        "backend",
+        "database",
+        "soft-delete",
+        "auth",
+        "credential-generation",
+        "audit-trail"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20261002-datatables-single-table-alignment",
+      "title": "Arsitektur Single Unified Table untuk Eliminasi Double-Scroll & Misalignment DataTables Enterprise",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20261002-datatables-single-table-alignment.yaml",
+      "domain_tags": [
+        "frontend",
+        "datatables",
+        "responsive",
+        "css",
+        "layout",
+        "ux"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20261002-cross-database-settlement-reporting",
+      "title": "Kueri Laporan Settlement Multi-Database Aman & Ekspor Streaming FastExcel Anti-OOM",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20261002-cross-database-settlement-reporting.yaml",
+      "domain_tags": [
+        "backend",
+        "database",
+        "cross-database",
+        "excel-export",
+        "streaming",
+        "memory-optimization"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "file": "cases/case-20261002-postgresql-enum-type-deduction.yaml",
+      "domain_tags": [
+        "backend",
+        "database",
+        "postgresql",
+        "enum",
+        "type-casting",
+        "express"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      },
+      "case_id": "case-20261002-postgresql-enum-type-deduction",
+      "category": "pattern",
+      "title": "Resolusi Error Parameter Type Deduction pada PostgreSQL Enum di Express",
+      "status": "verified_case"
+    },
+    {
+      "file": "cases/case-20261002-bom-hpp-database-sync.yaml",
+      "domain_tags": [
+        "database",
+        "accounting",
+        "bom",
+        "hpp",
+        "transaction",
+        "supabase"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      },
+      "case_id": "case-20261002-bom-hpp-database-sync",
+      "category": "pattern",
+      "title": "Sinkronisasi Akumulasi Biaya Resep BOM dengan Kolom raw_cost_hpp Produk",
+      "status": "verified_case"
+    },
+    {
+      "file": "cases/case-20261002-csv-utf8-bom-excel-compatibility.yaml",
+      "domain_tags": [
+        "frontend",
+        "export",
+        "csv",
+        "excel",
+        "utf-8",
+        "bom"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      },
+      "case_id": "case-20261002-csv-utf8-bom-excel-compatibility",
+      "category": "pattern",
+      "title": "Pencegahan Teks Rusak (Mojibake) pada Ekspor CSV saat Dibuka di Microsoft Excel",
+      "status": "verified_case"
+    },
+    {
+      "case_id": "case-20261003-custom-studio-checkout-and-maintenance-guard",
+      "title": "Dukungan Checkout Buket Kustom Studio dan Penegakan Guard Mode Istirahat Produksi pada Orders API",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20261003-custom-studio-checkout-and-maintenance-guard.yaml",
+      "domain_tags": [
+        "ecommerce",
+        "checkout",
+        "state-machine",
+        "custom-studio",
+        "guard"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20261003-admin-storefront-data-sync-copywriting",
+      "title": "Sinkronisasi Data Pengaturan Admin Toko ke Storefront & Eliminasi Copywriting AI Slop",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20261003-admin-storefront-data-sync-copywriting.yaml",
+      "domain_tags": [
+        "frontend",
+        "state-management",
+        "storefront",
+        "copywriting",
+        "anti-slop"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20261003-cod-checkout-guard-and-zero-dummy-quota",
+      "title": "Penegakan Guard Validasi Titik Temu COD di CartDrawer & Eliminasi Mock Kuota Harian Storefront",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20261003-cod-checkout-guard-and-zero-dummy-quota.yaml",
+      "domain_tags": [
+        "checkout",
+        "cod",
+        "logistics",
+        "state-integrity",
+        "anti-dummy"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20261004-chat-action-navigation-and-multi-turn-sync",
+      "title": "Resolusi Navigasi Tombol Aksi Chat, Global COD Modal & Sinkronisasi Konteks Multi-Turn AI",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20261004-chat-action-navigation-and-multi-turn-sync.yaml",
+      "domain_tags": [
+        "ai-chat",
+        "live-chat",
+        "multi-turn",
+        "state-sync",
+        "navigation"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20261004-database-optimization-and-test-orders-cleanup",
+      "title": "Optimasi Performa Indeks Database PostgreSQL (27 FK Unindexed & Chat Subquery) serta Pembersihan Pesanan Uji Coba",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20261004-database-optimization-and-test-orders-cleanup.yaml",
+      "domain_tags": [
+        "database",
+        "postgresql",
+        "index-optimization",
+        "performance",
+        "cleanup"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20261004-member-order-scoping-and-zero-fraud-claims",
+      "title": "Penegakan Scoping Pesanan Member, Penyimpanan Perangkat Guest, dan Verifikasi Kepemilikan Klaim Anti-Fraud",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20261004-member-order-scoping-and-zero-fraud-claims.yaml",
+      "domain_tags": [
+        "security",
+        "authorization",
+        "order-scoping",
+        "idor-prevention",
+        "anti-fraud"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20261004-uncontrolled-input-admin-store-settings",
+      "title": "Resolusi Error Uncontrolled Input React dan Sinkronisasi Alias WhatsApp Resmi di StoreSettingsView",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20261004-uncontrolled-input-admin-store-settings.yaml",
+      "domain_tags": [
+        "frontend",
+        "react",
+        "forms",
+        "admin-settings",
+        "uncontrolled-input"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20261007-studio-folded-wrapping-upright-chenille",
+      "title": "Resolusi Swatch Kertas Wrapping Lipatan Sudut Dual-Tone, Buket Tulip Tegak Lurus, Lavender Chenille Otentik, & Cache-Buster v4",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20261007-studio-folded-wrapping-upright-chenille.yaml",
+      "domain_tags": [
+        "frontend",
+        "studio",
+        "asset-integrity",
+        "css-layers",
+        "cache-buster"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20261007-sunflower-natural-color-and-package-lightbox",
+      "title": "Resolusi Kebocoran Warna Modulasi Global Bunga Matahari & Implementasi Lightbox Modal Detail Kelengkapan Paket Studio",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20261007-sunflower-natural-color-and-package-lightbox.yaml",
+      "domain_tags": [
+        "frontend",
+        "studio",
+        "color-integrity",
+        "ux",
+        "lightbox-modal"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20261016-financial-ledger-driver-withdrawal",
+      "title": "Pemisahan Dua Lapisan Tabel Request & Disbursement pada Penarikan Insentif Mitra Driver (Financial Ledger Pattern)",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20261016-financial-ledger-driver-withdrawal.yaml",
+      "domain_tags": [
+        "backend",
+        "database",
+        "financial-ledger",
+        "concurrency",
+        "driver-incentives",
+        "laravel",
+        "atomic-locking"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20261016-web3-ssr-hydration-mismatch",
+      "title": "Resolusi React SSR/CSR Hydration Mismatch pada Pure Client-Side Web3 Trading Terminal",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20261016-web3-ssr-hydration-mismatch.yaml",
+      "domain_tags": [
+        "frontend",
+        "web3",
+        "solana",
+        "nextjs",
+        "react",
+        "ssr",
+        "hydration"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20261016-video-shorts-millisecond-retention",
+      "title": "Presisi Milidetik Timeline Snapping & Koreografi Pacing Retensi Penonton pada Pemotongan Video Shorts",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20261016-video-shorts-millisecond-retention.yaml",
+      "domain_tags": [
+        "multimedia",
+        "video-editing",
+        "shorts",
+        "retention",
+        "timeline",
+        "audio-waveform",
+        "canvas"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    },
+    {
+      "case_id": "case-20261016-production-sql-schema-sync",
+      "title": "Sinkronisasi Aman Dump Basis Data Produksi SQL tanpa Tabrakan Sequence Auto-Increment & Schema Drift",
+      "status": "verified_case",
+      "category": "pattern",
+      "file": "cases/case-20261016-production-sql-schema-sync.yaml",
+      "domain_tags": [
+        "database",
+        "sql",
+        "postgresql",
+        "mysql",
+        "schema-drift",
+        "migrations",
+        "devops"
+      ],
+      "dual_approval": {
+        "qa_engineer": "approved",
+        "tech_critic": "approved"
+      }
+    }
+  ]
+}
