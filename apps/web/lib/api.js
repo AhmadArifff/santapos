@@ -195,3 +195,4 @@ export const getDatabaseConfig = () => api.get('/superadmin/database');
 export const testDatabaseConnection = (data) => api.post('/superadmin/database/test', data);
 export const updateDatabaseConfig = (data) => api.post('/superadmin/database/save', data);
 export const pingDatabaseKeepAlive = () => api.post('/superadmin/database/ping');
+export const migrateDatabaseAndStorage = (data) => api.post('/superadmin/database/migrate', data);

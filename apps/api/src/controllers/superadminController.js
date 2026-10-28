@@ -412,3 +412,159 @@ exports.pingDatabaseKeepAlive = async (req, res) => {
     res.status(500).json({ message: 'Gagal melakukan heartbeat ping: ' + err.message });
   }
 };
+
+exports.migrateDatabaseAndStorage = async (req, res) => {
+  const {
+    connection_string,
+    supabase_url,
+    supabase_service_role_key,
+    storage_bucket,
+  } = req.body || {};
+
+  const targetConn = connection_string || process.env.DATABASE_URL || process.env.SUPABASE_DATABASE_URL;
+  if (!targetConn) {
+    return res.status(400).json({ message: 'Connection string database wajib diisi atau diset di .env' });
+  }
+
+  const { Client } = require('pg');
+  const bcrypt = require('bcryptjs');
+  const path = require('path');
+  const fs = require('fs');
+  const { createClient } = require('@supabase/supabase-js');
+
+  let client;
+  const logs = [];
+
+  try {
+    const url = new URL(targetConn);
+    url.searchParams.delete('sslmode');
+    url.searchParams.delete('sslcert');
+    url.searchParams.delete('sslkey');
+    url.searchParams.delete('sslrootcert');
+
+    client = new Client({
+      connectionString: url.toString(),
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 20000,
+    });
+
+    await client.connect();
+    logs.push('Berhasil terhubung ke database target');
+
+    // 1. Terapkan Base Schema (30 Tabel Dasar)
+    const schemaPath = path.join(__dirname, '../../supabase/schema.sql');
+    if (fs.existsSync(schemaPath)) {
+      const schemaSql = fs.readFileSync(schemaPath, 'utf8')
+        .replace(/^\uFEFF/, '')
+        .replace(/\uFEFF/g, '');
+      await client.query(schemaSql);
+      logs.push('Base schema.sql berhasil diterapkan (30 tabel & relasi foreign key dibuat)');
+    }
+
+    // 2. Terapkan Multi-Tenant SaaS Migration
+    const saasPath = path.join(__dirname, '../../supabase/migrations/001_multi_tenant_saas.sql');
+    if (fs.existsSync(saasPath)) {
+      const saasSql = fs.readFileSync(saasPath, 'utf8')
+        .replace(/^\uFEFF/, '')
+        .replace(/\uFEFF/g, '');
+      await client.query(saasSql);
+      logs.push('Multi-tenant SaaS migration diterapkan (tabel tenants, plans, dan indeks komposit)');
+    }
+
+    // 3. Pastikan user_role enum lengkap & akun superadmin siap
+    await client.query("ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'superadmin'");
+    await client.query("ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'kitchen'");
+
+    const superEmail = 'superadmin@santapos.id';
+    const { rows: superRows } = await client.query('SELECT id FROM users WHERE email = $1', [superEmail]);
+    if (superRows.length === 0) {
+      const hash = await bcrypt.hash('santapos123', 10);
+      await client.query(`
+        INSERT INTO users (name, email, password, role, tenant_id)
+        VALUES ('Super Admin Santapos', $1, $2, 'superadmin', 1)
+      `, [superEmail, hash]);
+      logs.push('Akun Super Admin dibuat: superadmin@santapos.id / santapos123');
+    } else {
+      logs.push('Akun Super Admin sudah terverifikasi siap pakai');
+    }
+
+    // 4. Pastikan default admin demo siap
+    const adminEmail = 'admin@santapos.id';
+    const { rows: adminRows } = await client.query('SELECT id FROM users WHERE email = $1', [adminEmail]);
+    if (adminRows.length === 0) {
+      const hash = await bcrypt.hash('santapos123', 10);
+      await client.query(`
+        INSERT INTO users (name, email, password, role, tenant_id)
+        VALUES ('Admin Demo', $1, $2, 'admin', 1)
+      `, [adminEmail, hash]);
+      logs.push('Akun Admin Demo dibuat: admin@santapos.id / santapos123');
+    }
+
+    // 5. Hitung total tabel yang terbentuk
+    const { rows: tableRows } = await client.query(`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+      ORDER BY table_name
+    `);
+    const totalTables = tableRows.length;
+    logs.push(`Verifikasi akhir: ${totalTables} tabel aktif di skema public`);
+
+    await client.end();
+
+    // 6. Inisialisasi Storage Bucket jika Supabase
+    let bucketStatus = 'Tidak dikonfigurasi (Database-only / Neon)';
+    const targetSupabaseUrl = supabase_url || process.env.SUPABASE_URL;
+    const targetServiceKey = supabase_service_role_key || process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const targetBucketName = storage_bucket || process.env.SUPABASE_STORAGE_BUCKET || 'restaurant-pos-assets';
+
+    if (targetSupabaseUrl && targetServiceKey) {
+      try {
+        const supabase = createClient(targetSupabaseUrl, targetServiceKey, {
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
+
+        const { data: bucketData, error: getErr } = await supabase.storage.getBucket(targetBucketName);
+        if (!getErr && bucketData) {
+          bucketStatus = `Bucket public '${targetBucketName}' sudah aktif.`;
+          logs.push(bucketStatus);
+        } else {
+          const { error: createErr } = await supabase.storage.createBucket(targetBucketName, { public: true });
+          if (!createErr || /already exists|duplicate/i.test(createErr.message || '')) {
+            bucketStatus = `Bucket public '${targetBucketName}' berhasil dibuat dan siap untuk upload asset.`;
+            logs.push(bucketStatus);
+          } else {
+            bucketStatus = `Info bucket: ${createErr.message}`;
+            logs.push(bucketStatus);
+          }
+        }
+      } catch (bucketErr) {
+        bucketStatus = `Gagal inisialisasi bucket: ${bucketErr.message}`;
+        logs.push(bucketStatus);
+      }
+    } else {
+      logs.push('Inisialisasi bucket dilewati (kredensial Supabase Storage tidak disertakan)');
+    }
+
+    res.json({
+      success: true,
+      message: `Migrasi selesai! ${totalTables} tabel dan konfigurasi multi-tenant berhasil diinisialisasi.`,
+      data: {
+        total_tables: totalTables,
+        tables: tableRows.map((t) => t.table_name),
+        bucket_status: bucketStatus,
+        logs,
+      },
+    });
+  } catch (err) {
+    if (client) {
+      try { await client.end(); } catch (_) {}
+    }
+    console.error('[migrateDatabaseAndStorage error]:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal menjalankan migrasi database: ' + err.message,
+      logs,
+    });
+  }
+};

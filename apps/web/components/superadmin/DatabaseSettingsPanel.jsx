@@ -6,6 +6,7 @@ import {
   testDatabaseConnection,
   updateDatabaseConfig,
   pingDatabaseKeepAlive,
+  migrateDatabaseAndStorage,
 } from '@/lib/api';
 
 export default function DatabaseSettingsPanel() {
@@ -14,8 +15,11 @@ export default function DatabaseSettingsPanel() {
   const [testLoading, setTestLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [pingLoading, setPingLoading] = useState(false);
+  const [migrateLoading, setMigrateLoading] = useState(false);
+
   const [testResult, setTestResult] = useState(null);
   const [pingResult, setPingResult] = useState(null);
+  const [migrateResult, setMigrateResult] = useState(null);
   const [feedback, setFeedback] = useState(null);
 
   // Form state
@@ -50,6 +54,7 @@ export default function DatabaseSettingsPanel() {
   const handleSelectPreset = (provider) => {
     setSelectedProvider(provider.id);
     setTestResult(null);
+    setMigrateResult(null);
     if (provider.format_hint) {
       setConnectionString(provider.format_hint);
     }
@@ -122,6 +127,41 @@ export default function DatabaseSettingsPanel() {
       });
     } finally {
       setPingLoading(false);
+    }
+  };
+
+  const handleRunMigration = async () => {
+    const target = connectionString.trim() || configData?.connection?.host;
+    if (!target) {
+      setFeedback({ type: 'error', text: 'Masukkan connection string database target terlebih dahulu' });
+      return;
+    }
+
+    setMigrateLoading(true);
+    setMigrateResult(null);
+    setFeedback(null);
+
+    try {
+      const res = await migrateDatabaseAndStorage({
+        connection_string: connectionString.trim() || undefined,
+        supabase_url: supabaseUrl.trim() || undefined,
+        supabase_service_role_key: serviceRoleKey.trim() || undefined,
+        storage_bucket: storageBucket.trim() || undefined,
+      });
+      setMigrateResult({
+        success: true,
+        message: res.data?.message || 'Migrasi database dan storage berhasil!',
+        data: res.data?.data,
+      });
+      fetchConfig();
+    } catch (err) {
+      setMigrateResult({
+        success: false,
+        message: err.response?.data?.message || err.message || 'Gagal menjalankan migrasi',
+        logs: err.response?.data?.logs || [],
+      });
+    } finally {
+      setMigrateLoading(false);
     }
   };
 
@@ -232,7 +272,6 @@ export default function DatabaseSettingsPanel() {
 
                 <p className="text-xs text-slate-300 mt-2 font-medium">{p.free_tier}</p>
 
-                {/* Keunggulan List */}
                 <div className="mt-3.5 space-y-1.5 border-t border-slate-700/60 pt-3">
                   {p.advantages?.map((adv, idx) => (
                     <div key={idx} className="flex items-start gap-2 text-xs text-slate-400">
@@ -304,6 +343,92 @@ export default function DatabaseSettingsPanel() {
         </div>
       )}
 
+      {/* 1-Click Database & Storage Auto-Migration Section */}
+      <div className="bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl p-6 shadow-xl space-y-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-indigo-500/20 pb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🚀</span>
+              <h4 className="font-extrabold text-white text-base">Inisialisasi & Migrasi Database Baru (1-Click Auto Setup)</h4>
+            </div>
+            <p className="text-slate-300 text-xs mt-1 max-w-2xl">
+              Saat Anda menghubungkan project database baru yang masih kosong dari <strong className="text-amber-300">Supabase</strong> atau <strong className="text-cyan-300">Neon</strong>, klik tombol migrasi di bawah untuk otomatis menyiapkan 30 tabel, skema multi-tenant, akun bawaan, dan bucket storage foto menu!
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleRunMigration}
+            disabled={migrateLoading}
+            className="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/25 transition flex items-center gap-2 whitespace-nowrap"
+          >
+            {migrateLoading ? (
+              <>
+                <span className="animate-spin">⏳</span>
+                <span>Menjalankan Migrasi...</span>
+              </>
+            ) : (
+              <>
+                <span>🚀 Jalankan Migrasi Skema & Bucket</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Feature Highlights of Migration */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-slate-300">
+          <div className="bg-slate-800/40 border border-slate-700/60 p-3 rounded-xl flex items-center gap-2">
+            <span className="text-emerald-400 font-bold">✓</span>
+            <span>30 Tabel PostgreSQL</span>
+          </div>
+          <div className="bg-slate-800/40 border border-slate-700/60 p-3 rounded-xl flex items-center gap-2">
+            <span className="text-emerald-400 font-bold">✓</span>
+            <span>Multi-Tenant & Plans</span>
+          </div>
+          <div className="bg-slate-800/40 border border-slate-700/60 p-3 rounded-xl flex items-center gap-2">
+            <span className="text-emerald-400 font-bold">✓</span>
+            <span>Akun Super Admin Siap</span>
+          </div>
+          <div className="bg-slate-800/40 border border-slate-700/60 p-3 rounded-xl flex items-center gap-2">
+            <span className="text-emerald-400 font-bold">✓</span>
+            <span>Auto Buat Public Bucket</span>
+          </div>
+        </div>
+
+        {/* Migration Result Feedback */}
+        {migrateResult && (
+          <div className={`p-4 rounded-xl border text-xs space-y-2.5 ${
+            migrateResult.success
+              ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
+              : 'bg-red-950/40 border-red-500/40 text-red-200'
+          }`}>
+            <div className="font-bold text-sm flex items-center gap-2">
+              <span>{migrateResult.success ? '🎉' : '❌'}</span>
+              <span>{migrateResult.message}</span>
+            </div>
+
+            {migrateResult.data && (
+              <div className="space-y-1 font-mono text-[11px] pt-2 border-t border-emerald-500/20">
+                <div>Total Tabel Terbuat: <strong className="text-amber-300">{migrateResult.data.total_tables} tabel</strong></div>
+                <div>Status Bucket Storage: <strong className="text-emerald-300">{migrateResult.data.bucket_status}</strong></div>
+              </div>
+            )}
+
+            {migrateResult.logs && migrateResult.logs.length > 0 && (
+              <div className="bg-slate-950/80 p-3 rounded-lg border border-slate-800 space-y-1 font-mono text-[11px] text-slate-300 max-h-40 overflow-y-auto">
+                <div className="text-slate-500 font-semibold mb-1">Log Eksekusi:</div>
+                {migrateResult.logs.map((log, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="text-emerald-400">➜</span>
+                    <span>{log}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Connection Editor & Tester */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
         <div>
@@ -368,6 +493,19 @@ export default function DatabaseSettingsPanel() {
                 className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 focus:border-amber-400 text-white text-xs outline-none transition"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+              Supabase Service Role Key (Opsional - untuk izin pembuatan bucket otomatis)
+            </label>
+            <input
+              type="password"
+              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              value={serviceRoleKey}
+              onChange={(e) => setServiceRoleKey(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 focus:border-amber-400 text-white font-mono text-xs outline-none transition"
+            />
           </div>
         </div>
 
