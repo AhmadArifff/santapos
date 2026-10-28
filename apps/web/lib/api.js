@@ -189,3 +189,8 @@ export const updateSuperadminTenantPlan = (id, plan_code) => api.patch(`/superad
 export const updateSuperadminTenantStatus = (id, status) => api.patch(`/superadmin/tenants/${id}/status`, { status });
 export const getFranchiseHqReport = () => api.get('/reports/franchise-hq');
 
+
+// Database & Cloud Storage Management
+export const getDatabaseConfig = () => api.get('/superadmin/database');
+export const testDatabaseConnection = (data) => api.post('/superadmin/database/test', data);
+export const updateDatabaseConfig = (data) => api.post('/superadmin/database/save', data);

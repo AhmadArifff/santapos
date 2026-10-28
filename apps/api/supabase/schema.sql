@@ -64,8 +64,8 @@ create table if not exists branches (
 );
 
 insert into branches (branch_key, name, area, status)
-values ('default', 'Cabang Utama', 'Default', 'active')
-on conflict (branch_key) do nothing;
+select 'default', 'Cabang Utama', 'Default', 'active'
+where not exists (select 1 from branches where branch_key = 'default');
 
 create table if not exists users (
   id bigserial primary key,
@@ -577,7 +577,12 @@ where not exists (select 1 from discount_programs where type = 'review_reward');
 
 insert into payment_methods
   (method_key, name, type, provider_name, account_name, account_number, instructions, payment_timeout_minutes, sort_order, status)
-values
-  ('qris', 'QRIS', 'qris', 'QRIS', 'Sultan Kebab', null, 'Scan QRIS, pastikan nominal sesuai total bayar, lalu upload bukti pembayaran.', 15, 1, 'active'),
-  ('transfer', 'Transfer Bank', 'transfer', 'Bank', 'Sultan Kebab', '0000000000', 'Transfer sesuai total bayar, gunakan nama pelanggan sebagai berita transfer, lalu upload bukti pembayaran.', 15, 2, 'active')
-on conflict (method_key) do nothing;
+select
+  'qris', 'QRIS', 'qris', 'QRIS', 'Sultan Kebab', null, 'Scan QRIS, pastikan nominal sesuai total bayar, lalu upload bukti pembayaran.', 15, 1, 'active'
+where not exists (select 1 from payment_methods where method_key = 'qris');
+
+insert into payment_methods
+  (method_key, name, type, provider_name, account_name, account_number, instructions, payment_timeout_minutes, sort_order, status)
+select
+  'transfer', 'Transfer Bank', 'transfer', 'Bank', 'Sultan Kebab', '0000000000', 'Transfer sesuai total bayar, gunakan nama pelanggan sebagai berita transfer, lalu upload bukti pembayaran.', 15, 2, 'active'
+where not exists (select 1 from payment_methods where method_key = 'transfer');

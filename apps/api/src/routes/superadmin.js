@@ -4,6 +4,9 @@ const {
   getTenants,
   updateTenantPlan,
   updateTenantStatus,
+  getDatabaseConfig,
+  testDatabaseConnection,
+  updateDatabaseConfig,
 } = require('../controllers/superadminController');
 const { authenticate, isSuperAdmin } = require('../middleware/auth');
 
@@ -13,5 +16,10 @@ router.get('/stats', getStats);
 router.get('/tenants', getTenants);
 router.patch('/tenants/:id/plan', updateTenantPlan);
 router.patch('/tenants/:id/status', updateTenantStatus);
+
+// Database & Cloud Storage Settings
+router.get('/database', getDatabaseConfig);
+router.post('/database/test', testDatabaseConnection);
+router.post('/database/save', updateDatabaseConfig);
 
 module.exports = router;

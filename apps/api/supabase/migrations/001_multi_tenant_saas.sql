@@ -4,6 +4,10 @@
 
 create extension if not exists pgcrypto;
 
+-- Ensure roles include superadmin and kitchen
+ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'superadmin';
+ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'kitchen';
+
 -- 1. Table: plans (Starter, Pro, Franchise)
 create table if not exists plans (
   id bigserial primary key,
