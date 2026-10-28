@@ -1,14 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getDatabaseConfig, testDatabaseConnection, updateDatabaseConfig } from '@/lib/api';
+import {
+  getDatabaseConfig,
+  testDatabaseConnection,
+  updateDatabaseConfig,
+  pingDatabaseKeepAlive,
+} from '@/lib/api';
 
 export default function DatabaseSettingsPanel() {
   const [configData, setConfigData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [testLoading, setTestLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [pingLoading, setPingLoading] = useState(false);
   const [testResult, setTestResult] = useState(null);
+  const [pingResult, setPingResult] = useState(null);
   const [feedback, setFeedback] = useState(null);
 
   // Form state
@@ -43,7 +50,7 @@ export default function DatabaseSettingsPanel() {
   const handleSelectPreset = (provider) => {
     setSelectedProvider(provider.id);
     setTestResult(null);
-    if (provider.format_hint && !provider.format_hint.includes('Memerlukan')) {
+    if (provider.format_hint) {
       setConnectionString(provider.format_hint);
     }
   };
@@ -61,7 +68,7 @@ export default function DatabaseSettingsPanel() {
       const res = await testDatabaseConnection({ connection_string: connectionString });
       setTestResult({
         success: true,
-        message: res.data?.message || 'Koneksi database berhasil!',
+        message: res.data?.message || 'Koneksi database berhasil diverifikasi!',
         details: res.data?.data,
       });
     } catch (err) {
@@ -95,6 +102,26 @@ export default function DatabaseSettingsPanel() {
       setFeedback({ type: 'error', text: err.response?.data?.message || err.message || 'Gagal menyimpan konfigurasi' });
     } finally {
       setSaveLoading(false);
+    }
+  };
+
+  const handleHeartbeatPing = async () => {
+    setPingLoading(true);
+    setPingResult(null);
+    try {
+      const res = await pingDatabaseKeepAlive();
+      setPingResult({
+        success: true,
+        message: res.data?.message || 'Heartbeat keep-alive berhasil dikirim!',
+        data: res.data?.data,
+      });
+    } catch (err) {
+      setPingResult({
+        success: false,
+        message: err.response?.data?.message || err.message || 'Gagal mengirim heartbeat ping',
+      });
+    } finally {
+      setPingLoading(false);
     }
   };
 
@@ -145,7 +172,7 @@ export default function DatabaseSettingsPanel() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5 text-xs">
           <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-700/60">
             <span className="text-slate-400 block mb-1">Host Pooler</span>
-            <span className="font-mono text-slate-200 truncate block">{conn.host || '-'}</span>
+            <span className="font-mono text-slate-200 truncate block" title={conn.host}>{conn.host || '-'}</span>
           </div>
           <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-700/60">
             <span className="text-slate-400 block mb-1">Port</span>
@@ -157,56 +184,76 @@ export default function DatabaseSettingsPanel() {
           </div>
           <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-700/60">
             <span className="text-slate-400 block mb-1">Storage Bucket</span>
-            <span className="font-mono text-emerald-400 font-semibold">{storage.bucket || 'restaurant-pos-assets'}</span>
+            <span className="font-mono text-emerald-400 font-semibold truncate block">{storage.bucket || 'restaurant-pos-assets'}</span>
           </div>
         </div>
       </div>
 
-      {/* Cloud Database Providers Preset */}
+      {/* 2 Curated Cloud Database Providers (Supabase vs Neon) */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl">
         <div className="mb-4">
-          <h4 className="font-bold text-white text-base">Pilihan Database Cloud yang Didukung</h4>
+          <div className="flex items-center gap-2">
+            <span className="text-amber-400 text-base">⚡</span>
+            <h4 className="font-bold text-white text-base">2 Database Cloud Resmi Santapos (Free Selamanya)</h4>
+          </div>
           <p className="text-slate-400 text-xs mt-1">
-            Santapos menggunakan PostgreSQL standar sehingga kompatibel penuh dengan berbagai penyedia cloud database gratis.
+            Santapos telah dikurasi khusus untuk mendukung 2 opsi cloud database terbaik: Supabase (All-in-One + S3 Storage) dan Neon (Serverless Murni Auto Wake-up).
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        <div className="grid md:grid-cols-2 gap-4">
           {providers.map((p) => {
             const isSelected = selectedProvider === p.id;
+            const isSupabase = p.id === 'supabase';
+
             return (
               <div
                 key={p.id}
                 onClick={() => handleSelectPreset(p)}
-                className={`cursor-pointer p-4 rounded-xl border transition-all ${
+                className={`cursor-pointer p-5 rounded-2xl border transition-all relative ${
                   isSelected
-                    ? 'bg-amber-500/10 border-amber-400 ring-1 ring-amber-400/50'
+                    ? 'bg-amber-500/10 border-amber-400 ring-1 ring-amber-400/50 shadow-lg'
                     : 'bg-slate-800/40 border-slate-700/80 hover:border-slate-600'
                 }`}
               >
-                <div className="flex justify-between items-start mb-1.5">
-                  <h5 className="font-bold text-white text-sm">{p.name}</h5>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    p.id === 'supabase'
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{isSupabase ? '⚡' : '🚀'}</span>
+                    <h5 className="font-extrabold text-white text-sm">{p.name}</h5>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                    isSupabase
                       ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                      : 'bg-slate-700 text-slate-300'
+                      : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
                   }`}>
                     {p.badge}
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">{p.free_tier}</p>
-                <div className="mt-3 pt-2 border-t border-slate-700/50 flex justify-between items-center text-[11px]">
-                  <span className={p.status === 'compatible' ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
-                    {p.status === 'compatible' ? '✓ 100% Kompatibel' : '⚠️ VM Rekomendasi'}
+
+                <p className="text-xs text-slate-300 mt-2 font-medium">{p.free_tier}</p>
+
+                {/* Keunggulan List */}
+                <div className="mt-3.5 space-y-1.5 border-t border-slate-700/60 pt-3">
+                  {p.advantages?.map((adv, idx) => (
+                    <div key={idx} className="flex items-start gap-2 text-xs text-slate-400">
+                      <span className="text-emerald-400 font-bold">✓</span>
+                      <span>{adv}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-slate-700/50 flex justify-between items-center text-xs">
+                  <span className="text-emerald-400 font-bold flex items-center gap-1">
+                    <span>✓</span> 100% Siap Pakai
                   </span>
                   <a
                     href={p.docs_url}
                     target="_blank"
                     rel="noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="text-amber-400 hover:underline"
+                    className="text-amber-400 hover:text-amber-300 font-semibold transition"
                   >
-                    Buka Web →
+                    Buka Website Resmi →
                   </a>
                 </div>
               </div>
@@ -215,12 +262,54 @@ export default function DatabaseSettingsPanel() {
         </div>
       </div>
 
+      {/* Supabase Keep-Alive / Anti-Pause Toolkit */}
+      {configData?.active_provider === 'supabase' && (
+        <div className="bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-2xl p-5 shadow-lg">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-400 text-sm font-bold">🛡️ Fitur Anti-Pause Supabase</span>
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-mono">Heartbeat Keep-Alive</span>
+              </div>
+              <p className="text-xs text-slate-400 mt-1 max-w-xl">
+                Supabase mem-pause database free tier jika 7 hari tanpa query. Kirim query heartbeat secara berkala agar database tetap aktif selamanya tanpa pernah di-hold!
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleHeartbeatPing}
+              disabled={pingLoading}
+              className="px-4 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition flex items-center gap-2 whitespace-nowrap"
+            >
+              {pingLoading ? '⏳ Mengirim Ping...' : '💓 Kirim Heartbeat Ping'}
+            </button>
+          </div>
+
+          {pingResult && (
+            <div className={`mt-3 p-3 rounded-xl border text-xs ${
+              pingResult.success
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                : 'bg-red-500/10 border-red-500/30 text-red-300'
+            }`}>
+              <span className="font-bold mr-2">{pingResult.success ? '✅' : '❌'}</span>
+              <span>{pingResult.message}</span>
+              {pingResult.data && (
+                <span className="font-mono text-[11px] opacity-80 ml-2">
+                  (Latency: {pingResult.data.latency_ms} ms | Waktu: {new Date(pingResult.data.ping_time).toLocaleTimeString()})
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Connection Editor & Tester */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
         <div>
-          <h4 className="font-bold text-white text-base">Ubah / Sambungkan Database Cloud Baru</h4>
+          <h4 className="font-bold text-white text-base">Ganti / Sambungkan Database Cloud</h4>
           <p className="text-slate-400 text-xs mt-1">
-            Uji koneksi terlebih dahulu sebelum menyimpan. Sistem akan memverifikasi database dapat diakses.
+            Masukkan connection string dari <strong className="text-amber-300">Supabase</strong> atau <strong className="text-cyan-300">Neon</strong>, lalu klik Uji Koneksi sebelum disimpan.
           </p>
         </div>
 
@@ -247,14 +336,16 @@ export default function DatabaseSettingsPanel() {
               className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 focus:border-amber-400 text-amber-200 font-mono text-xs outline-none transition"
             />
             <p className="text-[11px] text-slate-500 mt-1">
-              Contoh format: postgresql://postgres.[REF]:[PASS]@aws-0-eu-west-2.pooler.supabase.com:6543/postgres?sslmode=require
+              {selectedProvider === 'supabase'
+                ? 'Format Supabase: postgresql://postgres.[REF]:[PASS]@aws-0-eu-west-2.pooler.supabase.com:6543/postgres?sslmode=require'
+                : 'Format Neon: postgresql://[USER]:[PASS]@[ENDPOINT].neon.tech/neondb?sslmode=require'}
             </p>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Supabase Project URL (Opsional)
+                Supabase Project URL (Jika pakai Supabase Storage)
               </label>
               <input
                 type="text"
@@ -293,16 +384,16 @@ export default function DatabaseSettingsPanel() {
             </div>
             {testResult.details && (
               <div className="font-mono text-[11px] opacity-90 space-y-1 pt-1 border-t border-emerald-500/20">
-                <div>Provider: {testResult.details.provider?.toUpperCase()}</div>
-                <div>Ping Latency: {testResult.details.latency_ms} ms</div>
-                <div>Server: {testResult.details.version?.split(' on ')[0]}</div>
-                <div>Database: {testResult.details.database}</div>
+                <div>Provider Terdeteksi: <strong className="text-white">{testResult.details.provider?.toUpperCase()}</strong></div>
+                <div>Latensi Ping: <strong className="text-emerald-400">{testResult.details.latency_ms} ms</strong></div>
+                <div>Server Database: {testResult.details.version?.split(' on ')[0]}</div>
+                <div>Nama Database: {testResult.details.database}</div>
               </div>
             )}
           </div>
         )}
 
-        {/* Buttons */}
+        {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-3 pt-2">
           <button
             type="button"
@@ -344,4 +435,3 @@ export default function DatabaseSettingsPanel() {
     </div>
   );
 }
-

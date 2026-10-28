@@ -194,3 +194,4 @@ export const getFranchiseHqReport = () => api.get('/reports/franchise-hq');
 export const getDatabaseConfig = () => api.get('/superadmin/database');
 export const testDatabaseConnection = (data) => api.post('/superadmin/database/test', data);
 export const updateDatabaseConfig = (data) => api.post('/superadmin/database/save', data);
+export const pingDatabaseKeepAlive = () => api.post('/superadmin/database/ping');

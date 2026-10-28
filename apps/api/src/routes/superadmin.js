@@ -7,6 +7,7 @@ const {
   getDatabaseConfig,
   testDatabaseConnection,
   updateDatabaseConfig,
+  pingDatabaseKeepAlive,
 } = require('../controllers/superadminController');
 const { authenticate, isSuperAdmin } = require('../middleware/auth');
 
@@ -21,5 +22,6 @@ router.patch('/tenants/:id/status', updateTenantStatus);
 router.get('/database', getDatabaseConfig);
 router.post('/database/test', testDatabaseConnection);
 router.post('/database/save', updateDatabaseConfig);
+router.post('/database/ping', pingDatabaseKeepAlive);
 
 module.exports = router;

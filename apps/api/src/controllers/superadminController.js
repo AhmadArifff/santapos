@@ -164,9 +164,6 @@ const detectProvider = (urlStr) => {
   const low = urlStr.toLowerCase();
   if (low.includes('supabase.co') || low.includes('pooler.supabase.com')) return 'supabase';
   if (low.includes('neon.tech')) return 'neon';
-  if (low.includes('render.com')) return 'render';
-  if (low.includes('aivencloud.com') || low.includes('aiven.io')) return 'aiven';
-  if (low.includes('oracle') || low.includes('adb.')) return 'oracle';
   return 'custom';
 };
 
@@ -246,51 +243,31 @@ exports.getDatabaseConfig = async (req, res) => {
             id: 'supabase',
             name: 'Supabase PostgreSQL',
             dialect: 'postgres',
-            badge: 'Default / Aktif',
-            free_tier: '500MB DB, 1GB Storage, 50k MAU, Realtime & Auth',
+            badge: 'Default / All-in-One',
+            free_tier: 'Gratis 500MB DB, 1GB S3 Storage (Foto Menu & Struk), Auth & Realtime',
             docs_url: 'https://supabase.com',
-            format_hint: 'postgresql://postgres.[REF]:[PASS]@[HOST]:6543/postgres?sslmode=require',
-            status: 'compatible'
+            format_hint: 'postgresql://postgres.[REF]:[PASS]@aws-0-eu-west-2.pooler.supabase.com:6543/postgres?sslmode=require',
+            advantages: [
+              'Paket komplit: Database + S3 Storage foto dalam satu akun',
+              'Didukung fitur Anti-Pause Keep-Alive (tidak pernah di-hold)',
+              'Shared transaction pooler port 6543 hemat koneksi'
+            ],
+            status: 'recommended'
           },
           {
             id: 'neon',
             name: 'Neon Serverless Postgres',
             dialect: 'postgres',
-            badge: 'Always Free',
-            free_tier: '0.5 GB Storage, Serverless Autoscaling, Git-like Branching',
+            badge: 'Auto Wake-up / Zero Hold',
+            free_tier: 'Gratis Selamanya 0.5 GB Storage, Serverless, Auto Wake-up dalam 0.5s',
             docs_url: 'https://neon.tech',
-            format_hint: 'postgresql://[USER]:[PASS]@[HOST]/neondb?sslmode=require',
-            status: 'compatible'
-          },
-          {
-            id: 'render',
-            name: 'Render PostgreSQL',
-            dialect: 'postgres',
-            badge: '90-Day Free',
-            free_tier: '1 GB RAM, Shared CPU, Full Postgres 16',
-            docs_url: 'https://render.com',
-            format_hint: 'postgresql://[USER]:[PASS]@[HOST].render.com/[DBNAME]',
-            status: 'compatible'
-          },
-          {
-            id: 'aiven',
-            name: 'Aiven Cloud Postgres',
-            dialect: 'postgres',
-            badge: 'Free Tier',
-            free_tier: '1 vCPU, 1 GB RAM, 5 GB Storage, Automated Backups',
-            docs_url: 'https://aiven.io',
-            format_hint: 'postgres://avnadmin:[PASS]@[HOST]:[PORT]/defaultdb?sslmode=require',
-            status: 'compatible'
-          },
-          {
-            id: 'oracle',
-            name: 'Oracle Cloud Autonomous Database',
-            dialect: 'oracle',
-            badge: '2x 20GB Always Free',
-            free_tier: '20 GB Storage, OCPU Dedicated, mTLS Wallets',
-            docs_url: 'https://www.oracle.com/cloud/free/',
-            format_hint: 'Memerlukan Oracle Wallet / mTLS. Disarankan deploy PostgreSQL di Oracle Always Free Compute VM.',
-            status: 'vm_recommended'
+            format_hint: 'postgresql://[USER]:[PASS]@[ENDPOINT].neon.tech/neondb?sslmode=require',
+            advantages: [
+              '100% Free selamanya tanpa kartu kredit',
+              'Zero manual hold (otomatis bangun saat kasir/web dibuka)',
+              'Koneksi serverless cepat dengan driver pg bawaan'
+            ],
+            status: 'recommended'
           }
         ]
       }
@@ -412,5 +389,26 @@ exports.updateDatabaseConfig = async (req, res) => {
   } catch (err) {
     console.error('[updateDatabaseConfig error]:', err.message);
     res.status(500).json({ message: 'Gagal memperbarui konfigurasi database: ' + err.message });
+  }
+};
+
+exports.pingDatabaseKeepAlive = async (req, res) => {
+  try {
+    const start = Date.now();
+    const [rows] = await db.query('SELECT 1 AS heartbeat, NOW() AS ping_time, current_database() AS db_name');
+    const latency = Date.now() - start;
+
+    res.json({
+      success: true,
+      message: 'Keep-Alive Berhasil! Database telah menerima query aktif sehingga terbebas dari auto-pause / hold.',
+      data: {
+        latency_ms: latency,
+        ping_time: rows?.[0]?.ping_time,
+        database: rows?.[0]?.db_name,
+      }
+    });
+  } catch (err) {
+    console.error('[pingDatabaseKeepAlive error]:', err);
+    res.status(500).json({ message: 'Gagal melakukan heartbeat ping: ' + err.message });
   }
 };
