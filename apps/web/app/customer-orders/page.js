@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import { playOrderNotificationSound } from '@/lib/soundNotification';
 import { motion } from 'framer-motion';
 import AdminLayout from '@/components/layout/AdminLayout';
 import AuthGuard from '@/components/ui/AuthGuard';
@@ -392,6 +393,7 @@ export default function CustomerOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [proofModal, setProofModal] = useState(null);
+  const prevPendingRef = useRef(-1);
 
   const load = async ({ silent = false } = {}) => {
     if (silent || orders.length > 0) setRefreshing(true);
@@ -406,7 +408,13 @@ export default function CustomerOrdersPage() {
         }),
         isAdmin ? getManagedDiningTables() : Promise.resolve({ data: [] }),
       ]);
-      setOrders(ordersRes.data || []);
+      const fetchedOrders = ordersRes.data || [];
+      const pendingCount = fetchedOrders.filter((o) => o.status === 'pending').length;
+      if (prevPendingRef.current >= 0 && pendingCount > prevPendingRef.current) {
+        playOrderNotificationSound();
+      }
+      prevPendingRef.current = pendingCount;
+      setOrders(fetchedOrders);
       setTables(tablesRes.data || []);
       setSelectedTable((prev) => {
         const rows = tablesRes.data || [];
@@ -640,7 +648,18 @@ export default function CustomerOrdersPage() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between" data-tour="customer-orders-header">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.28em] text-orange-400">Customer Table Order</p>
-              <h1 className="mt-2 text-3xl font-black text-white">Pesanan Meja dan QR Pelanggan</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="mt-2 text-3xl font-black text-white">Pesanan Meja dan QR Pelanggan</h1>
+                <button
+                  type="button"
+                  onClick={playOrderNotificationSound}
+                  className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-500/10 border border-orange-500/30 text-orange-300 hover:bg-orange-500/20 text-xs font-semibold transition"
+                  title="Klik untuk menguji nada bel pesanan masuk"
+                >
+                  <span>🔔</span>
+                  <span>Tes Bel</span>
+                </button>
+              </div>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
                 Pantau order pelanggan dari QR meja, approve proses dapur, dan kelola meja yang tampil di landing page.
               </p>

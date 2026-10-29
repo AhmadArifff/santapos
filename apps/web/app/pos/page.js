@@ -1,11 +1,13 @@
 'use client';
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import AuthGuard from '@/components/ui/AuthGuard';
 import {
   getCategories, createTransaction,
   getMyStockProducts, getStockAllUsers, getTodayStats,
   getPublicDiningTables, getActiveDiscountPrograms,
+  getCustomerOrders,
 } from '@/lib/api';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
@@ -13,6 +15,8 @@ import Cart         from '@/components/pos/Cart';
 import PaymentModal from '@/components/pos/PaymentModal';
 import Receipt      from '@/components/pos/Receipt';
 import ProductCard  from '@/components/pos/ProductCard';
+import PrintReceiptModal from '@/components/pos/PrintReceiptModal';
+import { playOrderNotificationSound, playCheckoutSuccessSound } from '@/lib/soundNotification';
 import { useReactToPrint } from 'react-to-print';
 import AdminLayout  from '@/components/layout/AdminLayout';
 import SuccessModal from '@/components/stock/SuccessModal';
@@ -169,6 +173,9 @@ export default function PosPage() {
   const [diningTables, setDiningTables] = useState([]);
   const [bundlePrograms, setBundlePrograms] = useState([]);
   const [selectedTableId, setSelectedTableId] = useState('');
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
+  const [prevPendingCount, setPrevPendingCount] = useState(0);
   const [feedbackModal,   setFeedbackModal]   = useState({
     isOpen: false,
     type: 'success',
@@ -191,6 +198,31 @@ export default function PosPage() {
   }, [products]);
   useEffect(() => {
     selectedSourceUserRef.current = selectedSourceUser;
+  }, [selectedSourceUser]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const checkOrders = async () => {
+      try {
+        const res = await getCustomerOrders({ status: 'pending' });
+        const orders = res.data?.data || res.data || [];
+        const count = Array.isArray(orders) ? orders.length : 0;
+        if (isMounted) {
+          if (count > prevPendingCount && prevPendingCount >= 0) {
+            playOrderNotificationSound();
+          }
+          setPendingOrdersCount(count);
+          setPrevPendingCount(count);
+        }
+      } catch (_) {}
+    };
+
+    checkOrders();
+    const interval = setInterval(checkOrders, 12000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [selectedSourceUser]);
 
   const total     = items.reduce((s, i) => s + Number(i.price) * i.qty, 0);
@@ -487,7 +519,8 @@ export default function PosPage() {
         'Transaksi Berhasil',
         `Pendapatan cabang hari ini bertambah Rp ${Number(finalTotal || 0).toLocaleString('id-ID')}. Struk sedang disiapkan.`
       );
-      setTimeout(() => handlePrint(), 400);
+      playCheckoutSuccessSound();
+      setShowPrintModal(true);
       loadData({ silent: true });
     } catch (err) {
       const validation = err.response?.data?.validation_errors;
@@ -773,6 +806,27 @@ export default function PosPage() {
               </div>
             </div>
 
+            {/* ── NOTIFIKASI PESANAN QR MEJA BARU ── */}
+            {pendingOrdersCount > 0 && (
+              <div className="px-4 sm:px-5 pt-3">
+                <Link
+                  href="/admin/customer-orders"
+                  className="p-3 rounded-2xl bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-red-500/20 border border-orange-500/40 text-orange-200 text-xs font-bold flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-lg shadow-orange-500/10 animate-pulse transition hover:border-orange-400"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-lg">🔔</span>
+                    <span>
+                      Ada <strong className="text-white bg-orange-600/70 px-2.5 py-0.5 rounded-full">{pendingOrdersCount} Pesanan Meja</strong> baru menunggu konfirmasi kasir!
+                    </span>
+                  </div>
+                  <span className="px-3 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-black font-extrabold text-xs transition flex items-center gap-1 self-end sm:self-auto">
+                    <span>Buka Pesanan Meja</span>
+                    <span>→</span>
+                  </span>
+                </Link>
+              </div>
+            )}
+
             {/* ── CATEGORY FILTER ── */}
             <div
               className="flex gap-2 px-4 sm:px-5 py-3 overflow-x-auto scrollbar-hide
@@ -988,6 +1042,17 @@ export default function PosPage() {
 
           <div className="hidden">
             <Receipt ref={receiptRef} transaction={lastTransaction} />
+          </div>
+          <PrintReceiptModal
+            isOpen={showPrintModal}
+            onClose={() => setShowPrintModal(false)}
+            transaction={lastTransaction}
+            storeSettings={{
+              brand_name: user?.tenant_name || user?.name || 'Santapos Resto',
+              address: user?.branch_name ? `Cabang ${user.branch_name}` : '',
+            }}
+          />
+          <div className="hidden">
           </div>
         </div>
 
