@@ -8,6 +8,7 @@
     "dev:web": "turbo run dev --filter=@santapos/web",
     "dev:api": "turbo run dev --filter=@santapos/api",
     "build": "turbo run build",
+    "db:setup": "pnpm --filter @santapos/api db:setup",
     "lint": "turbo run lint"
   },
   "devDependencies": {

@@ -86,6 +86,7 @@ echo   [2] Jalankan Frontend Saja (Next.js 16)
 echo   [3] Jalankan Backend API Saja (Express + Database)
 echo   [4] Install Ulang Dependencies (pnpm install dan build)
 echo   [5] Verifikasi Production Build (Turbo Build Test)
+echo   [6] Migrasi Database, Seed Akun User dan Setup Storage Supabase
 echo   [0] Keluar
 echo =====================================================================
 echo.
@@ -99,7 +100,7 @@ if not "%1"=="" (
     goto process_choice
 )
 
-choice /C 123450 /D 1 /T 5 /M "Pilih opsi [1-5] (Otomatis menjalankan Opsi 1 dalam 5 detik): "
+choice /C 1234560 /D 1 /T 5 /M "Pilih opsi [1-6] (Otomatis menjalankan Opsi 1 dalam 5 detik): "
 set USER_CHOICE=%ERRORLEVEL%
 
 :process_choice
@@ -108,7 +109,8 @@ if "%USER_CHOICE%"=="2" goto run_web
 if "%USER_CHOICE%"=="3" goto run_api
 if "%USER_CHOICE%"=="4" goto run_setup
 if "%USER_CHOICE%"=="5" goto run_build
-if "%USER_CHOICE%"=="6" goto exit_launcher
+if "%USER_CHOICE%"=="6" goto run_db_setup
+if "%USER_CHOICE%"=="7" goto exit_launcher
 if "%USER_CHOICE%"=="0" goto exit_launcher
 
 :run_all
@@ -165,9 +167,25 @@ echo.
 pause
 goto done
 
+:run_db_setup
+echo.
+echo =====================================================================
+echo   Menjalankan Migrasi Database, Seed Akun User dan Setup Supabase...
+echo =====================================================================
+echo.
+call pnpm db:setup
+echo.
+echo =====================================================================
+echo   Database dan Storage Supabase siap digunakan!
+echo =====================================================================
+echo.
+if "%1"=="" pause
+goto done
+
 :exit_launcher
 echo Keluar.
 exit /b 0
 
 :done
-pause
+if "%1"=="" pause
+exit /b 0
