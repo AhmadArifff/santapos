@@ -140,3 +140,91 @@ exports.deleteMethod = async (req, res) => {
     sendSafeError(res, 500, 'Gagal menghapus metode pembayaran');
   }
 };
+
+const midtransService = require('../services/midtransService');
+
+exports.getMidtransConfig = async (req, res) => {
+  try {
+    const tenantId = req.user?.tenant_id || 1;
+    const config = await midtransService.getMidtransConfig(tenantId);
+    res.json({ success: true, data: config });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.saveMidtransConfig = async (req, res) => {
+  try {
+    const tenantId = req.user?.tenant_id || 1;
+    const { server_key, client_key, merchant_id, environment, is_active } = req.body;
+    const saved = await midtransService.saveMidtransConfig({
+      tenantId,
+      serverKey: server_key,
+      clientKey: client_key,
+      merchantId: merchant_id,
+      environment,
+      isActive: is_active,
+      webhookUrl: `${process.env.FRONTEND_URL || ''}/api/payments/midtrans/notification`,
+    });
+    res.json({ success: true, message: 'Konfigurasi Midtrans berhasil disimpan!', data: saved });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.testMidtransConfig = async (req, res) => {
+  try {
+    const { server_key, environment } = req.body;
+    const result = await midtransService.testMidtransCredentials({
+      serverKey: server_key,
+      environment,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+exports.createMidtransSnapToken = async (req, res) => {
+  try {
+    const { orderCode } = req.params;
+    const [orderRows] = await db.query('SELECT * FROM customer_orders WHERE order_code = ? LIMIT 1', [orderCode]);
+    const order = orderRows?.[0];
+    if (!order) return res.status(404).json({ message: 'Pesanan tidak ditemukan' });
+
+    const [items] = await db.query('SELECT * FROM customer_order_items WHERE order_id = ?', [order.id]);
+    order.items = items;
+
+    const snapResult = await midtransService.createSnapToken({
+      tenantId: order.tenant_id || 1,
+      order,
+    });
+    res.json({ success: true, data: snapResult });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.handleMidtransNotification = async (req, res) => {
+  try {
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const result = await midtransService.handleWebhookNotification(req.body, clientIp);
+    res.json(result);
+  } catch (err) {
+    console.error('[Midtrans Webhook Error]:', err.message);
+    res.status(400).json({ message: err.message });
+  }
+};
+
+exports.getMidtransAuditLogs = async (req, res) => {
+  try {
+    const tenantId = req.user?.tenant_id || 1;
+    const logs = await midtransService.getPaymentAuditLogs({
+      tenantId: req.user?.role === 'superadmin' ? null : tenantId,
+      limit: 100,
+    });
+    res.json({ success: true, data: logs });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

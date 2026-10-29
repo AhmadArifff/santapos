@@ -196,3 +196,10 @@ export const testDatabaseConnection = (data) => api.post('/superadmin/database/t
 export const updateDatabaseConfig = (data) => api.post('/superadmin/database/save', data);
 export const pingDatabaseKeepAlive = () => api.post('/superadmin/database/ping');
 export const migrateDatabaseAndStorage = (data) => api.post('/superadmin/database/migrate', data);
+
+// Midtrans Payment Gateway & Financial Audit
+export const getMidtransConfig = () => api.get('/payments/midtrans/config');
+export const saveMidtransConfig = (data) => api.post('/payments/midtrans/config', data);
+export const testMidtransConfig = (data) => api.post('/payments/midtrans/test', data);
+export const createMidtransSnapToken = (orderCode) => api.post(`/payments/midtrans/snap/${orderCode}`);
+export const getMidtransAuditLogs = () => api.get('/payments/midtrans/audit-logs');
