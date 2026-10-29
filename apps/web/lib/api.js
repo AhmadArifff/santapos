@@ -203,3 +203,6 @@ export const saveMidtransConfig = (data) => api.post('/payments/midtrans/config'
 export const testMidtransConfig = (data) => api.post('/payments/midtrans/test', data);
 export const createMidtransSnapToken = (orderCode) => api.post(`/payments/midtrans/snap/${orderCode}`);
 export const getMidtransAuditLogs = () => api.get('/payments/midtrans/audit-logs');
+export const checkMidtransOrderStatus = (orderCode) => api.get(`/payments/midtrans/status/${orderCode}`);
+export const syncMidtransOrders = (data) => api.post('/payments/midtrans/sync', data);
+export const manualApproveMidtransPayment = (orderCode, data = {}) => api.post(`/payments/midtrans/manual-approve/${orderCode}`, data);

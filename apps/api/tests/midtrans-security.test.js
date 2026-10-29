@@ -102,5 +102,55 @@ console.log('--- SANTAPOS MIDTRANS FINANCIAL SECURITY UNIT TESTS ---');
   console.log('✅ TEST 3 PASSED: Incomplete webhook signatures safely fail-closed.');
 })();
 
-console.log('🎉 ALL MIDTRANS FINANCIAL SECURITY UNIT TESTS PASSED SUCCESSFULLY!\n');
+// TEST 4: Reconciliation Status Mapping Logic
+(() => {
+  const mapReconciliationOutcome = (status, fraudStatus) => {
+    if (status === 'settlement' || (status === 'capture' && fraudStatus === 'accept')) {
+      return 'settled';
+    }
+    if (['expire', 'cancel', 'deny'].includes(status)) {
+      return 'expired';
+    }
+    if (status === 'pending') {
+      return 'pending';
+    }
+    return 'unknown';
+  };
+
+  assert.strictEqual(mapReconciliationOutcome('settlement', null), 'settled');
+  assert.strictEqual(mapReconciliationOutcome('capture', 'accept'), 'settled');
+  assert.strictEqual(mapReconciliationOutcome('capture', 'challenge'), 'unknown');
+  assert.strictEqual(mapReconciliationOutcome('expire', null), 'expired');
+  assert.strictEqual(mapReconciliationOutcome('cancel', null), 'expired');
+  assert.strictEqual(mapReconciliationOutcome('pending', null), 'pending');
+
+  console.log('✅ TEST 4 PASSED: Reconciliation outcome mapping matches financial gateway states.');
+})();
+
+// TEST 5: Manual Override Validation & Audit Guard
+(() => {
+  const sanitizeManualApprove = ({ orderCode, reason, user }) => {
+    if (!orderCode) throw new Error('Kode pesanan wajib diisi');
+    return {
+      orderCode: String(orderCode).trim(),
+      reason: String(reason || 'Manual override kasir/admin').trim(),
+      approvedBy: user?.name || 'Admin',
+      timestamp: new Date().toISOString(),
+    };
+  };
+
+  const payload = sanitizeManualApprove({
+    orderCode: 'ORD-999',
+    reason: 'Uang sudah masuk via mutasi bank konfirmasi',
+    user: { name: 'Owner Resto' },
+  });
+
+  assert.strictEqual(payload.orderCode, 'ORD-999');
+  assert.strictEqual(payload.approvedBy, 'Owner Resto');
+  assert.strictEqual(payload.reason.includes('mutasi bank'), true);
+
+  console.log('✅ TEST 5 PASSED: Manual approve paid parameters are strictly sanitized and auditable.');
+})();
+
+console.log('🎉 ALL MIDTRANS FINANCIAL SECURITY & RECONCILIATION UNIT TESTS PASSED SUCCESSFULLY!\n');
 

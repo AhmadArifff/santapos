@@ -17,5 +17,8 @@ router.post('/midtrans/test', authenticate, isAdmin, c.testMidtransConfig);
 router.post('/midtrans/snap/:orderCode', c.createMidtransSnapToken); // Public for customers paying their QR order
 router.post('/midtrans/notification', c.handleMidtransNotification); // Webhook endpoint called by Midtrans
 router.get('/midtrans/audit-logs', authenticate, isAdmin, c.getMidtransAuditLogs); // Financial Audit Trail
+router.get('/midtrans/status/:orderCode', authenticate, c.checkOrderStatus); // Real-time status query from Midtrans API
+router.post('/midtrans/sync', authenticate, isAdmin, c.syncMidtransRange); // Reconciliation sync by date range
+router.post('/midtrans/manual-approve/:orderCode', authenticate, isAdmin, c.manualApprovePayment); // Manual fallback approve paid
 
 module.exports = router;

@@ -14,6 +14,9 @@ import {
   saveMidtransConfig,
   testMidtransConfig,
   getMidtransAuditLogs,
+  checkMidtransOrderStatus,
+  syncMidtransOrders,
+  manualApproveMidtransPayment,
 } from '@/lib/api';
 import { showConfirm } from '@/lib/modalDialog';
 import PaymentMethodCard from '@/components/payment/PaymentMethodCard';
@@ -69,7 +72,7 @@ const toFormData = (form) => {
 };
 
 export default function PaymentManagementPage() {
-  const [activeTab, setActiveTab] = useState('manual'); // 'manual' | 'midtrans' | 'audit'
+  const [activeTab, setActiveTab] = useState('manual'); // 'manual' | 'midtrans' | 'sync' | 'audit'
 
   // --- MANUAL METHODS STATE ---
   const [methods, setMethods] = useState([]);
@@ -100,6 +103,23 @@ export default function PaymentManagementPage() {
   const [testResult, setTestResult] = useState(null);
   const [midtransFeedback, setMidtransFeedback] = useState(null);
   const [copyWebhookMsg, setCopyWebhookMsg] = useState('');
+
+  // --- RECONCILIATION / SYNC STATE ---
+  const [syncStartDate, setSyncStartDate] = useState(() => {
+    const d = new Date(Date.now() - 7 * 86400000);
+    return d.toISOString().slice(0, 10);
+  });
+  const [syncEndDate, setSyncEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [syncStatusFilter, setSyncStatusFilter] = useState('pending_unpaid'); // 'pending_unpaid' | 'all'
+  const [syncing, setSyncing] = useState(false);
+  const [syncSummary, setSyncSummary] = useState(null);
+  const [syncResults, setSyncResults] = useState([]);
+  const [singleCheckLoading, setSingleCheckLoading] = useState(false);
+  const [singleCheckResult, setSingleCheckResult] = useState(null);
+  const [manualApproveModal, setManualApproveModal] = useState(null); // { orderCode, customerName, amount }
+  const [manualApproveReason, setManualApproveReason] = useState('');
+  const [approvingPayment, setApprovingPayment] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState(null);
 
   // --- AUDIT LOGS STATE ---
   const [auditLogs, setAuditLogs] = useState([]);
@@ -380,6 +400,105 @@ export default function PaymentManagementPage() {
     }
   };
 
+  // --- RECONCILIATION / SYNC HANDLERS ---
+  const handleSetPresetRange = (days) => {
+    const end = new Date().toISOString().slice(0, 10);
+    const start = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+    setSyncStartDate(start);
+    setSyncEndDate(end);
+  };
+
+  const handleRunSync = async () => {
+    setSyncing(true);
+    setSyncFeedback(null);
+    try {
+      const res = await syncMidtransOrders({
+        start_date: syncStartDate,
+        end_date: syncEndDate,
+        status_filter: syncStatusFilter,
+        limit: 100,
+      });
+      const data = res.data?.data || res.data;
+      setSyncSummary(data.summary || null);
+      setSyncResults(data.details || []);
+      setSyncFeedback({
+        type: 'success',
+        text: `Sinkronisasi selesai! ${data.summary?.total_checked || 0} transaksi diperiksa: ${data.summary?.settled_synced || 0} berhasil disinkronkan lunas, ${data.summary?.expired_synced || 0} kedaluwarsa.`,
+      });
+    } catch (err) {
+      setSyncFeedback({
+        type: 'error',
+        text: err.response?.data?.message || err.message || 'Gagal menjalankan sinkronisasi Midtrans.',
+      });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleSingleCheck = async (orderCode) => {
+    setSingleCheckLoading(true);
+    try {
+      const res = await checkMidtransOrderStatus(orderCode);
+      const data = res.data?.data || res.data;
+      setSingleCheckResult(data);
+
+      // Auto update status di tabel jika settled
+      if (data?.is_settled) {
+        setSyncResults((prev) =>
+          prev.map((item) =>
+            item.order_code === orderCode
+              ? {
+                  ...item,
+                  santapos_status: 'accepted',
+                  santapos_payment: 'paid',
+                  midtrans_status: data.transaction_status,
+                  action_taken: 'settled',
+                  message: 'Status berhasil diperbarui lunas dari Midtrans!',
+                }
+              : item
+          )
+        );
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Gagal memeriksa status ke Midtrans.');
+    } finally {
+      setSingleCheckLoading(false);
+    }
+  };
+
+  const handleConfirmManualApprove = async () => {
+    if (!manualApproveModal?.orderCode) return;
+    setApprovingPayment(true);
+    try {
+      await manualApproveMidtransPayment(manualApproveModal.orderCode, {
+        reason: manualApproveReason || 'Verifikasi manual oleh kasir/admin',
+      });
+      setSyncResults((prev) =>
+        prev.map((item) =>
+          item.order_code === manualApproveModal.orderCode
+            ? {
+                ...item,
+                santapos_status: 'accepted',
+                santapos_payment: 'paid',
+                action_taken: 'manual_approved',
+                message: 'Manual approve paid berhasil diverifikasi!',
+              }
+            : item
+        )
+      );
+      setManualApproveModal(null);
+      setManualApproveReason('');
+      setSyncFeedback({
+        type: 'success',
+        text: `Pesanan ${manualApproveModal.orderCode} berhasil disetujui (Approve Paid) secara manual!`,
+      });
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Gagal melakukan approve paid manual.');
+    } finally {
+      setApprovingPayment(false);
+    }
+  };
+
   // Filtered Audit Logs
   const filteredAuditLogs = useMemo(() => {
     return auditLogs.filter((log) => {
@@ -420,7 +539,7 @@ export default function PaymentManagementPage() {
               </div>
               <h1 className="mt-2 text-3xl font-black text-white">Metode Pembayaran & Gateway</h1>
               <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-400">
-                Kelola pembayaran manual QRIS/Transfer struk, integrasikan Midtrans Snap payment gateway otomatis, dan pantau log audit transaksi keuangan.
+                Kelola pembayaran manual QRIS/Transfer struk, integrasikan Midtrans Snap gateway, cocokkan transaksi dengan rekonsiliasi range, dan pantau audit trail finansial.
               </p>
             </div>
 
@@ -444,7 +563,7 @@ export default function PaymentManagementPage() {
             </div>
           </div>
 
-          {/* Tab Navigation */}
+          {/* Tab Navigation (4 Tabs) */}
           <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-2">
             <button
               onClick={() => setActiveTab('manual')}
@@ -474,6 +593,23 @@ export default function PaymentManagementPage() {
               {midtransForm.is_active && (
                 <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-xs text-black font-extrabold">
                   ON
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('sync')}
+              className={`flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black transition ${
+                activeTab === 'sync'
+                  ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+              }`}
+            >
+              <span>🔄</span>
+              <span>Sync & Rekonsiliasi Gateway</span>
+              {syncResults.length > 0 && (
+                <span className="rounded-full bg-sky-500 px-2 py-0.5 text-xs text-black font-extrabold">
+                  {syncResults.length}
                 </span>
               )}
             </button>
@@ -1025,7 +1161,267 @@ export default function PaymentManagementPage() {
             </div>
           )}
 
-          {/* TAB 3: AUDIT TRAIL LOG TRANSAKSI KEANGAN */}
+          {/* TAB 3: SINKRONISASI & REKONSILIASI MIDTRANS (BARU) */}
+          {activeTab === 'sync' && (
+            <div className="space-y-6">
+              {/* Range & Filter Panel */}
+              <div className="rounded-3xl border border-slate-700 bg-slate-800 p-6 space-y-5">
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between border-b border-slate-700/60 pb-4">
+                  <div>
+                    <h2 className="text-xl font-black text-white flex items-center gap-2">
+                      <span>🔄</span>
+                      <span>Sinkronisasi & Rekonsiliasi Status Pembayaran</span>
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-400">
+                      Cocokkan status pesanan di database Santapos dengan status aktual di API Midtrans berdasarkan rentang tanggal.
+                    </p>
+                  </div>
+
+                  {/* Range Presets */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-xs font-bold text-slate-400 mr-1">Preset:</span>
+                    <button
+                      type="button"
+                      onClick={() => handleSetPresetRange(0)}
+                      className="rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-slate-300 hover:bg-slate-700 hover:text-white transition"
+                    >
+                      Hari Ini
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSetPresetRange(3)}
+                      className="rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-slate-300 hover:bg-slate-700 hover:text-white transition"
+                    >
+                      3 Hari
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSetPresetRange(7)}
+                      className="rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-slate-300 hover:bg-slate-700 hover:text-white transition"
+                    >
+                      7 Hari
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSetPresetRange(30)}
+                      className="rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-slate-300 hover:bg-slate-700 hover:text-white transition"
+                    >
+                      30 Hari
+                    </button>
+                  </div>
+                </div>
+
+                {syncFeedback && (
+                  <div className={`rounded-2xl p-4 text-sm font-bold ${
+                    syncFeedback.type === 'success'
+                      ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
+                      : 'border border-red-500/30 bg-red-500/10 text-red-200'
+                  }`}>
+                    {syncFeedback.text}
+                  </div>
+                )}
+
+                {/* Form Range & Trigger */}
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 items-end">
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-2">
+                      Dari Tanggal
+                    </label>
+                    <input
+                      type="date"
+                      value={syncStartDate}
+                      onChange={(e) => setSyncStartDate(e.target.value)}
+                      className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm text-white outline-none focus:border-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-2">
+                      Sampai Tanggal
+                    </label>
+                    <input
+                      type="date"
+                      value={syncEndDate}
+                      onChange={(e) => setSyncEndDate(e.target.value)}
+                      className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm text-white outline-none focus:border-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-2">
+                      Filter Target Pesanan
+                    </label>
+                    <select
+                      value={syncStatusFilter}
+                      onChange={(e) => setSyncStatusFilter(e.target.value)}
+                      className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm text-white outline-none focus:border-orange-500"
+                    >
+                      <option value="pending_unpaid">Belum Lunas / Pending (Efisien & Cepat)</option>
+                      <option value="all">Semua Status Pesanan</option>
+                    </select>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleRunSync}
+                    disabled={syncing}
+                    className="w-full rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-black text-white hover:bg-orange-400 disabled:opacity-50 transition shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2"
+                  >
+                    {syncing ? (
+                      <>
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                        <span>Mencocokkan API...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>⚡</span>
+                        <span>Mulai Sinkronkan</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* KPI Summary (Jika sudah pernah sync) */}
+              {syncSummary && (
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                  <div className="rounded-2xl border border-slate-700 bg-slate-800 p-4">
+                    <p className="text-xs font-bold text-slate-400">Total Diperiksa</p>
+                    <strong className="mt-1 block text-2xl text-white">{syncSummary.total_checked}</strong>
+                    <span className="text-[11px] text-slate-500">Dalam range tanggal</span>
+                  </div>
+
+                  <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
+                    <p className="text-xs font-bold text-emerald-300">✓ Disinkronkan Lunas</p>
+                    <strong className="mt-1 block text-2xl text-emerald-300">{syncSummary.settled_synced}</strong>
+                    <span className="text-[11px] text-emerald-400/80">Otomatis masuk dapur</span>
+                  </div>
+
+                  <div className="rounded-2xl border border-sky-500/30 bg-sky-500/10 p-4">
+                    <p className="text-xs font-bold text-sky-300">⏱ Masih Pending</p>
+                    <strong className="mt-1 block text-2xl text-sky-200">{syncSummary.still_pending}</strong>
+                    <span className="text-[11px] text-sky-400/80">Menunggu pelanggan</span>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-700 bg-slate-800 p-4">
+                    <p className="text-xs font-bold text-slate-400">Kedaluwarsa / Dibatalkan</p>
+                    <strong className="mt-1 block text-2xl text-red-300">{syncSummary.expired_synced}</strong>
+                    <span className="text-[11px] text-slate-500">Kedaluwarsa di Midtrans</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Tabel Hasil Sinkronisasi & Rekonsiliasi */}
+              <div className="overflow-x-auto rounded-3xl border border-slate-700 bg-slate-800">
+                <table className="w-full text-left text-sm text-slate-300">
+                  <thead className="border-b border-slate-700 bg-slate-900/80 text-xs font-black uppercase tracking-wider text-slate-400">
+                    <tr>
+                      <th className="px-5 py-4">Kode & Meja</th>
+                      <th className="px-5 py-4">Pelanggan</th>
+                      <th className="px-5 py-4">Nominal</th>
+                      <th className="px-5 py-4">Status Santapos</th>
+                      <th className="px-5 py-4">Status Midtrans API</th>
+                      <th className="px-5 py-4">Hasil Pencocokan</th>
+                      <th className="px-5 py-4 text-right">Tindakan Rekonsiliasi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/60">
+                    {syncing && (
+                      <tr>
+                        <td colSpan={7} className="px-5 py-12 text-center text-slate-400">
+                          <div className="inline-flex items-center gap-2">
+                            <span className="h-5 w-5 animate-spin rounded-full border-2 border-orange-500/20 border-t-orange-500" />
+                            <span>Sedang memeriksa status transaksi ke server Midtrans...</span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    {!syncing && syncResults.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="px-5 py-12 text-center text-slate-400">
+                          Pilih rentang tanggal dan klik tombol <strong>"Mulai Sinkronkan"</strong> untuk mencocokkan data.
+                        </td>
+                      </tr>
+                    )}
+                    {!syncing && syncResults.map((item) => {
+                      const isSettledMidtrans = ['settlement', 'capture'].includes(item.midtrans_status);
+                      const isPendingMidtrans = item.midtrans_status === 'pending';
+                      const isExpiredMidtrans = ['expire', 'cancel', 'deny'].includes(item.midtrans_status);
+                      const isNotFound = item.midtrans_status === 'not_found';
+                      const isPaidSantapos = item.santapos_payment === 'paid';
+
+                      return (
+                        <tr key={item.order_code} className="hover:bg-slate-700/40 transition">
+                          <td className="px-5 py-4 whitespace-nowrap">
+                            <strong className="block font-mono text-white text-sm">{item.order_code}</strong>
+                            <span className="text-xs text-slate-400">Meja {item.table_number || '-'}</span>
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-300">
+                            {item.customer_name || 'Pelanggan Meja'}
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap font-bold text-white">
+                            {formatRp(item.amount)}
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black uppercase ${
+                              isPaidSantapos
+                                ? 'bg-emerald-500/15 text-emerald-300'
+                                : 'bg-amber-500/15 text-amber-300'
+                            }`}>
+                              {item.santapos_payment} ({item.santapos_status})
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black uppercase ${
+                              isSettledMidtrans
+                                ? 'bg-emerald-500/15 text-emerald-300'
+                                : isPendingMidtrans
+                                ? 'bg-sky-500/15 text-sky-300'
+                                : isExpiredMidtrans
+                                ? 'bg-red-500/15 text-red-300'
+                                : isNotFound
+                                ? 'bg-slate-700 text-slate-400'
+                                : 'bg-slate-700 text-slate-300'
+                            }`}>
+                              {item.midtrans_status}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-xs text-slate-300 max-w-xs">
+                            {item.message}
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap text-right space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => handleSingleCheck(item.order_code)}
+                              disabled={singleCheckLoading}
+                              className="rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-bold text-sky-300 hover:bg-slate-600 transition"
+                            >
+                              🔍 Cek Midtrans
+                            </button>
+                            {!isPaidSantapos && (
+                              <button
+                                type="button"
+                                onClick={() => setManualApproveModal({
+                                  orderCode: item.order_code,
+                                  customerName: item.customer_name,
+                                  amount: item.amount,
+                                })}
+                                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-500 transition"
+                              >
+                                ✓ Approve Paid
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: AUDIT TRAIL LOG TRANSAKSI */}
           {activeTab === 'audit' && (
             <div className="space-y-6">
               {/* Filter & Action Bar */}
@@ -1106,10 +1502,11 @@ export default function PaymentManagementPage() {
                       </tr>
                     )}
                     {filteredAuditLogs.map((log) => {
-                      const isSettled = log.event_type === 'order_settled';
+                      const isSettled = log.event_type === 'order_settled' || log.event_type === 'status_check_settled';
                       const isCharge = log.event_type === 'charge_created';
                       const isSkipped = log.event_type === 'idempotency_skipped';
                       const isFailed = log.event_type === 'signature_failed' || log.event_type === 'order_not_found';
+                      const isManual = log.event_type === 'manual_admin_approve';
 
                       return (
                         <tr key={log.id} className="hover:bg-slate-700/40 transition">
@@ -1129,6 +1526,8 @@ export default function PaymentManagementPage() {
                                 ? 'bg-amber-500/15 text-amber-300'
                                 : isFailed
                                 ? 'bg-red-500/15 text-red-300'
+                                : isManual
+                                ? 'bg-purple-500/15 text-purple-300'
                                 : 'bg-slate-700 text-slate-300'
                             }`}>
                               {log.event_type}
@@ -1216,6 +1615,154 @@ export default function PaymentManagementPage() {
                       className="rounded-xl bg-orange-500 px-5 py-2 text-xs font-black text-white hover:bg-orange-400 transition"
                     >
                       Tutup
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
+          {/* Modal Single Order Check Result */}
+          <AnimatePresence>
+            {singleCheckResult && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="w-full max-w-md rounded-3xl border border-slate-700 bg-slate-900 p-6 shadow-2xl"
+                >
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h3 className="text-lg font-black text-white flex items-center gap-2">
+                      <span>🔍</span>
+                      <span>Status Real-Time Midtrans</span>
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setSingleCheckResult(null)}
+                      className="rounded-xl bg-slate-800 p-2 text-slate-400 hover:text-white"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="mt-4 space-y-3 text-sm">
+                    <div className="flex justify-between rounded-xl bg-slate-800/80 p-3">
+                      <span className="text-slate-400">Kode Pesanan:</span>
+                      <strong className="font-mono text-white">{singleCheckResult.order_code}</strong>
+                    </div>
+
+                    <div className="flex justify-between rounded-xl bg-slate-800/80 p-3">
+                      <span className="text-slate-400">Status di Midtrans:</span>
+                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-black uppercase ${
+                        singleCheckResult.is_settled
+                          ? 'bg-emerald-500/20 text-emerald-300'
+                          : singleCheckResult.transaction_status === 'pending'
+                          ? 'bg-sky-500/20 text-sky-300'
+                          : 'bg-slate-700 text-slate-300'
+                      }`}>
+                        {singleCheckResult.transaction_status}
+                      </span>
+                    </div>
+
+                    {singleCheckResult.gross_amount && (
+                      <div className="flex justify-between rounded-xl bg-slate-800/80 p-3">
+                        <span className="text-slate-400">Nominal:</span>
+                        <strong className="text-white">{formatRp(singleCheckResult.gross_amount)}</strong>
+                      </div>
+                    )}
+
+                    {singleCheckResult.payment_type && (
+                      <div className="flex justify-between rounded-xl bg-slate-800/80 p-3">
+                        <span className="text-slate-400">Tipe Pembayaran:</span>
+                        <span className="font-bold uppercase text-slate-200">{singleCheckResult.payment_type}</span>
+                      </div>
+                    )}
+
+                    {singleCheckResult.message && (
+                      <p className="text-xs text-slate-400 italic mt-2">
+                        {singleCheckResult.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="mt-5">
+                    <button
+                      type="button"
+                      onClick={() => setSingleCheckResult(null)}
+                      className="w-full rounded-2xl bg-orange-500 px-5 py-3 text-sm font-black text-white hover:bg-orange-400 transition"
+                    >
+                      Tutup
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
+          {/* Modal Approve Paid Manual Override */}
+          <AnimatePresence>
+            {manualApproveModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="w-full max-w-md rounded-3xl border border-emerald-500/30 bg-slate-900 p-6 shadow-2xl"
+                >
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h3 className="text-lg font-black text-white flex items-center gap-2">
+                      <span className="text-emerald-400">✓</span>
+                      <span>Approve Paid Manual</span>
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setManualApproveModal(null)}
+                      className="rounded-xl bg-slate-800 p-2 text-slate-400 hover:text-white"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="mt-4 space-y-3">
+                    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3.5 text-xs leading-relaxed text-emerald-200">
+                      Anda akan menyetujui pesanan <strong>{manualApproveModal.orderCode}</strong> menjadi <strong>LUNAS (PAID)</strong> secara manual. Tindakan ini akan dicatat di <em>Financial Audit Trail</em>.
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-slate-400">Nominal Tagihan:</p>
+                      <strong className="text-xl text-white">{formatRp(manualApproveModal.amount)}</strong>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 mb-1.5">
+                        Alasan / Catatan Override Manual:
+                      </label>
+                      <input
+                        type="text"
+                        value={manualApproveReason}
+                        onChange={(e) => setManualApproveReason(e.target.value)}
+                        placeholder="Contoh: Sudah konfirmasi mutasi bank / testing sistem"
+                        className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-xs text-white outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setManualApproveModal(null)}
+                      className="flex-1 rounded-xl bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-700 transition"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmManualApprove}
+                      disabled={approvingPayment}
+                      className="flex-1 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white hover:bg-emerald-500 disabled:opacity-50 transition"
+                    >
+                      {approvingPayment ? 'Menyetujui...' : 'Setujui Lunas'}
                     </button>
                   </div>
                 </motion.div>

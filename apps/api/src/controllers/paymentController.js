@@ -244,3 +244,53 @@ exports.getMidtransAuditLogs = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+exports.checkOrderStatus = async (req, res) => {
+  try {
+    const tenantId = req.user?.tenant_id || 1;
+    const { orderCode } = req.params;
+    const result = await midtransService.checkMidtransOrderStatus({
+      tenantId,
+      orderCode,
+      autoSettleIfPaid: true,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+exports.syncMidtransRange = async (req, res) => {
+  try {
+    const tenantId = req.user?.tenant_id || 1;
+    const { start_date, end_date, status_filter, limit } = req.body || {};
+    const result = await midtransService.syncMidtransOrdersByRange({
+      tenantId,
+      startDate: start_date,
+      endDate: end_date,
+      statusFilter: status_filter,
+      limit,
+    });
+    res.json({ success: true, data: result });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.manualApprovePayment = async (req, res) => {
+  try {
+    const tenantId = req.user?.tenant_id || 1;
+    const { orderCode } = req.params;
+    const { reason } = req.body || {};
+    const result = await midtransService.manualApproveOrderPayment({
+      tenantId,
+      orderCode,
+      reason,
+      userId: req.user?.id || null,
+      userName: req.user?.name || 'Admin',
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};

@@ -459,6 +459,338 @@ const getPaymentAuditLogs = async ({ tenantId = null, limit = 50 }) => {
   return rows;
 };
 
+/**
+ * Mengecek status transaksi langsung ke API Midtrans (Real-Time Status Check)
+ */
+const checkMidtransOrderStatus = async ({ tenantId = 1, orderCode, autoSettleIfPaid = true }) => {
+  if (!orderCode) {
+    throw new Error('Kode pesanan wajib diisi');
+  }
+
+  const config = await getMidtransConfig(tenantId);
+  if (!config.server_key) {
+    throw new Error('Server Key Midtrans belum dikonfigurasi');
+  }
+
+  const authHeader = 'Basic ' + Buffer.from(config.server_key.trim() + ':').toString('base64');
+  const statusUrl = `${getApiBaseUrl(config.environment)}/v2/${encodeURIComponent(orderCode)}/status`;
+
+  try {
+    const response = await axios.get(statusUrl, {
+      headers: {
+        Authorization: authHeader,
+        Accept: 'application/json',
+      },
+    });
+
+    const midtransData = response.data || {};
+    const transactionStatus = midtransData.transaction_status || 'unknown';
+    const fraudStatus = midtransData.fraud_status;
+    const isSettled = transactionStatus === 'settlement' || (transactionStatus === 'capture' && fraudStatus === 'accept');
+
+    // Jika autoSettleIfPaid dan dari Midtrans sudah lunas, perbarui pesanan di DB
+    if (autoSettleIfPaid && isSettled) {
+      const [orderRows] = await db.query(
+        'SELECT id, status, payment_status FROM customer_orders WHERE order_code = ? LIMIT 1',
+        [orderCode]
+      );
+      const order = orderRows?.[0];
+      if (order && order.payment_status !== 'paid') {
+        await db.query(`
+          UPDATE customer_orders
+          SET payment_status = 'paid',
+              status = 'accepted',
+              midtrans_transaction_id = ?,
+              midtrans_payment_type = ?,
+              payment_submitted_at = NOW(),
+              updated_at = NOW()
+          WHERE id = ?
+        `, [midtransData.transaction_id || null, midtransData.payment_type || 'qris', order.id]);
+
+        await logAudit({
+          tenantId,
+          orderId: order.id,
+          orderCode,
+          eventType: 'status_check_settled',
+          grossAmount: Number(midtransData.gross_amount || 0),
+          paymentType: midtransData.payment_type,
+          transactionStatus,
+          isSignatureValid: true,
+          rawPayload: midtransData,
+        });
+      }
+    }
+
+    return {
+      success: true,
+      exists: true,
+      order_code: orderCode,
+      transaction_id: midtransData.transaction_id,
+      transaction_status: transactionStatus,
+      fraud_status: fraudStatus,
+      payment_type: midtransData.payment_type,
+      gross_amount: Number(midtransData.gross_amount || 0),
+      transaction_time: midtransData.transaction_time,
+      is_settled: isSettled,
+      raw: midtransData,
+    };
+  } catch (err) {
+    if (err.response?.status === 404) {
+      return {
+        success: true,
+        exists: false,
+        order_code: orderCode,
+        transaction_status: 'not_found',
+        message: 'Transaksi belum dibuat atau tidak ditemukan di Midtrans',
+      };
+    }
+    throw new Error(err.response?.data?.status_message || err.message || 'Gagal mengecek status ke Midtrans API');
+  }
+};
+
+/**
+ * Sinkronisasi Rekonsiliasi Pesanan dalam Range Tanggal
+ */
+const syncMidtransOrdersByRange = async ({
+  tenantId = 1,
+  startDate,
+  endDate,
+  statusFilter = 'pending_unpaid',
+  limit = 100,
+}) => {
+  const config = await getMidtransConfig(tenantId);
+  if (!config.server_key) {
+    throw new Error('Server Key Midtrans belum dikonfigurasi untuk melakukan sinkronisasi.');
+  }
+
+  // Siapkan query rentang tanggal
+  const start = startDate ? `${startDate} 00:00:00` : new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10) + ' 00:00:00';
+  const end = endDate ? `${endDate} 23:59:59` : new Date().toISOString().slice(0, 10) + ' 23:59:59';
+
+  let where = 'WHERE co.created_at >= ? AND co.created_at <= ?';
+  const params = [start, end];
+
+  if (tenantId) {
+    where += ' AND co.tenant_id = ?';
+    params.push(tenantId);
+  }
+
+  if (statusFilter === 'pending_unpaid') {
+    where += " AND co.payment_status != 'paid' AND co.status NOT IN ('cancelled', 'completed')";
+  }
+
+  params.push(Math.min(200, Math.max(1, Number(limit || 50))));
+
+  const [orders] = await db.query(`
+    SELECT co.id, co.order_code, co.table_id, co.customer_name, co.subtotal, co.final_total,
+           co.status, co.payment_status, co.payment_method_key, co.payment_method_name,
+           co.created_at, dt.table_number
+    FROM customer_orders co
+    LEFT JOIN dining_tables dt ON dt.id = co.table_id
+    ${where}
+    ORDER BY co.created_at DESC
+    LIMIT ?
+  `, params);
+
+  const summary = {
+    total_checked: orders.length,
+    settled_synced: 0,
+    expired_synced: 0,
+    still_pending: 0,
+    not_found: 0,
+    already_paid: 0,
+  };
+
+  const results = [];
+
+  for (const order of orders) {
+    if (order.payment_status === 'paid') {
+      summary.already_paid++;
+      results.push({
+        order_id: order.id,
+        order_code: order.order_code,
+        customer_name: order.customer_name,
+        table_number: order.table_number,
+        amount: Number(order.final_total || order.subtotal || 0),
+        santapos_status: order.status,
+        santapos_payment: order.payment_status,
+        midtrans_status: 'already_paid',
+        action_taken: 'none',
+        message: 'Pesanan sudah berstatus lunas sebelumnya',
+      });
+      continue;
+    }
+
+    try {
+      const statusRes = await checkMidtransOrderStatus({
+        tenantId,
+        orderCode: order.order_code,
+        autoSettleIfPaid: true,
+      });
+
+      if (!statusRes.exists) {
+        summary.not_found++;
+        results.push({
+          order_id: order.id,
+          order_code: order.order_code,
+          customer_name: order.customer_name,
+          table_number: order.table_number,
+          amount: Number(order.final_total || order.subtotal || 0),
+          santapos_status: order.status,
+          santapos_payment: order.payment_status,
+          midtrans_status: 'not_found',
+          action_taken: 'none',
+          message: 'Belum ada transaksi dibuat di Midtrans',
+        });
+        continue;
+      }
+
+      if (statusRes.is_settled) {
+        summary.settled_synced++;
+        results.push({
+          order_id: order.id,
+          order_code: order.order_code,
+          customer_name: order.customer_name,
+          table_number: order.table_number,
+          amount: Number(order.final_total || order.subtotal || 0),
+          santapos_status: 'accepted',
+          santapos_payment: 'paid',
+          midtrans_status: statusRes.transaction_status,
+          payment_type: statusRes.payment_type,
+          action_taken: 'settled',
+          message: 'Berhasil dicocokkan! Transaksi diverifikasi lunas dari Midtrans.',
+        });
+      } else if (['expire', 'cancel', 'deny'].includes(statusRes.transaction_status)) {
+        summary.expired_synced++;
+        await db.query(`
+          UPDATE customer_orders
+          SET status = 'cancelled',
+              cancel_reason = 'Dibatalkan otomatis: Transaksi kedaluwarsa/ditolak di Midtrans',
+              updated_at = NOW()
+          WHERE id = ?
+        `, [order.id]);
+
+        await logAudit({
+          tenantId,
+          orderId: order.id,
+          orderCode: order.order_code,
+          eventType: 'reconciliation_expired',
+          grossAmount: Number(order.final_total || order.subtotal || 0),
+          transactionStatus: statusRes.transaction_status,
+          isSignatureValid: true,
+          rawPayload: statusRes.raw,
+        });
+
+        results.push({
+          order_id: order.id,
+          order_code: order.order_code,
+          customer_name: order.customer_name,
+          table_number: order.table_number,
+          amount: Number(order.final_total || order.subtotal || 0),
+          santapos_status: 'cancelled',
+          santapos_payment: order.payment_status,
+          midtrans_status: statusRes.transaction_status,
+          action_taken: 'cancelled',
+          message: 'Transaksi kedaluwarsa di Midtrans, pesanan otomatis dibatalkan.',
+        });
+      } else {
+        summary.still_pending++;
+        results.push({
+          order_id: order.id,
+          order_code: order.order_code,
+          customer_name: order.customer_name,
+          table_number: order.table_number,
+          amount: Number(order.final_total || order.subtotal || 0),
+          santapos_status: order.status,
+          santapos_payment: order.payment_status,
+          midtrans_status: statusRes.transaction_status,
+          action_taken: 'none',
+          message: 'Menunggu pembayaran diselesaikan pelanggan di Midtrans',
+        });
+      }
+    } catch (err) {
+      results.push({
+        order_id: order.id,
+        order_code: order.order_code,
+        customer_name: order.customer_name,
+        table_number: order.table_number,
+        amount: Number(order.final_total || order.subtotal || 0),
+        santapos_status: order.status,
+        santapos_payment: order.payment_status,
+        midtrans_status: 'error',
+        action_taken: 'none',
+        message: err.message,
+      });
+    }
+  }
+
+  return {
+    summary,
+    range: { start_date: start, end_date: end },
+    details: results,
+  };
+};
+
+/**
+ * Manual Approve Paid oleh Admin (Manual Override / Fallback dengan Audit Trail)
+ */
+const manualApproveOrderPayment = async ({
+  tenantId = 1,
+  orderCode,
+  reason = 'Verifikasi manual oleh kasir/admin',
+  userId = null,
+  userName = 'Admin',
+}) => {
+  const [rows] = await db.query(
+    'SELECT * FROM customer_orders WHERE order_code = ? LIMIT 1',
+    [orderCode]
+  );
+  const order = rows?.[0];
+  if (!order) {
+    throw new Error('Pesanan tidak ditemukan');
+  }
+
+  if (order.payment_status === 'paid') {
+    return { success: true, message: 'Pesanan sudah berstatus lunas sebelumnya.' };
+  }
+
+  const grossAmount = Number(order.final_total || order.subtotal || 0);
+
+  await db.query(`
+    UPDATE customer_orders
+    SET payment_status = 'paid',
+        status = CASE WHEN status = 'pending' THEN 'accepted' ELSE status END,
+        accepted_by = CASE WHEN status = 'pending' THEN ? ELSE accepted_by END,
+        accepted_at = CASE WHEN status = 'pending' THEN NOW() ELSE accepted_at END,
+        payment_submitted_at = COALESCE(payment_submitted_at, NOW()),
+        updated_at = NOW()
+    WHERE id = ?
+  `, [userId || null, order.id]);
+
+  await logAudit({
+    tenantId: order.tenant_id || tenantId,
+    orderId: order.id,
+    orderCode,
+    eventType: 'manual_admin_approve',
+    grossAmount,
+    paymentType: order.payment_method_key || 'manual_override',
+    transactionStatus: 'settlement',
+    isSignatureValid: true,
+    rawPayload: {
+      action: 'manual_override_approve',
+      approved_by_user_id: userId,
+      approved_by_name: userName,
+      reason,
+      timestamp: new Date().toISOString(),
+    },
+  });
+
+  return {
+    success: true,
+    message: `Pesanan ${orderCode} berhasil disetujui (Approve Paid) secara manual!`,
+  };
+};
+
 module.exports = {
   getMidtransConfig,
   saveMidtransConfig,
@@ -467,5 +799,8 @@ module.exports = {
   verifyMidtransSignature,
   handleWebhookNotification,
   getPaymentAuditLogs,
+  checkMidtransOrderStatus,
+  syncMidtransOrdersByRange,
+  manualApproveOrderPayment,
 };
 
