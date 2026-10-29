@@ -140,16 +140,20 @@ const normalizeFromApi = (apiSettings) => {
 const getInitialLoginSettings = () => readLoginSettingsCache() || clone(defaultLoginPageSettings);
 
 export const useLoginPageSettingsStore = create((set, get) => ({
-  settings: getInitialLoginSettings(),
+  settings: clone(defaultLoginPageSettings),
   isDirty: false,
   isSaving: false,
-  isLoading: !readLoginSettingsCache(),
+  isLoading: false,
   saveError: null,
   loadError: null,
   lastSavedAt: null,
-  hasLoaded: Boolean(readLoginSettingsCache()),
+  hasLoaded: false,
 
   loadSettings: async () => {
+    const cached = readLoginSettingsCache();
+    if (cached && !get().hasLoaded) {
+      set({ settings: cached, hasLoaded: true });
+    }
     set({ isLoading: true, loadError: null });
     try {
       const response = await getWebsiteSettings();

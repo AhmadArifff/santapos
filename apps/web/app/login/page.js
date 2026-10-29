@@ -124,8 +124,8 @@ export default function LoginPage() {
   const {
     settings: loginPageSettings,
     loadSettings: loadLoginPageSettings,
-    isLoading: loginSettingsLoading,
-    hasLoaded: loginSettingsHasLoaded,
+
+
   } = useLoginPageSettingsStore();
   const router      = useRouter();
   const logoSrc     = resolveAssetUrl(settings?.logo_url, '/images/assets/logo.png');
@@ -224,54 +224,6 @@ export default function LoginPage() {
     borderRadius:    '2px',
   });
 
-  if (!loginSettingsHasLoaded && loginSettingsLoading) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'grid',
-        placeItems: 'center',
-        background: 'radial-gradient(circle at 20% 0%, rgba(201,168,76,0.14), transparent 35%), #0D0A06',
-        color: 'var(--cream)',
-      }}>
-        <div style={{
-          width: 'min(360px, calc(100vw - 48px))',
-          border: '1px solid rgba(201,168,76,0.22)',
-          background: 'rgba(26,20,9,0.72)',
-          padding: '2rem',
-          textAlign: 'center',
-          boxShadow: '0 24px 70px rgba(0,0,0,0.35)',
-        }}>
-          <p style={{
-            color: 'var(--gold)',
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: '2rem',
-            letterSpacing: '0.22em',
-          }}>{storeName}</p>
-          <div style={{
-            height: '3px',
-            margin: '1.25rem auto 0',
-            width: '72%',
-            overflow: 'hidden',
-            background: 'rgba(201,168,76,0.14)',
-          }}>
-            <span style={{
-              display: 'block',
-              width: '45%',
-              height: '100%',
-              background: 'linear-gradient(90deg, transparent, var(--gold), transparent)',
-              animation: 'loginShellSweep 1.2s ease-in-out infinite',
-            }} />
-          </div>
-        </div>
-        <style>{`
-          @keyframes loginShellSweep {
-            from { transform: translateX(-120%); }
-            to { transform: translateX(260%); }
-          }
-        `}</style>
-      </div>
-    );
-  }
 
   return (
     <>

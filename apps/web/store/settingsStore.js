@@ -66,12 +66,16 @@ const getInitialSettings = () => ({
 });
 
 export const useWebsiteSettings = create((set, get) => ({
-  settings: getInitialSettings(),
+  settings: { ...DEFAULT_SETTINGS },
   loading: false,
   error: null,
   loadedAt: null,
 
   loadSettings: async ({ force = false } = {}) => {
+    const cached = readSettingsCache();
+    if (cached && !get().loadedAt) {
+      set({ settings: { ...DEFAULT_SETTINGS, ...cached } });
+    }
     const current = get();
     if (!force && current.loadedAt) return current.settings;
     if (!force && current.loading) return current.settings;
