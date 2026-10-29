@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const midtransService = require('../services/midtransService');
 const {
   ensurePaymentTables,
   getPaymentMethodById,
@@ -13,6 +14,23 @@ const sendSafeError = (res, status, message) => res.status(status).json({ messag
 exports.listPublicMethods = async (req, res) => {
   try {
     const rows = await listPaymentMethods({ includeInactive: false });
+    const tenantId = req.query.tenant_id || 1;
+    const midtransConfig = await midtransService.getMidtransConfig(tenantId);
+    if (midtransConfig?.is_active && midtransConfig?.client_key) {
+      rows.unshift({
+        id: 'midtrans-instant',
+        method_key: 'midtrans',
+        name: 'Bayar Otomatis (QRIS / GoPay / ShopeePay / VA)',
+        type: 'midtrans',
+        provider_name: 'Midtrans Payment Gateway',
+        account_name: 'Verifikasi Otomatis',
+        account_number: 'Instan & Bebas Upload Bukti',
+        instructions: 'Pilih pembayaran otomatis untuk membayar dengan QRIS Dinamis atau E-Wallet. Pesanan langsung diproses tanpa upload bukti transfer.',
+        payment_timeout_minutes: 15,
+        status: 'active',
+        sort_order: -1,
+      });
+    }
     res.json(rows);
   } catch (_) {
     sendSafeError(res, 500, 'Gagal mengambil metode pembayaran');
@@ -140,8 +158,6 @@ exports.deleteMethod = async (req, res) => {
     sendSafeError(res, 500, 'Gagal menghapus metode pembayaran');
   }
 };
-
-const midtransService = require('../services/midtransService');
 
 exports.getMidtransConfig = async (req, res) => {
   try {

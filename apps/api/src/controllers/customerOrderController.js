@@ -1062,13 +1062,21 @@ exports.createOrder = async (req, res) => {
     });
     const discountAmount = Number(discount?.discount_amount || 0);
     const finalTotal = toMoney(subtotal - discountAmount);
-    const paymentMethod = payment_method_id
-      ? await getPaymentMethodById(payment_method_id, { activeOnly: true })
-      : null;
-    if (payment_method_id && !paymentMethod) {
-      const err = new Error('Metode pembayaran tidak tersedia');
-      err.status_code = 400;
-      throw err;
+    let paymentMethod = null;
+    if (payment_method_id === 'midtrans' || payment_method_id === 'midtrans-instant') {
+      paymentMethod = {
+        id: null,
+        method_key: 'midtrans',
+        name: 'Bayar Otomatis (Midtrans)',
+        payment_timeout_minutes: 15,
+      };
+    } else if (payment_method_id) {
+      paymentMethod = await getPaymentMethodById(payment_method_id, { activeOnly: true });
+      if (!paymentMethod) {
+        const err = new Error('Metode pembayaran tidak tersedia');
+        err.status_code = 400;
+        throw err;
+      }
     }
     const paymentFields = buildPaymentOrderFields(paymentMethod);
     const orderCode = makeOrderCode();

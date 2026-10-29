@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { submitCustomerPaymentProof } from '@/lib/api';
+import { submitCustomerPaymentProof, createMidtransSnapToken, getCustomerOrder } from '@/lib/api';
 import { PAYMENT_PROOF_EXTENSIONS, acceptFromExtensions, getFileValidationError } from '@/lib/fileValidation';
 import { resolveAssetUrl } from '@/lib/assetUrl';
 import PaymentMethodCard, { PaymentCopyButton } from '@/components/payment/PaymentMethodCard';
@@ -26,11 +26,38 @@ const formatRemaining = (seconds) => {
   return `${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`;
 };
 
+const loadSnapScript = (clientKey, environment = 'sandbox') => {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') return reject(new Error('Window not found'));
+    if (window.snap) {
+      return resolve(window.snap);
+    }
+    const snapUrl = environment === 'production'
+      ? 'https://app.midtrans.com/snap/snap.js'
+      : 'https://app.sandbox.midtrans.com/snap/snap.js';
+
+    const existingScript = document.querySelector(`script[src="${snapUrl}"]`);
+    if (existingScript) {
+      existingScript.onload = () => resolve(window.snap);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = snapUrl;
+    script.setAttribute('data-client-key', clientKey);
+    script.async = true;
+    script.onload = () => resolve(window.snap);
+    script.onerror = () => reject(new Error('Gagal memuat script Midtrans Snap'));
+    document.body.appendChild(script);
+  });
+};
+
 export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = false }) {
   const [now, setNow] = useState(Date.now());
   const [proof, setProof] = useState(null);
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [payingMidtrans, setPayingMidtrans] = useState(false);
   const [copyMessage, setCopyMessage] = useState('');
   const [accountCopyMessage, setAccountCopyMessage] = useState('');
   const [proofModalOpen, setProofModalOpen] = useState(false);
@@ -44,10 +71,19 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
   const hasProof = Boolean(order?.payment_proof_url || order?.payment_submitted_at);
   const isPaid = order?.payment_status === 'paid';
   const isCancelled = order?.status === 'cancelled';
+  const isMidtrans = method?.type === 'midtrans' || method?.method_key === 'midtrans';
 
   const instructionLines = useMemo(() => {
     const raw = String(method?.instructions || '').trim();
     if (!raw) {
+      if (isMidtrans) {
+        return [
+          'Klik tombol Bayar Sekarang via Midtrans di bawah.',
+          'Pilih metode pembayaran favorit Anda (QRIS, GoPay, ShopeePay, Virtual Account, Kartu Kredit).',
+          'Selesaikan pembayaran pada aplikasi Anda.',
+          'Status pesanan akan otomatis terverifikasi dan langsung diproses dapur.',
+        ];
+      }
       if (method?.type === 'transfer') {
         return [
           'Salin nomor rekening dan nominal agar tidak salah transfer.',
@@ -62,7 +98,7 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
       ];
     }
     return raw.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  }, [method?.instructions]);
+  }, [method?.instructions, isMidtrans]);
 
   useEffect(() => {
     if (!dueAt || hasProof || isPaid || isCancelled) return undefined;
@@ -71,6 +107,62 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
   }, [dueAt, hasProof, isPaid, isCancelled]);
 
   if (!method) return null;
+
+  const handlePayWithMidtrans = async () => {
+    setPayingMidtrans(true);
+    try {
+      const res = await createMidtransSnapToken(order.order_code);
+      const snapData = res.data?.data || res.data;
+      if (!snapData?.token) {
+        throw new Error('Snap token tidak berhasil dibuat oleh server.');
+      }
+
+      await loadSnapScript(snapData.client_key, snapData.environment);
+
+      window.snap.pay(snapData.token, {
+        onSuccess: async () => {
+          try {
+            const updated = await getCustomerOrder(order.order_code);
+            onOrderUpdate?.(updated.data?.data || updated.data);
+          } catch (_) {}
+          setMessageModal({
+            title: 'Pembayaran Berhasil! 🎉',
+            message: 'Pembayaran Anda telah diverifikasi otomatis oleh Midtrans. Pesanan sedang disiapkan di dapur.',
+            tone: 'success',
+          });
+        },
+        onPending: async () => {
+          try {
+            const updated = await getCustomerOrder(order.order_code);
+            onOrderUpdate?.(updated.data?.data || updated.data);
+          } catch (_) {}
+          setMessageModal({
+            title: 'Menunggu Pembayaran',
+            message: 'Silakan selesaikan pembayaran sesuai instruksi pada aplikasi e-wallet / m-banking Anda.',
+            tone: 'warning',
+          });
+        },
+        onError: () => {
+          setMessageModal({
+            title: 'Pembayaran Gagal',
+            message: 'Transaksi tidak berhasil diproses. Silakan coba kembali atau gunakan metode transfer manual.',
+            tone: 'danger',
+          });
+        },
+        onClose: () => {
+          // User closed popup without completing
+        },
+      });
+    } catch (err) {
+      setMessageModal({
+        title: 'Gagal Membuka Jendela Bayar',
+        message: err.response?.data?.message || err.message || 'Pembayaran online belum dapat diproses saat ini.',
+        tone: 'danger',
+      });
+    } finally {
+      setPayingMidtrans(false);
+    }
+  };
 
   const copyAmount = async () => {
     try {
@@ -110,7 +202,7 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
       return;
     }
 
-    const fileName = `qris-${order?.order_code || method.method_key || 'sultan-kebab'}.png`;
+    const fileName = `qris-${order?.order_code || method.method_key || 'santapos'}.png`;
     try {
       const response = await fetch(qrUrl, { mode: 'cors' });
       if (!response.ok) throw new Error('download-failed');
@@ -209,7 +301,36 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
         </div>
       </div>
 
-      {method.type === 'qris' && (
+      {/* MIDTRANS INSTANT ACTION BANNER */}
+      {!isPaid && !isCancelled && (
+        <div className="mt-4 rounded-2xl border border-orange-500/30 bg-gradient-to-r from-orange-500/20 via-orange-500/10 to-transparent p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <span className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-orange-400">
+                <span>⚡</span>
+                <span>Pembayaran Otomatis Midtrans</span>
+              </span>
+              <p className="mt-1 text-sm text-slate-200">
+                Bayar via QRIS Dinamis, GoPay, ShopeePay, Virtual Account, atau Kartu.
+              </p>
+              <p className="text-xs text-slate-400">
+                Otomatis lunas seketika tanpa perlu upload struk transfer!
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handlePayWithMidtrans}
+              disabled={payingMidtrans}
+              className="rounded-xl bg-orange-500 px-5 py-3 text-sm font-black text-white hover:bg-orange-400 shadow-lg shadow-orange-500/30 transition shrink-0 disabled:opacity-50"
+            >
+              {payingMidtrans ? 'Menyiapkan...' : '⚡ Bayar Sekarang via Snap'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Manual QRIS Image Download */}
+      {method.type === 'qris' && !isMidtrans && (
         <button
           type="button"
           onClick={downloadQrImage}
@@ -219,11 +340,12 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
         </button>
       )}
 
+      {/* Steps */}
       <div className="mt-4 grid gap-2 rounded-2xl border border-[#C9A84C]/15 bg-[#0D0A06]/45 p-3 sm:grid-cols-3">
         {[
-          method.type === 'qris' ? '1. Scan QRIS toko' : '1. Salin rekening',
-          method.type === 'qris' ? '2. Bayar sesuai nominal' : '2. Transfer sesuai nominal',
-          '3. Upload bukti & tunggu verifikasi',
+          isMidtrans ? '1. Klik Bayar via Snap' : method.type === 'qris' ? '1. Scan QRIS toko' : '1. Salin rekening',
+          isMidtrans ? '2. Bayar QRIS/E-Wallet' : method.type === 'qris' ? '2. Bayar nominal' : '2. Transfer nominal',
+          isMidtrans ? '3. Lunas otomatis' : '3. Upload bukti transfer',
         ].map((step) => (
           <div key={step} className="rounded-xl bg-[#241C0E] px-3 py-2 text-xs font-bold text-[#F5EDD8]/80">
             {step}
@@ -231,8 +353,8 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
         ))}
       </div>
 
-      <div className={`mt-4 grid min-w-0 gap-4 ${method.type === 'qris' && qrUrl ? 'xl:grid-cols-[minmax(180px,240px)_1fr]' : ''}`}>
-        {method.type === 'qris' && qrUrl && (
+      <div className={`mt-4 grid min-w-0 gap-4 ${method.type === 'qris' && qrUrl && !isMidtrans ? 'xl:grid-cols-[minmax(180px,240px)_1fr]' : ''}`}>
+        {method.type === 'qris' && qrUrl && !isMidtrans && (
           <div className="min-w-0">
             <img
               src={qrUrl}
@@ -249,7 +371,7 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
           </div>
         )}
         <div className="min-w-0 space-y-3">
-          {method.account_number && (
+          {method.account_number && !isMidtrans && (
             <div className="flex flex-col gap-2 rounded-2xl bg-[#0D0A06]/55 p-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <p className="text-xs text-[#EDE0C4]/65">Nomor rekening / akun tujuan</p>
@@ -280,8 +402,8 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
           {order.cancel_reason && <p className="mt-1 text-red-100/75">{order.cancel_reason}</p>}
         </div>
       ) : isPaid ? (
-        <div className="mt-4 rounded-2xl border border-emerald-300/25 bg-emerald-500/15 p-3 text-sm text-emerald-100">
-          Pembayaran sudah dikonfirmasi kasir.
+        <div className="mt-4 rounded-2xl border border-emerald-300/25 bg-emerald-500/15 p-3 text-sm text-emerald-100 font-bold">
+          ✓ Pembayaran sudah lunas dan terverifikasi. Pesanan sedang diproses di dapur!
         </div>
       ) : hasProof ? (
         <div className="mt-4 rounded-2xl border border-emerald-300/25 bg-emerald-500/15 p-3 text-sm text-emerald-100">
@@ -296,12 +418,12 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
         <div className="mt-4 rounded-2xl border border-red-300/25 bg-red-500/15 p-3 text-sm text-red-100">
           Waktu pembayaran sudah habis. Silakan hubungi kasir untuk membuat pembayaran ulang.
         </div>
-      ) : (
+      ) : !isMidtrans ? (
         <div className="mt-4 space-y-3 rounded-2xl bg-[#0D0A06]/45 p-3">
           <div className="rounded-2xl border border-sky-200/15 bg-sky-300/10 p-3 text-sm leading-6 text-sky-50/85">
             {isTransfer
               ? 'Transfer cukup salin rekening dan nominal, lalu upload struk pembayaran agar admin bisa memverifikasi.'
-              : 'Jika pembayaran QRIS sudah berhasil, klik tombol konfirmasi dengan melampirkan bukti pembayaran.'}
+              : 'Jika pembayaran QRIS manual sudah berhasil, klik tombol konfirmasi dengan melampirkan bukti pembayaran.'}
           </div>
           <input
             type="file"
@@ -324,7 +446,8 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
             {submitting ? 'Mengirim bukti...' : method.type === 'qris' ? 'Saya Sudah Bayar & Kirim Bukti' : 'Konfirmasi & Kirim Bukti Transfer'}
           </button>
         </div>
-      )}
+      ) : null}
+
       {messageModal && (
         <div className="fixed inset-0 z-[95] grid place-items-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
           <div className={`w-full max-w-sm rounded-3xl border p-5 shadow-2xl shadow-black/50 ${
@@ -346,6 +469,7 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
           </div>
         </div>
       )}
+
       {proofModalOpen && (
         <div className="fixed inset-0 z-[90] grid place-items-center bg-black/75 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
           <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-sky-200/20 bg-[#101820] p-4 shadow-2xl shadow-black/50">
