@@ -19,6 +19,7 @@ import {
 const menus = [
   { href: '/pos',                       label: 'Kasir',        roles: ['admin','kasir'], anim: 'pop'    },
   { href: '/admin/customer-orders',     label: 'Pesanan Meja', roles: ['admin','kasir'], anim: 'pulse'  },
+  { href: '/kitchen',                   label: 'Layar Dapur',  roles: ['admin','kasir','kitchen'], anim: 'bounce' },
   { href: '/pos/history',               label: 'Riwayat POS',   roles: ['admin'],        anim: 'slide'  },
   { href: '/dashboard',                 label: 'Dashboard',    roles: ['admin'],          anim: 'bounce' },
   { href: '/discounts',                 label: 'Vocher & Diskon', roles: ['admin'],       anim: 'pop'    },
@@ -64,6 +65,16 @@ function TableOrderIcon({ active }) {
       <path d="M7 10v9M17 10v9M5 19h14"/>
       <path d="M9 14h6"/>
       <path d="M8 6.5h.01M12 6.5h.01M16 6.5h.01"/>
+    </svg>
+  );
+}
+function KitchenIcon({ active }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke={active ? '#fff' : 'currentColor'} strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/>
+      <line x1="6" y1="17" x2="18" y2="17"/>
     </svg>
   );
 }
@@ -280,6 +291,7 @@ function SuperadminIcon({ active }) {
 const iconMap = {
   '/pos':                         PosIcon,
   '/admin/customer-orders':       TableOrderIcon,
+  '/kitchen':                     KitchenIcon,
   '/pos/history':                 HistoryIcon,
   '/dashboard':                   DashIcon,
   '/discounts':                   DiscountIcon,
@@ -571,6 +583,7 @@ export default function Sidebar() {
   const [branches, setBranches] = useState([]);
   const [notificationCounts, setNotificationCounts] = useState({
     '/admin/customer-orders': 0,
+    '/kitchen': 0,
     '/stock': 0,
   });
 
@@ -616,6 +629,7 @@ export default function Sidebar() {
         const pendingStockRequests = Array.isArray(stockRes.data) ? stockRes.data : [];
         setNotificationCounts({
           '/admin/customer-orders': orders.filter((order) => activeOrderStatuses.includes(order.status)).length,
+          '/kitchen': orders.filter((order) => ['accepted', 'preparing'].includes(order.status)).length,
           '/stock': pendingStockRequests.length,
         });
       } catch (_) {
