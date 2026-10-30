@@ -136,23 +136,27 @@ exports.login = async (req, res) => {
     );
 
     // ── Catat kehadiran ──
-    await ensureAttendanceAutomationSchema();
-    const today = new Date().toISOString().split('T')[0];
-    const [existing] = await db.query(
-      "SELECT id FROM attendance WHERE user_id = ? AND date = ? AND source = 'user'",
-      [user.id, today]
-    );
-    if (!existing.length) {
-      await db.query(
-        "INSERT INTO attendance (user_id, date, login_at, source) VALUES (?, ?, NOW(), 'user')",
+    try {
+      await ensureAttendanceAutomationSchema();
+      const today = new Date().toISOString().split('T')[0];
+      const [existing] = await db.query(
+        "SELECT id FROM attendance WHERE user_id = ? AND date = ? AND source = 'user'",
         [user.id, today]
       );
-    } else {
-      // Update login_at jika login ulang
-      await db.query(
-        "UPDATE attendance SET login_at = NOW(), logout_at = NULL WHERE user_id = ? AND date = ? AND source = 'user'",
-        [user.id, today]
-      );
+      if (!existing.length) {
+        await db.query(
+          "INSERT INTO attendance (tenant_id, user_id, date, login_at, source) VALUES (?, ?, ?, NOW(), 'user')",
+          [tenantId, user.id, today]
+        );
+      } else {
+        // Update login_at jika login ulang
+        await db.query(
+          "UPDATE attendance SET login_at = NOW(), logout_at = NULL, tenant_id = COALESCE(tenant_id, ?) WHERE user_id = ? AND date = ? AND source = 'user'",
+          [tenantId, user.id, today]
+        );
+      }
+    } catch (attendanceErr) {
+      console.warn('⚠️ Peringatan pencatatan absensi:', attendanceErr.message);
     }
 
     res.json({

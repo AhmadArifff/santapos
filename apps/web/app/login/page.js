@@ -201,7 +201,12 @@ export default function LoginPage() {
       setTimeout(() => {
         setTransition(true);
         setTimeout(() => {
-          router.replace(res.data.user.role === 'admin' ? '/dashboard' : '/pos');
+          const role = res.data.user.role;
+          let targetPath = '/pos';
+          if (role === 'superadmin') targetPath = '/superadmin';
+          else if (role === 'admin') targetPath = '/dashboard';
+          else if (role === 'kitchen') targetPath = '/kitchen';
+          router.replace(targetPath);
         }, 600);
       }, 700);
     } catch (err) {

@@ -62,7 +62,7 @@ const createDailyAttendanceKeepalive = async (date = new Date()) => {
   const automationKey = buildAutomationKey(dateKey);
 
   const [admins] = await db.query(
-    "SELECT id, name FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1"
+    "SELECT id, name, tenant_id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1"
   );
   if (!admins.length) {
     return { created: false, reason: 'admin_not_found', date: dateKey };
@@ -77,9 +77,9 @@ const createDailyAttendanceKeepalive = async (date = new Date()) => {
   }
 
   await db.query(
-    `INSERT INTO attendance (user_id, date, login_at, logout_at, source, automation_key)
-     VALUES (?, ?, NOW(), NOW(), ?, ?)`,
-    [admins[0].id, dateKey, KEEPALIVE_SOURCE, automationKey]
+    `INSERT INTO attendance (tenant_id, user_id, date, login_at, logout_at, source, automation_key)
+     VALUES (?, ?, ?, NOW(), NOW(), ?, ?)`,
+    [admins[0].tenant_id || 1, admins[0].id, dateKey, KEEPALIVE_SOURCE, automationKey]
   );
 
   return {
