@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useWebsiteSettings } from '@/store/settingsStore';
+import PresenceHeartbeat from './PresenceHeartbeat';
 
 export default function SettingsProvider({ children }) {
   const loadSettings = useWebsiteSettings((state) => state.loadSettings);
@@ -10,5 +11,10 @@ export default function SettingsProvider({ children }) {
     loadSettings().catch(() => {});
   }, [loadSettings]);
 
-  return <>{children}</>;
+  return (
+    <>
+      <PresenceHeartbeat />
+      {children}
+    </>
+  );
 }

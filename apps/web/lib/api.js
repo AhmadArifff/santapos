@@ -6,6 +6,7 @@ export const getMe        = ()           => api.get('/auth/me');
 export const registerUser = (data)       => api.post('/auth/register', data);
 export const getActiveUsers    = ()       => api.get('/auth/active');
 export const logoutUser        = ()       => api.post('/auth/logout', null, { feedback: false });
+export const sendPresenceHeartbeat = ()   => api.post('/auth/heartbeat', null, { feedback: false });
 export const getUsers = (params) => api.get('/auth/users', { params });
 export const getCashierSchedules = (params) => api.get('/auth/schedules', { params });
 export const createCashierSchedule = (data) => api.post('/auth/schedules', data);

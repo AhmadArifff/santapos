@@ -159,6 +159,8 @@ exports.login = async (req, res) => {
       console.warn('⚠️ Peringatan pencatatan absensi:', attendanceErr.message);
     }
 
+    await db.query('UPDATE users SET last_seen_at = NOW() WHERE id = ?', [user.id]).catch(() => {});
+
     res.json({
       token,
       user: {
@@ -185,6 +187,7 @@ exports.logout = async (req, res) => {
   try {
     await ensureAttendanceAutomationSchema();
     const today = new Date().toISOString().split('T')[0];
+    await db.query("UPDATE users SET last_seen_at = NOW() - INTERVAL '10 minute' WHERE id = ?", [req.user.id]).catch(() => {});
     await db.query(
       "UPDATE attendance SET logout_at = NOW() WHERE user_id = ? AND date = ? AND logout_at IS NULL AND source = 'user'",
       [req.user.id, today]
@@ -199,16 +202,64 @@ exports.getActiveUsers = async (req, res) => {
   try {
     await ensureAttendanceAutomationSchema();
     const today = new Date().toISOString().split('T')[0];
-    // User aktif = login hari ini & belum logout
+    const tenantId = req.user?.tenant_id ? Number(req.user.tenant_id) : 1;
+    const isSuper = req.user?.role === 'superadmin';
+
+    // Real-Time Online Filter:
+    // 1. Hadir hari ini & belum logout (logout_at IS NULL)
+    // 2. Terdeteksi aktif dalam 3 menit terakhir (last_seen_at >= NOW() - 3m) atau user yang sedang request saat ini
     const [rows] = await db.query(`
-      SELECT u.id, u.name, u.role, a.login_at,
+      SELECT u.id, u.name, u.role, a.login_at, u.last_seen_at,
              TIMESTAMPDIFF(MINUTE, a.login_at, NOW()) AS active_minutes
       FROM attendance a
       JOIN users u ON a.user_id = u.id
-      WHERE a.date = ? AND a.logout_at IS NULL AND a.source = 'user'
+      WHERE a.date = ?
+        AND a.logout_at IS NULL
+        AND a.source = 'user'
+        AND (? = true OR a.tenant_id = ? OR a.tenant_id IS NULL)
+        AND (u.last_seen_at >= (NOW() - INTERVAL '3 minute') OR u.id = ?)
       ORDER BY a.login_at ASC
-    `, [today]);
+    `, [today, isSuper, tenantId, req.user?.id || 0]);
     res.json(rows);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.heartbeat = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (userId) {
+      await db.query('UPDATE users SET last_seen_at = NOW() WHERE id = ?', [userId]);
+    }
+    res.json({ ok: true, timestamp: Date.now() });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.leave = async (req, res) => {
+  try {
+    let userId = req.user?.id;
+    if (!userId) {
+      const token = req.query?.token || req.body?.token;
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET);
+          userId = decoded.id;
+        } catch (_) {}
+      }
+    }
+
+    if (userId) {
+      const today = new Date().toISOString().split('T')[0];
+      await db.query("UPDATE users SET last_seen_at = NOW() - INTERVAL '10 minute' WHERE id = ?", [userId]);
+      await db.query(
+        "UPDATE attendance SET logout_at = NOW() WHERE user_id = ? AND date = ? AND logout_at IS NULL AND source = 'user'",
+        [userId, today]
+      );
+    }
+    res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

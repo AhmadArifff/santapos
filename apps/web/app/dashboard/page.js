@@ -806,6 +806,16 @@ export default function DashboardPage() {
       });
   }, [year, currentMonth]);
 
+  // Auto-refresh daftar pengguna aktif secara real-time setiap 30 detik
+  useEffect(() => {
+    const timer = setInterval(() => {
+      getActiveUsers()
+        .then((res) => setActiveUsers(res.data || []))
+        .catch(() => {});
+    }, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
   // ── Transform data untuk chart ────────────────────────────────
 
 // Produk unik dari data bulanan

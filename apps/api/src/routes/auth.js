@@ -6,6 +6,8 @@ const {
   getAllUsers,
   getActiveUsers,
   logout,
+  heartbeat,
+  leave,
   getCashierSchedules,
   createCashierSchedule,
   updateCashierSchedule,
@@ -18,6 +20,8 @@ const { authenticate, isAdmin } = require('../middleware/auth');
 router.post('/login',    login);
 router.post('/onboard',  onboardTenant);
 router.post('/logout',   authenticate, logout);
+router.post('/heartbeat', authenticate, heartbeat);
+router.all('/leave', leave);
 router.get('/me',        authenticate, getMe);
 router.post('/register', authenticate, isAdmin, register);
 router.get('/users',     authenticate, isAdmin, getAllUsers);
