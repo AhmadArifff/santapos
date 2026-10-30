@@ -77,7 +77,13 @@ echo [OK] @santapos/shared siap digunakan!
 echo.
 
 :show_menu
-:: 6. Menu Interaktif dengan Auto-Start 5 Detik
+set USER_CHOICE=
+:: 6. Menu Interaktif dengan Auto-Start 10 Detik
+echo =====================================================================
+echo           SANTAPOS - Multi-Tenant Restaurant POS and SaaS
+echo                     All-in-One Unified Launcher
+echo =====================================================================
+echo.
 echo =====================================================================
 echo   PILIH MODE MENJALANKAN APLIKASI:
 echo =====================================================================
@@ -96,11 +102,12 @@ echo   - Superadmin Portal      : http://localhost:3000/superadmin
 echo.
 
 if not "%1"=="" (
+    set CLI_MODE=1
     set USER_CHOICE=%1
     goto process_choice
 )
 
-choice /C 1234560 /D 1 /T 5 /M "Pilih opsi [1-6] (Otomatis menjalankan Opsi 1 dalam 5 detik): "
+choice /C 1234560 /D 1 /T 10 /M "Pilih opsi [1-6] (Otomatis menjalankan Opsi 1 dalam 10 detik): "
 set USER_CHOICE=%ERRORLEVEL%
 
 :process_choice
@@ -121,7 +128,7 @@ echo   Tekan Ctrl + C untuk menghentikan server kapan saja.
 echo =====================================================================
 echo.
 call pnpm dev
-goto done
+goto prompt_next_action
 
 :run_web
 echo.
@@ -131,7 +138,7 @@ echo   Tekan Ctrl + C untuk menghentikan server.
 echo =====================================================================
 echo.
 call pnpm dev:web
-goto done
+goto prompt_next_action
 
 :run_api
 echo.
@@ -141,7 +148,7 @@ echo   Tekan Ctrl + C untuk menghentikan server.
 echo =====================================================================
 echo.
 call pnpm dev:api
-goto done
+goto prompt_next_action
 
 :run_setup
 echo.
@@ -151,10 +158,7 @@ echo =====================================================================
 echo.
 call pnpm install
 call pnpm build
-echo.
-echo Setup ulang selesai! Silakan tekan tombol apa saja untuk kembali.
-pause
-goto done
+goto prompt_next_action
 
 :run_build
 echo.
@@ -163,9 +167,7 @@ echo   Menjalankan Verifikasi Production Build...
 echo =====================================================================
 echo.
 call pnpm build
-echo.
-pause
-goto done
+goto prompt_next_action
 
 :run_db_setup
 echo.
@@ -179,13 +181,35 @@ echo =====================================================================
 echo   Database dan Storage Supabase siap digunakan!
 echo =====================================================================
 echo.
-if "%1"=="" pause
-goto done
+goto prompt_next_action
+
+:prompt_next_action
+if not "%CLI_MODE%"=="" exit /b 0
+
+echo.
+echo =====================================================================
+echo   PILIH TINDAKAN SELANJUTNYA:
+echo =====================================================================
+echo   [1] Jalankan Semua Aplikasi (Frontend + Backend)  [DEFAULT]
+echo   [2] Kembali ke Menu Utama
+echo   [0] Keluar dari Launcher
+echo =====================================================================
+echo.
+
+choice /C 120 /D 1 /T 10 /M "Pilih opsi [1, 2, 0] (Otomatis opsi 1 dalam 10 detik): "
+set NEXT_CHOICE=%ERRORLEVEL%
+
+if "%NEXT_CHOICE%"=="1" goto run_all
+if "%NEXT_CHOICE%"=="2" goto back_to_menu
+if "%NEXT_CHOICE%"=="3" goto exit_launcher
+if "%NEXT_CHOICE%"=="0" goto exit_launcher
+goto exit_launcher
+
+:back_to_menu
+cls
+goto show_menu
 
 :exit_launcher
-echo Keluar.
-exit /b 0
-
-:done
-if "%1"=="" pause
+echo.
+echo Keluar dari launcher. Sampai jumpa!
 exit /b 0
