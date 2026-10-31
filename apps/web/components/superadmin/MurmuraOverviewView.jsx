@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function useCountUp(target, duration = 520, triggerKey = 0) {
   const [value, setValue] = useState(0);
@@ -351,7 +352,12 @@ export default function MurmuraOverviewView({
           </div>
 
           {/* Inline KPI 1: 976.3K +12.1% in 30 days */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <motion.div
+            whileHover={{ y: -3, scale: 1.02 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            className="murmura-card-vibrate"
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'default' }}
+          >
             <div
               style={{
                 width: '38px',
@@ -405,10 +411,15 @@ export default function MurmuraOverviewView({
                 channels
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Inline KPI 2: 10.3% Engagement / Conversion rate */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <motion.div
+            whileHover={{ y: -3, scale: 1.02 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            className="murmura-card-vibrate"
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'default' }}
+          >
             <div
               style={{
                 width: '38px',
@@ -444,10 +455,15 @@ export default function MurmuraOverviewView({
                 days
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Inline KPI 3: 19 Posts / Deployments going out this week */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <motion.div
+            whileHover={{ y: -3, scale: 1.02 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            className="murmura-card-vibrate"
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'default' }}
+          >
             <div
               style={{
                 width: '38px',
@@ -484,11 +500,13 @@ export default function MurmuraOverviewView({
                 Posts going out this week
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Right Primary Dark Pill CTA: "✎ New post / deal" */}
-        <button
+        <motion.button
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.96 }}
           onClick={onOpenNewDeal}
           style={{
             display: 'inline-flex',
@@ -510,7 +528,7 @@ export default function MurmuraOverviewView({
         >
           <span>✎</span>
           <span>New deal</span>
-        </button>
+        </motion.button>
       </div>
 
       {/* =====================================================================
@@ -603,7 +621,9 @@ export default function MurmuraOverviewView({
           </div>
 
           {/* HERO DARK CHARCOAL DEPLOYMENT CARD (Exact Match to Screenshot 1) */}
-          <div
+          <motion.div
+            whileHover={{ y: -4 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 25 }}
             className="murmura-card-vibrate"
             style={{
               background: '#181C23',
@@ -777,8 +797,9 @@ export default function MurmuraOverviewView({
 
                 {/* "goes out in" + Countdown */}
                 <div style={{ marginTop: '14px' }}>
-                  <div style={{ fontSize: '11.5px', color: '#94A3B8', marginBottom: '2px' }}>
-                    goes out in
+                  <div style={{ fontSize: '11.5px', color: '#94A3B8', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span className="murmura-radar-pulse" style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#F2B249', display: 'inline-block' }} />
+                    <span>goes out in</span>
                   </div>
                   <div
                     style={{
@@ -879,7 +900,9 @@ export default function MurmuraOverviewView({
                   </span>
                 </div>
 
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.15, x: 3 }}
+                  whileTap={{ scale: 0.9 }}
                   onClick={() => {
                     setHeroItem((prev) => ({ ...prev, status: 'Approved · Ready' }));
                     if (onTriggerToast) {
@@ -901,10 +924,10 @@ export default function MurmuraOverviewView({
                   }}
                 >
                   →
-                </button>
+                </motion.button>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* COMING UP SECTION (2x3 Grid matching Screenshot 1) */}
           <div style={{ marginTop: '20px' }}>
@@ -928,24 +951,29 @@ export default function MurmuraOverviewView({
                 gap: '12px',
               }}
             >
-              {filteredComingUp.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => handlePromoteComingUpToHero(item)}
-                  title="Click to inspect in Up Next hero viewer"
-                  className="murmura-card-vibrate"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '10px 12px',
-                    borderRadius: '14px',
-                    background: subtleCardBg,
-                    border: `1px solid ${surfaceBorder}`,
-                    cursor: 'pointer',
-                    transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                  }}
-                >
+              {filteredComingUp.map((item) => {
+                const isHero = heroItem.brand.toLowerCase().includes(item.subtitle.split('·')[0].trim().toLowerCase());
+                return (
+                  <motion.div
+                    key={item.id}
+                    whileHover={{ scale: 1.025, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    onClick={() => handlePromoteComingUpToHero(item)}
+                    title="Click to inspect in Up Next hero viewer"
+                    className="murmura-card-vibrate"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '10px 12px',
+                      borderRadius: '14px',
+                      background: subtleCardBg,
+                      border: isHero ? '1px solid #0E7C5B' : `1px solid ${surfaceBorder}`,
+                      cursor: 'pointer',
+                      boxShadow: isHero ? '0 0 0 1px #0E7C5B' : 'none',
+                    }}
+                  >
                   {/* Thumbnail */}
                   <div
                     style={{
@@ -1040,8 +1068,9 @@ export default function MurmuraOverviewView({
                       </span>
                     </div>
                   </div>
-                </div>
-              ))}
+                </motion.div>
+              );
+            })}
             </div>
           </div>
         </div>
@@ -1081,7 +1110,11 @@ export default function MurmuraOverviewView({
             >
               Needs you
             </h2>
-            <span
+            <motion.span
+              key={pendingNeedsYou.length}
+              initial={{ scale: 1.35 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 22 }}
               style={{
                 width: '22px',
                 height: '22px',
@@ -1095,184 +1128,227 @@ export default function MurmuraOverviewView({
               }}
             >
               {pendingNeedsYou.length}
-            </span>
+            </motion.span>
           </div>
 
-          {/* Stack of Approval & Error Retry Cards */}
-          {visibleNeedsYou.map((item) => {
-            if (item.type === 'alert') {
-              return (
-                <div
-                  key={item.id}
-                  className="murmura-card-vibrate"
-                  style={{
-                    padding: '14px',
-                    borderRadius: '16px',
-                    background: isLight ? '#FDF2F0' : 'rgba(200, 75, 49, 0.14)',
-                    border: `1px solid ${isLight ? '#F5D0C8' : 'rgba(200, 75, 49, 0.35)'}`,
-                    display: 'flex',
-                     gap: '12px',
-                    alignItems: 'flex-start',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '38px',
-                      height: '38px',
-                      borderRadius: '10px',
-                      background: '#C84B31',
-                      color: '#FFFFFF',
-                      display: 'grid',
-                      placeItems: 'center',
-                      fontSize: '16px',
-                      fontWeight: 800,
-                      flexShrink: 0,
-                    }}
-                  >
-                    ▲
-                  </div>
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: '13px',
-                        fontWeight: 700,
-                        color: isLight ? '#7F1D1D' : '#FCA5A5',
-                      }}
-                    >
-                      {item.title}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: '11.5px',
-                        color: isLight ? '#991B1B' : '#FECACA',
-                        marginTop: '3px',
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      {item.meta}
-                    </div>
-
-                    <div style={{ marginTop: '10px' }}>
-                      <button
-                        onClick={() => handleRetryWebhook(item)}
-                        disabled={retryingId === item.id}
-                        style={{
-                          padding: '6px 14px',
-                          borderRadius: '999px',
-                          border: 'none',
-                          background: '#181C23',
-                          color: '#FFFFFF',
-                          fontSize: '11.5px',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}
-                      >
-                        <span>↻</span>
-                        <span>{retryingId === item.id ? 'Reconnecting...' : 'Retry'}</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            }
-
-            return (
-              <div
-                key={item.id}
-                className="murmura-card-vibrate"
+          {/* Stack of Approval & Error Retry Cards with AnimatePresence */}
+          <AnimatePresence mode="popLayout">
+            {visibleNeedsYou.length === 0 ? (
+              <motion.div
+                key="empty-needs-you"
+                initial={{ opacity: 0, scale: 0.94 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.94 }}
                 style={{
-                  padding: '14px',
+                  padding: '28px 16px',
                   borderRadius: '16px',
-                  background: subtleCardBg,
-                  border: `1px solid ${surfaceBorder}`,
-                  display: 'flex',
-                  gap: '12px',
-                  alignItems: 'flex-start',
+                  background: isLight ? '#F0FDF4' : '#052E16',
+                  border: '1px dashed #86EFAC',
+                  textAlign: 'center',
                 }}
               >
-                <div
-                  style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '10px',
-                    background: item.thumbGradient,
-                    display: 'grid',
-                    placeItems: 'center',
-                    fontSize: '18px',
-                    flexShrink: 0,
-                  }}
-                >
-                  {item.thumbEmoji}
+                <div style={{ fontSize: '20px', marginBottom: '6px' }}>✓</div>
+                <div style={{ fontSize: '14px', fontWeight: 700, color: '#166534' }}>
+                  Semua Otorisasi Selesai Ditangani!
                 </div>
-
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      color: textPrimary,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {item.title}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: '11.5px',
-                      color: textSecondary,
-                      marginTop: '2px',
-                    }}
-                  >
-                    {item.meta}
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}>
-                    <button
-                      onClick={() => handleApproveItem(item)}
+                <div style={{ fontSize: '11.5px', color: '#15803D', marginTop: '2px' }}>
+                  Tidak ada permohonan atau alert yang tertunda di antrean Superadmin.
+                </div>
+              </motion.div>
+            ) : (
+              visibleNeedsYou.map((item) => {
+                if (item.type === 'alert') {
+                  return (
+                    <motion.div
+                      layout
+                      key={item.id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.92, x: 20 }}
+                      transition={{ duration: 0.22 }}
+                      className="murmura-card-vibrate"
                       style={{
-                        padding: '6px 14px',
-                        borderRadius: '999px',
-                        border: 'none',
-                        background: '#0E7C5B',
-                        color: '#FFFFFF',
-                        fontSize: '11.5px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '5px',
+                        padding: '14px',
+                        borderRadius: '16px',
+                        background: isLight ? '#FDF2F0' : 'rgba(200, 75, 49, 0.14)',
+                        border: `1px solid ${isLight ? '#F5D0C8' : 'rgba(200, 75, 49, 0.35)'}`,
+                        display: 'flex',
+                        gap: '12px',
+                        alignItems: 'flex-start',
                       }}
                     >
-                      <span>✓</span>
-                      <span>Approve</span>
-                    </button>
+                      <div
+                        style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '10px',
+                          background: '#C84B31',
+                          color: '#FFFFFF',
+                          display: 'grid',
+                          placeItems: 'center',
+                          fontSize: '16px',
+                          fontWeight: 800,
+                          flexShrink: 0,
+                        }}
+                      >
+                        ▲
+                      </div>
 
-                    <button
-                      onClick={() => setReviewModalItem(item)}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            color: isLight ? '#7F1D1D' : '#FCA5A5',
+                          }}
+                        >
+                          {item.title}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: '11.5px',
+                            color: isLight ? '#991B1B' : '#FECACA',
+                            marginTop: '3px',
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {item.meta}
+                        </div>
+
+                        <div style={{ marginTop: '10px' }}>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handleRetryWebhook(item)}
+                            disabled={retryingId === item.id}
+                            style={{
+                              padding: '6px 14px',
+                              borderRadius: '999px',
+                              border: 'none',
+                              background: '#181C23',
+                              color: '#FFFFFF',
+                              fontSize: '11.5px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                            }}
+                          >
+                            <span>↻</span>
+                            <span>{retryingId === item.id ? 'Reconnecting...' : 'Retry'}</span>
+                          </motion.button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                }
+
+                return (
+                  <motion.div
+                    layout
+                    key={item.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.92, x: 20 }}
+                    transition={{ duration: 0.22 }}
+                    className="murmura-card-vibrate"
+                    style={{
+                      padding: '14px',
+                      borderRadius: '16px',
+                      background: subtleCardBg,
+                      border: `1px solid ${surfaceBorder}`,
+                      display: 'flex',
+                      gap: '12px',
+                      alignItems: 'flex-start',
+                    }}
+                  >
+                    <div
                       style={{
-                        padding: '6px 14px',
-                        borderRadius: '999px',
-                        border: `1px solid ${surfaceBorder}`,
-                        background: isLight ? '#FFFFFF' : '#1E293B',
-                        color: textPrimary,
-                        fontSize: '11.5px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '10px',
+                        background: item.thumbGradient,
+                        display: 'grid',
+                        placeItems: 'center',
+                        fontSize: '18px',
+                        flexShrink: 0,
                       }}
                     >
-                      Review
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                      {item.thumbEmoji}
+                    </div>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          color: textPrimary,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {item.title}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '11.5px',
+                          color: textSecondary,
+                          marginTop: '2px',
+                        }}
+                      >
+                        {item.meta}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleApproveItem(item)}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '999px',
+                            border: 'none',
+                            background: '#0E7C5B',
+                            color: '#FFFFFF',
+                            fontSize: '11.5px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            boxShadow: '0 2px 8px rgba(14, 124, 91, 0.22)',
+                          }}
+                        >
+                          <span>✓</span>
+                          <span>Approve</span>
+                        </motion.button>
+
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setReviewModalItem(item)}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '999px',
+                            border: `1px solid ${surfaceBorder}`,
+                            background: isLight ? '#FFFFFF' : '#1E293B',
+                            color: textPrimary,
+                            fontSize: '11.5px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Review
+                        </motion.button>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })
+            )}
+          </AnimatePresence>
 
           {/* Show 2 more button (Exact Match to Screenshot 1) */}
           {(hiddenCount > 0 || showAllNeedsYou) && (
@@ -1304,33 +1380,41 @@ export default function MurmuraOverviewView({
       </div>
 
       {/* REVIEW MODAL WHEN CLICKING "Review" ON ANY NEEDS YOU CARD */}
-      {reviewModalItem && (
-        <div
-          onClick={() => setReviewModalItem(null)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 90,
-            background: 'rgba(15, 23, 42, 0.55)',
-            backdropFilter: 'blur(6px)',
-            display: 'grid',
-            placeItems: 'center',
-            padding: '20px',
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
+      <AnimatePresence>
+        {reviewModalItem && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setReviewModalItem(null)}
             style={{
-              width: '100%',
-              maxWidth: '480px',
-              background: surfaceBg,
-              color: textPrimary,
-              borderRadius: '20px',
-              padding: '24px',
-              border: `1px solid ${surfaceBorder}`,
-              boxShadow: '0 24px 48px rgba(0,0,0,0.3)',
+              position: 'fixed',
+              inset: 0,
+              zIndex: 90,
+              background: 'rgba(15, 23, 42, 0.55)',
+              backdropFilter: 'blur(6px)',
+              display: 'grid',
+              placeItems: 'center',
+              padding: '20px',
             }}
           >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 16 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: '100%',
+                maxWidth: '480px',
+                background: surfaceBg,
+                color: textPrimary,
+                borderRadius: '20px',
+                padding: '24px',
+                border: `1px solid ${surfaceBorder}`,
+                boxShadow: '0 24px 48px rgba(0,0,0,0.3)',
+              }}
+            >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
               <div
                 style={{
@@ -1401,9 +1485,10 @@ export default function MurmuraOverviewView({
                 ✓ Approve & Deploy Now
               </button>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
+    </AnimatePresence>
     </div>
   );
 }
