@@ -14,25 +14,87 @@ import {
   onboardTenant,
 } from '@/lib/api';
 import DatabaseSettingsPanel from '@/components/superadmin/DatabaseSettingsPanel';
-import TavolaFloorPlanView from '@/components/superadmin/TavolaFloorPlanView';
 import TavolaSalesReportsView from '@/components/superadmin/TavolaSalesReportsView';
+import MurmuraOverviewView from '@/components/superadmin/MurmuraOverviewView';
+import MurmuraCalendarView from '@/components/superadmin/MurmuraCalendarView';
 
-const NAV_TABS = [
+const MURMURA_NAV_TABS = [
   { id: 'overview', label: 'Overview' },
-  { id: 'orders', label: 'Orders' },
-  { id: 'floor', label: 'Floor' },
-  { id: 'reservations', label: 'Reservations' },
-  { id: 'menu', label: 'Menu' },
-  { id: 'inventory', label: 'Inventory' },
-  { id: 'staff', label: 'Staff' },
-  { id: 'reports', label: 'Reports' },
+  { id: 'orders', label: 'Compose · Deals' },
+  { id: 'calendar', label: 'Calendar' },
+  { id: 'inbox', label: 'Inbox', badge: 14, badgeBg: '#F2B249' },
+  { id: 'approvals', label: 'Approvals', badge: 5, badgeBg: '#F2B249' },
+  { id: 'reports', label: 'Analytics' },
+  { id: 'listening', label: 'Listening · DB' },
+];
+
+const INITIAL_INBOX_MESSAGES = [
+  {
+    id: 'inb-1',
+    brand: 'Ember & Oak',
+    badgeCode: 'EO',
+    badgeColor: '#D94E34',
+    sender: 'Rio Pratama (Owner)',
+    subject: 'Requesting approval for 14-table Kemang Flagship POS & Barista KDS rollout',
+    snippet:
+      'Halo tim Superadmin, kami sudah mengunggah denah 14 meja dan menu musim gugur. Mohon approval agar jadwal rilis besok pukul 09:00 AM berjalan otomatis.',
+    time: '4m ago',
+    channel: 'Enterprise Ticket',
+    unread: true,
+    plan: 'franchise',
+  },
+  {
+    id: 'inb-2',
+    brand: 'Ramen Ya! GI',
+    badgeCode: 'RY',
+    badgeColor: '#C84B31',
+    sender: 'Hendra Wijaya (Ops Director)',
+    subject: 'Midtrans QRIS Dynamic Split-Bill untuk 12 cabang Jabodetabek',
+    snippet:
+      'Kami ingin mengaktifkan fitur pembayaran split-bill langsung dari meja QR Self-Order mulai Jumat ini.',
+    time: '18m ago',
+    channel: 'WhatsApp Business',
+    unread: true,
+    plan: 'franchise',
+  },
+  {
+    id: 'inb-3',
+    brand: 'Wildroot Botanics',
+    badgeCode: 'WB',
+    badgeColor: '#0E7C5B',
+    sender: 'Nia Kusuma (General Manager)',
+    subject: 'Integrasi resep HPP otomatis & pengurangan stok daun teh',
+    snippet:
+      'Mohon dibantu review skema HPP bahan baku kami sebelum cutover shift malam pukul 20:00.',
+    time: '42m ago',
+    channel: 'In-App Support',
+    unread: true,
+    plan: 'pro',
+  },
+  {
+    id: 'inb-4',
+    brand: 'Hollow Home Bistro',
+    badgeCode: 'HH',
+    badgeColor: '#B45309',
+    sender: 'Freya Lindqvist',
+    subject: 'Penambahan zona Terrace 8 meja pada Interactive Floor Plan Kasir',
+    snippet:
+      'Apakah kapasitas kursi untuk meja Terrace T1–T8 bisa disetel 6 pax per meja?',
+    time: '1h ago',
+    channel: 'Email CRM',
+    unread: false,
+    plan: 'pro',
+  },
 ];
 
 export default function SuperadminPage() {
-  // Default to 'orders' (Kitchen / CRM Deal Kanban Board - Screenshot 1)
-  const [activeTab, setActiveTab] = useState('orders');
-  const [currency, setCurrency] = useState('USD'); // 'USD' ($ matching screenshot) or 'IDR' (Rp)
-  const [boardTitleMode, setBoardTitleMode] = useState('crm'); // 'crm' or 'tavola'
+  // Default to 'overview' (Murmura Executive CRM Overview - Gambar 1)
+  const [activeTab, setActiveTab] = useState('overview');
+  // Theme: 'murmura' (Warm Alabaster Cream + Mint Sage - Gambar 1..4) | 'tavola' (Midnight Slate Dark)
+  const [theme, setTheme] = useState('murmura');
+  const [currency, setCurrency] = useState('USD'); // 'USD' or 'IDR'
+  const [brandHeaderMode, setBrandHeaderMode] = useState('murmura'); // 'murmura' or 'santapos'
+  const [selectedTenantFilter, setSelectedTenantFilter] = useState('All tenants');
 
   // Backend state
   const [stats, setStats] = useState(null);
@@ -41,12 +103,18 @@ export default function SuperadminPage() {
   const [loading, setLoading] = useState(true);
   const [updatingTenantId, setUpdatingTenantId] = useState(null);
 
-  // Filters on Orders / CRM Deal Board
+  // Inbox state
+  const [inboxMessages, setInboxMessages] = useState(INITIAL_INBOX_MESSAGES);
+  const [selectedInboxId, setSelectedInboxId] = useState('inb-1');
+
+  // Filters & Drag-and-Drop on Compose / CRM Deals Board
   const [searchQuery, setSearchQuery] = useState('');
   const [channelFilter, setChannelFilter] = useState('All');
   const [stationFilter, setStationFilter] = useState('All stations');
   const [viewMode, setViewMode] = useState('Board'); // 'Board' | 'List'
   const [elevatedTicket, setElevatedTicket] = useState('#1062');
+  const [draggedDeal, setDraggedDeal] = useState(null);
+  const [dragOverStage, setDragOverStage] = useState(null);
 
   // Modals
   const [showNewDealModal, setShowNewDealModal] = useState(false);
@@ -59,7 +127,8 @@ export default function SuperadminPage() {
     station_region: 'Jabodetabek',
     amount_usd: 95,
     alert_badge: 'Well done · Custom ERP',
-    items_text: '1x Paket Franchise Multi-Cabang\n1x POS Kasir + Kitchen Display\n2x QR Table Self-Order\n1x Midtrans QRIS Sync',
+    items_text:
+      '1x Paket Franchise Multi-Cabang\n1x POS Kasir + Kitchen Display\n2x QR Table Self-Order\n1x Midtrans QRIS Sync',
   });
 
   const [showOnboardModal, setShowOnboardModal] = useState(false);
@@ -72,10 +141,10 @@ export default function SuperadminPage() {
     plan_code: 'pro',
   });
 
-  // Bottom Floating Toast with Undo (Exact match to Screenshots 2 & 3)
+  // Bottom Floating Toast with Undo
   const [toastInfo, setToastInfo] = useState({
     visible: true,
-    message: '#1062 · Table 7 (Ramen Ya! GI) is ready for deployment',
+    message: 'Ember & Oak (#1062) deployment queued · Ready for Superadmin review',
     undoAction: null,
   });
 
@@ -106,6 +175,12 @@ export default function SuperadminPage() {
     fetchAllData();
   }, []);
 
+  const isLight = theme === 'murmura';
+  const textPrimary = isLight ? '#14171D' : '#F8FAFC';
+  const textSecondary = isLight ? '#5A6065' : '#94A3B8';
+  const surfaceBg = isLight ? '#FFFFFF' : '#131C2E';
+  const surfaceBorder = isLight ? 'rgba(20, 23, 29, 0.08)' : 'rgba(255, 255, 255, 0.08)';
+
   const formatDealPrice = (deal) => {
     if (currency === 'IDR') {
       const jt = (Number(deal.amount_idr || deal.amount_usd * 200000) / 1000000).toFixed(1);
@@ -126,6 +201,12 @@ export default function SuperadminPage() {
   // Filtered Deals for Kanban Board
   const filteredDeals = useMemo(() => {
     return deals.filter((d) => {
+      if (selectedTenantFilter !== 'All tenants') {
+        const brandMatch =
+          String(d.tenant_brand || '').toLowerCase().includes(selectedTenantFilter.toLowerCase()) ||
+          String(d.table_label || '').toLowerCase().includes(selectedTenantFilter.toLowerCase());
+        if (!brandMatch) return false;
+      }
       if (channelFilter !== 'All' && d.channel_type !== channelFilter) return false;
       if (stationFilter !== 'All stations' && d.station_region !== stationFilter) return false;
       if (searchQuery.trim()) {
@@ -139,21 +220,20 @@ export default function SuperadminPage() {
       }
       return true;
     });
-  }, [deals, channelFilter, stationFilter, searchQuery]);
+  }, [deals, selectedTenantFilter, channelFilter, stationFilter, searchQuery]);
 
   const newDeals = filteredDeals.filter((d) => d.stage === 'new');
   const cookingDeals = filteredDeals.filter((d) => d.stage === 'cooking');
   const readyDeals = filteredDeals.filter((d) => d.stage === 'ready');
   const servedDeals = filteredDeals.filter((d) => d.stage === 'served');
-
   const openDealsCount = newDeals.length + cookingDeals.length + readyDeals.length;
 
-  // Advance Deal Stage on Kanban Card Button Click
+  // Advance or Drag-and-Drop Deal Stage on Kanban Card
   const handleAdvanceDeal = async (deal, targetStage, provisionTenant = false) => {
+    if (!deal || deal.stage === targetStage) return;
     const previousStage = deal.stage;
     const previousPayment = deal.payment_status;
 
-    // Optimistic UI update
     setDeals((prev) =>
       prev.map((item) =>
         item.id === deal.id
@@ -203,6 +283,16 @@ export default function SuperadminPage() {
     }
   };
 
+  const handleDropDealOnColumn = (targetStage) => {
+    setDragOverStage(null);
+    if (!draggedDeal || draggedDeal.stage === targetStage) {
+      setDraggedDeal(null);
+      return;
+    }
+    handleAdvanceDeal(draggedDeal, targetStage, targetStage === 'served');
+    setDraggedDeal(null);
+  };
+
   const handleTogglePaymentStatus = async (deal) => {
     const nextPay = deal.payment_status === 'Paid' ? 'Unpaid' : 'Paid';
     setDeals((prev) =>
@@ -225,7 +315,9 @@ export default function SuperadminPage() {
         .filter(Boolean);
 
       const res = await createSuperadminCrmDeal({
-        table_label: newDealForm.table_label || `Table ${Math.floor(1 + Math.random() * 14)} · ${newDealForm.tenant_brand}`,
+        table_label:
+          newDealForm.table_label ||
+          `Table ${Math.floor(1 + Math.random() * 14)} · ${newDealForm.tenant_brand}`,
         tenant_brand: newDealForm.tenant_brand || newDealForm.table_label,
         pic_name: newDealForm.pic_name || 'Owner Resto',
         channel_type: newDealForm.channel_type,
@@ -240,20 +332,11 @@ export default function SuperadminPage() {
 
       if (res?.data?.data) {
         setDeals((prev) => [res.data.data, ...prev]);
-        triggerToast(`Created new deal ${res.data.data.ticket_number} (${res.data.data.table_label})`);
+        triggerToast(
+          `Created new tenant deal ${res.data.data.ticket_number} (${res.data.data.table_label})`
+        );
       }
       setShowNewDealModal(false);
-      setNewDealForm({
-        table_label: '',
-        tenant_brand: '',
-        pic_name: '',
-        channel_type: 'Dine-in',
-        plan_code: 'franchise',
-        station_region: 'Jabodetabek',
-        amount_usd: 95,
-        alert_badge: 'Well done · Custom ERP',
-        items_text: '1x Paket Franchise Multi-Cabang\n1x POS Kasir + Kitchen Display\n2x QR Table Self-Order',
-      });
     } catch (err) {
       alert(err?.response?.data?.message || 'Gagal menambahkan deal');
     }
@@ -301,21 +384,47 @@ export default function SuperadminPage() {
     <div
       style={{
         minHeight: '100vh',
-        background: 'radial-gradient(circle at 20% 0%, #17233B 0%, #0B111E 55%, #080D18 100%)',
-        color: '#F8FAFC',
+        background: isLight
+          ? '#F5F4EE'
+          : 'radial-gradient(circle at 20% 0%, #17233B 0%, #0B111E 55%, #080D18 100%)',
+        backgroundImage: isLight
+          ? 'radial-gradient(circle at 14% 10%, rgba(208, 238, 225, 0.92) 0%, rgba(235, 245, 239, 0.55) 28%, rgba(245, 244, 238, 0) 56%)'
+          : undefined,
+        color: textPrimary,
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         position: 'relative',
         paddingBottom: '90px',
+        transition: 'background 0.28s ease, color 0.2s ease',
       }}
     >
-      {/* TOP FLOATING PILL NAVBAR (Exact Match to All 3 Screenshots) */}
+      {/* GLOBAL CHOREOGRAPHY KEYFRAMES (@motion-design-skill & @cast) */}
+      <style>{`
+        @keyframes murmuraFadeSlideIn {
+          0% { opacity: 0; transform: translateY(10px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes murmuraTitleRise {
+          0% { opacity: 0; transform: translateY(65%); }
+          100% { opacity: 1; transform: translateY(0%); }
+        }
+        @keyframes murmuraCardSpringPop {
+          0% { opacity: 0; transform: translateY(14px) scale(0.95); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
+
+      {/* =====================================================================
+          TOP FLOATING NAVIGATION BAR (Exact Match to Murmura Screenshots 1–4)
+         ===================================================================== */}
       <header
         style={{
           position: 'sticky',
           top: 0,
           zIndex: 50,
           padding: '16px 28px 12px 28px',
-          background: 'linear-gradient(180deg, rgba(11,17,30,0.92) 0%, rgba(11,17,30,0.65) 85%, transparent 100%)',
+          background: isLight
+            ? 'linear-gradient(180deg, rgba(245, 244, 238, 0.92) 0%, rgba(245, 244, 238, 0.72) 85%, transparent 100%)'
+            : 'linear-gradient(180deg, rgba(11,17,30,0.92) 0%, rgba(11,17,30,0.65) 85%, transparent 100%)',
           backdropFilter: 'blur(12px)',
           display: 'flex',
           alignItems: 'center',
@@ -324,10 +433,12 @@ export default function SuperadminPage() {
           flexWrap: 'wrap',
         }}
       >
-        {/* Left Brand Logo (`tavola` / `santapos`) */}
+        {/* Left Brand Logo (`murmura` / `santapos` with Dark Rounded Square Icon) */}
         <div
-          onClick={() => setBoardTitleMode((m) => (m === 'crm' ? 'tavola' : 'crm'))}
-          title="Click to toggle between Tavola & Santapos CRM labels"
+          onClick={() =>
+            setBrandHeaderMode((m) => (m === 'murmura' ? 'santapos' : 'murmura'))
+          }
+          title="Click to toggle header label (murmura / santapos)"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -340,96 +451,182 @@ export default function SuperadminPage() {
               width: '34px',
               height: '34px',
               borderRadius: '10px',
-              background: '#F3A68F',
-              color: '#111827',
+              background: '#161920',
+              color: '#FFFFFF',
               display: 'grid',
               placeItems: 'center',
-              fontWeight: 900,
-              fontSize: '16px',
-              boxShadow: '0 4px 14px rgba(243, 166, 143, 0.35)',
+              fontWeight: 800,
+              fontSize: '15px',
+              boxShadow: '0 4px 12px rgba(22, 25, 32, 0.2)',
             }}
           >
-            ✦
+            ∿
           </div>
-          <div>
-            <div
-              style={{
-                fontSize: '18px',
-                fontWeight: 800,
-                letterSpacing: '-0.03em',
-                color: '#F8FAFC',
-                lineHeight: 1,
-              }}
-            >
-              {boardTitleMode === 'tavola' ? 'tavola' : 'santapos'}
-            </div>
-            <div style={{ fontSize: '9.5px', color: '#94A3B8', letterSpacing: '0.06em', marginTop: '2px' }}>
-              SUPERADMIN CRM
-            </div>
-          </div>
+          <span
+            style={{
+              fontSize: '19px',
+              fontWeight: 700,
+              letterSpacing: '-0.03em',
+              color: textPrimary,
+            }}
+          >
+            {brandHeaderMode === 'murmura' ? 'murmura' : 'santapos'}
+          </span>
         </div>
 
-        {/* Center Floating Pill Navigation Bar */}
+        {/* Center Navigation Tabs (`Overview`, `Compose`, `Calendar`, `Inbox 14`, `Approvals 5`, `Analytics`, `Listening`) */}
         <nav
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '4px',
-            background: '#131C2E',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: '999px',
-            padding: '5px 6px',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
-            overflowX: 'auto',
+            flexWrap: 'wrap',
           }}
         >
-          {NAV_TABS.map((tab) => {
+          {MURMURA_NAV_TABS.map((tab) => {
             const active = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 style={{
-                  padding: '7px 16px',
+                  padding: '8px 16px',
                   borderRadius: '999px',
                   border: 'none',
-                  fontSize: '12.5px',
-                  fontWeight: active ? 700 : 500,
+                  fontSize: '13px',
+                  fontWeight: active ? 600 : 500,
                   cursor: 'pointer',
-                  background: active ? '#F3A68F' : 'transparent',
-                  color: active ? '#0F172A' : '#94A3B8',
+                  background: active
+                    ? isLight
+                      ? '#161920'
+                      : '#F2B249'
+                    : 'transparent',
+                  color: active
+                    ? isLight
+                      ? '#FFFFFF'
+                      : '#14171D'
+                    : textSecondary,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
                   transition: 'all 0.18s ease',
-                  whiteSpace: 'nowrap',
                 }}
               >
-                {tab.label}
+                <span>{tab.label}</span>
+                {tab.badge && (
+                  <span
+                    style={{
+                      padding: '1px 7px',
+                      borderRadius: '999px',
+                      background: tab.badgeBg || '#F2B249',
+                      color: '#14171D',
+                      fontSize: '10.5px',
+                      fontWeight: 800,
+                    }}
+                  >
+                    {tab.badge}
+                  </span>
+                )}
               </button>
             );
           })}
         </nav>
 
-        {/* Right Action Pill Icons */}
+        {/* Right Controls: `[All brands ▾]` + `Role Inspector ↗` + Notification Bell + Avatar */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            background: '#131C2E',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: '999px',
-            padding: '5px 8px',
+            gap: '10px',
+            flexWrap: 'wrap',
           }}
         >
+          {/* All brands / tenants pill selector (Exact Match to Screenshots 1–4) */}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '5px 12px 5px 6px',
+              borderRadius: '999px',
+              background: surfaceBg,
+              border: `1px solid ${surfaceBorder}`,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+            }}
+          >
+            <span
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                background: '#161920',
+                color: '#FFFFFF',
+                fontSize: '11px',
+                display: 'grid',
+                placeItems: 'center',
+              }}
+            >
+              🏪
+            </span>
+            <select
+              value={selectedTenantFilter}
+              onChange={(e) => setSelectedTenantFilter(e.target.value)}
+              style={{
+                border: 'none',
+                outline: 'none',
+                background: 'transparent',
+                color: textPrimary,
+                fontSize: '12.5px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <option value="All tenants">All brands</option>
+              <option value="Ember & Oak">Ember & Oak</option>
+              <option value="Ramen Ya">Ramen Ya! GI</option>
+              <option value="Wildroot">Wildroot Botanics</option>
+              <option value="Hollow Home">Hollow Home Bistro</option>
+              {tenants.map((t) => (
+                <option key={t.id} value={t.name}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Dedicated Separate Page Link: Live Role System Inspector (Admin / Kasir / Kitchen) */}
+          <Link
+            href="/superadmin/inspector"
+            title="Buka halaman khusus untuk melihat langsung tampilan Role Admin, Kasir POS, dan Kitchen KDS"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '7px 14px',
+              borderRadius: '999px',
+              background: '#0E7C5B',
+              color: '#FFFFFF',
+              textDecoration: 'none',
+              fontSize: '12px',
+              fontWeight: 700,
+              boxShadow: '0 4px 14px rgba(14, 124, 91, 0.25)',
+            }}
+          >
+            <span>🖥️</span>
+            <span>Live 3-Role Inspector ↗</span>
+          </Link>
+
+          {/* Currency Toggle ($ USD / Rp IDR) */}
           <button
             onClick={() => setCurrency((c) => (c === 'USD' ? 'IDR' : 'USD'))}
-            title="Switch Currency Display ($ USD / Rp IDR)"
+            title="Switch Currency ($ USD / Rp IDR)"
             style={{
-              padding: '5px 10px',
+              padding: '6px 11px',
               borderRadius: '999px',
-              border: '1px solid rgba(255,255,255,0.1)',
-              background: '#1C2942',
-              color: '#EADCA6',
-              fontSize: '11px',
+              border: `1px solid ${surfaceBorder}`,
+              background: surfaceBg,
+              color: textPrimary,
+              fontSize: '11.5px',
               fontWeight: 700,
               cursor: 'pointer',
             }}
@@ -437,187 +634,320 @@ export default function SuperadminPage() {
             {currency === 'USD' ? '$ USD' : 'Rp IDR'}
           </button>
 
+          {/* Notification Bell with Red Dot */}
           <button
-            onClick={fetchAllData}
-            title="Refresh Live Data"
-            style={{
-              width: '30px',
-              height: '30px',
-              borderRadius: '50%',
-              border: 'none',
-              background: '#1B273D',
-              color: '#CBD5E1',
-              cursor: 'pointer',
-              display: 'grid',
-              placeItems: 'center',
-              fontSize: '13px',
-            }}
-          >
-            ↻
-          </button>
-
-          <Link
-            href="/dashboard"
-            title="Kembali ke Dashboard POS Resto"
-            style={{
-              padding: '5px 12px',
-              borderRadius: '999px',
-              background: '#1B273D',
-              color: '#F8FAFC',
-              textDecoration: 'none',
-              fontSize: '11.5px',
-              fontWeight: 600,
-            }}
-          >
-            POS Resto ↗
-          </Link>
-
-          <div
-            style={{
-              width: '30px',
-              height: '30px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #F3A68F, #EADCA6)',
-              color: '#0F172A',
-              display: 'grid',
-              placeItems: 'center',
-              fontSize: '12px',
-              fontWeight: 800,
-            }}
-          >
-            SA
-          </div>
-        </div>
-      </header>
-
-      {/* LEFT VERTICAL FLOATING DOCK (Exact Match to Screenshots 1, 2, 3) */}
-      <aside
-        style={{
-          position: 'fixed',
-          left: '16px',
-          top: '52%',
-          transform: 'translateY(-50%)',
-          zIndex: 40,
-          background: '#131C2E',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '999px',
-          padding: '12px 7px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '10px',
-          boxShadow: '0 16px 40px rgba(0,0,0,0.45)',
-        }}
-      >
-        {[
-          {
-            icon: '🔍',
-            title: 'Search Deals & Tenants',
-            action: () => {
-              setActiveTab('orders');
-              const el = document.getElementById('tavola-deal-search');
-              if (el) el.focus();
-            },
-          },
-          {
-            icon: '＋',
-            title: 'New Tenant Deal',
-            action: () => setShowNewDealModal(true),
-          },
-          {
-            icon: '🗓️',
-            title: 'Tenant Reservations & Directory',
-            action: () => setActiveTab('reservations'),
-          },
-          {
-            icon: '⏳',
-            title: 'Floor Plan & Waitlist',
-            badge: '3',
-            action: () => setActiveTab('floor'),
-          },
-          {
-            icon: '🚫',
-            title: '86d / Watchlist & Reports',
-            action: () => setActiveTab('reports'),
-          },
-          {
-            icon: '🔗',
-            title: 'Copy Self-Onboarding Link',
-            action: () => {
-              if (typeof window !== 'undefined') {
-                navigator.clipboard?.writeText(`${window.location.origin}/onboarding`);
-                triggerToast('Copied tenant onboarding link to clipboard');
-              }
-            },
-          },
-          {
-            icon: '🗄️',
-            title: 'Database & Cloud Storage Settings',
-            action: () => setActiveTab('inventory'),
-          },
-          {
-            icon: '☀️',
-            title: 'Toggle Title Mode (Tavola / CRM)',
-            action: () => setBoardTitleMode((m) => (m === 'crm' ? 'tavola' : 'crm')),
-          },
-        ].map((item, idx) => (
-          <button
-            key={idx}
-            onClick={item.action}
-            title={item.title}
+            onClick={() => setActiveTab('inbox')}
+            title="Open Tenant Inbox & Notifications"
             style={{
               position: 'relative',
               width: '34px',
               height: '34px',
               borderRadius: '50%',
-              border: 'none',
-              background: 'transparent',
-              color: '#94A3B8',
+              border: `1px solid ${surfaceBorder}`,
+              background: surfaceBg,
+              color: textPrimary,
               cursor: 'pointer',
               display: 'grid',
               placeItems: 'center',
               fontSize: '14px',
-              transition: 'background 0.15s ease, color 0.15s ease',
             }}
           >
-            {item.icon}
-            {item.badge && (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: '1px',
-                  right: '1px',
-                  width: '15px',
-                  height: '15px',
-                  borderRadius: '50%',
-                  background: '#F3A68F',
-                  color: '#0F172A',
-                  fontSize: '9.5px',
-                  fontWeight: 800,
-                  display: 'grid',
-                  placeItems: 'center',
-                }}
-              >
-                {item.badge}
-              </span>
-            )}
+            🔔
+            <span
+              style={{
+                position: 'absolute',
+                top: '5px',
+                right: '6px',
+                width: '7px',
+                height: '7px',
+                borderRadius: '50%',
+                background: '#C84B31',
+                border: `1.5px solid ${surfaceBg}`,
+              }}
+            />
           </button>
-        ))}
+
+          {/* Profile Avatar */}
+          <div
+            title="Camila · Superadmin Santapos"
+            style={{
+              width: '34px',
+              height: '34px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #1E293B 0%, #0E7C5B 100%)',
+              color: '#FFFFFF',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: '12px',
+              fontWeight: 800,
+              border: `2px solid ${surfaceBg}`,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+            }}
+          >
+            CA
+          </div>
+        </div>
+      </header>
+
+      {/* =====================================================================
+          LEFT VERTICAL CHARCOAL PILL DOCK (Exact Match to Screenshots 1–4)
+         ===================================================================== */}
+      <aside
+        style={{
+          position: 'fixed',
+          left: '16px',
+          top: '53%',
+          transform: 'translateY(-50%)',
+          zIndex: 40,
+          background: '#181A1F',
+          borderRadius: '999px',
+          padding: '10px 7px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '10px',
+          boxShadow: '0 18px 40px rgba(20, 23, 29, 0.25)',
+        }}
+      >
+        {/* 1. Search */}
+        <button
+          onClick={() => {
+            setActiveTab('orders');
+            setTimeout(() => {
+              const el = document.getElementById('tavola-deal-search');
+              if (el) el.focus();
+            }, 80);
+          }}
+          title="Search Deals & Tenants"
+          style={{
+            width: '34px',
+            height: '34px',
+            borderRadius: '50%',
+            border: 'none',
+            background: 'transparent',
+            color: '#94A3B8',
+            cursor: 'pointer',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: '14px',
+          }}
+        >
+          🔍
+        </button>
+
+        {/* 2. Prominent Warm Amber "+" Action Button (Exact Match to Screenshots 1–4) */}
+        <button
+          onClick={() => setShowNewDealModal(true)}
+          title="Create New Tenant Deal / Post"
+          style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            border: 'none',
+            background: '#F2B249',
+            color: '#14171D',
+            cursor: 'pointer',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: '18px',
+            fontWeight: 700,
+            boxShadow: '0 4px 14px rgba(242, 178, 73, 0.4)',
+          }}
+        >
+          +
+        </button>
+
+        {/* 3. Clock / Live Queue (Overview) */}
+        <button
+          onClick={() => setActiveTab('overview')}
+          title="Overview · Up Next Queue"
+          style={{
+            width: '34px',
+            height: '34px',
+            borderRadius: '50%',
+            border: 'none',
+            background: activeTab === 'overview' ? 'rgba(255,255,255,0.12)' : 'transparent',
+            color: activeTab === 'overview' ? '#FFFFFF' : '#94A3B8',
+            cursor: 'pointer',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: '14px',
+          }}
+        >
+          🕒
+        </button>
+
+        {/* 4. Calendar / Onboarding Roadmap */}
+        <button
+          onClick={() => setActiveTab('calendar')}
+          title="Publishing & Onboarding Calendar"
+          style={{
+            width: '34px',
+            height: '34px',
+            borderRadius: '50%',
+            border: 'none',
+            background: activeTab === 'calendar' ? 'rgba(255,255,255,0.12)' : 'transparent',
+            color: activeTab === 'calendar' ? '#FFFFFF' : '#94A3B8',
+            cursor: 'pointer',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: '14px',
+          }}
+        >
+          🗓️
+        </button>
+
+        {/* 5. Pen / Deals Board with Red Notification Dot */}
+        <button
+          onClick={() => setActiveTab('orders')}
+          title="Compose · Tenant Deals Kanban Board"
+          style={{
+            position: 'relative',
+            width: '34px',
+            height: '34px',
+            borderRadius: '50%',
+            border: 'none',
+            background: activeTab === 'orders' ? 'rgba(255,255,255,0.12)' : 'transparent',
+            color: activeTab === 'orders' ? '#FFFFFF' : '#94A3B8',
+            cursor: 'pointer',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: '14px',
+          }}
+        >
+          ✒️
+          <span
+            style={{
+              position: 'absolute',
+              top: '5px',
+              right: '5px',
+              width: '7px',
+              height: '7px',
+              borderRadius: '50%',
+              background: '#C84B31',
+            }}
+          />
+        </button>
+
+        {/* 6. Shield / Approvals */}
+        <button
+          onClick={() => setActiveTab('approvals')}
+          title="Tenant Approvals & SLA"
+          style={{
+            width: '34px',
+            height: '34px',
+            borderRadius: '50%',
+            border: 'none',
+            background: activeTab === 'approvals' ? 'rgba(255,255,255,0.12)' : 'transparent',
+            color: activeTab === 'approvals' ? '#FFFFFF' : '#94A3B8',
+            cursor: 'pointer',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: '14px',
+          }}
+        >
+          🛡️
+        </button>
+
+        {/* 7. Settings / Database & Tenants */}
+        <button
+          onClick={() => setActiveTab('listening')}
+          title="Tenants Directory & Database Settings"
+          style={{
+            width: '34px',
+            height: '34px',
+            borderRadius: '50%',
+            border: 'none',
+            background: activeTab === 'listening' ? 'rgba(255,255,255,0.12)' : 'transparent',
+            color: activeTab === 'listening' ? '#FFFFFF' : '#94A3B8',
+            cursor: 'pointer',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: '14px',
+          }}
+        >
+          ⚙️
+        </button>
+
+        {/* 8. Theme Switcher (Moon / Sun — exact bottom icon in Screenshots 1–4) */}
+        <button
+          onClick={() => {
+            const nextTheme = theme === 'murmura' ? 'tavola' : 'murmura';
+            setTheme(nextTheme);
+            triggerToast(
+              `Switched visual atmosphere to ${
+                nextTheme === 'murmura' ? 'Murmura Editorial Cream & Mint' : 'Tavola Midnight Dark'
+              }`
+            );
+          }}
+          title="Toggle Theme (Murmura Cream / Tavola Dark)"
+          style={{
+            width: '34px',
+            height: '34px',
+            borderRadius: '50%',
+            border: 'none',
+            background: 'rgba(255,255,255,0.08)',
+            color: '#F2B249',
+            cursor: 'pointer',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: '14px',
+          }}
+        >
+          {isLight ? '☾' : '☼'}
+        </button>
       </aside>
 
-      {/* MAIN CONTENT CONTAINER */}
+      {/* =====================================================================
+          MAIN CONTENT CONTAINER
+         ===================================================================== */}
       <main
         style={{
           maxWidth: '1440px',
           margin: '0 auto',
-          padding: '8px 28px 40px 76px',
+          padding: '8px 28px 40px 78px',
         }}
       >
-        {/* =====================================================================
-            TAB: ORDERS / CRM DEAL BOARD (Exact REA of Screenshot 1)
-           ===================================================================== */}
+        {/* ===================================================================
+            TAB 1: OVERVIEW (Exact REA of Gambar 1 — Murmura Executive CRM)
+           =================================================================== */}
+        {activeTab === 'overview' && (
+          <MurmuraOverviewView
+            theme={theme}
+            currency={currency}
+            selectedTenantFilter={selectedTenantFilter}
+            deals={deals}
+            tenants={tenants}
+            onOpenNewDeal={() => setShowNewDealModal(true)}
+            onNavigateTab={(tabId) => setActiveTab(tabId)}
+            onTriggerToast={triggerToast}
+          />
+        )}
+
+        {/* ===================================================================
+            TAB 2: CALENDAR (Exact REA of Gambar 2, 3, 4 — Before/After Animation + Drag & Drop)
+           =================================================================== */}
+        {activeTab === 'calendar' && (
+          <MurmuraCalendarView
+            theme={theme}
+            selectedTenantFilter={selectedTenantFilter}
+            onOpenNewDeal={() => setShowNewDealModal(true)}
+            onTriggerToast={triggerToast}
+          />
+        )}
+
+        {/* ===================================================================
+            TAB 3: COMPOSE · DEALS BOARD (Interactive CRM Deal Kanban with Drag & Drop)
+           =================================================================== */}
         {activeTab === 'orders' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              animation: 'murmuraFadeSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
+          >
             {/* Row 1: 2-Line Serif Title + 3 Inline KPI Pills */}
             <div
               style={{
@@ -628,7 +958,7 @@ export default function SuperadminPage() {
                 gap: '16px',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '22px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
                 <h1
                   style={{
                     margin: 0,
@@ -637,32 +967,22 @@ export default function SuperadminPage() {
                     fontWeight: 400,
                     lineHeight: 1.02,
                     letterSpacing: '-0.02em',
-                    color: '#F8FAFC',
+                    color: textPrimary,
                   }}
                 >
-                  {boardTitleMode === 'tavola' ? (
-                    <>
-                      Kitchen
-                      <br />
-                      Board
-                    </>
-                  ) : (
-                    <>
-                      Kitchen & Deal
-                      <br />
-                      Board
-                    </>
-                  )}
+                  Tenant Deals
+                  <br />
+                  Board
                 </h1>
 
-                {/* KPI Pill 1: 12 [2 ready] Open tickets */}
+                {/* KPI Pill 1 */}
                 <div
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '12px',
-                    background: '#131C2E',
-                    border: '1px solid rgba(255,255,255,0.07)',
+                    background: surfaceBg,
+                    border: `1px solid ${surfaceBorder}`,
                     borderRadius: '999px',
                     padding: '10px 18px 10px 12px',
                   }}
@@ -672,10 +992,9 @@ export default function SuperadminPage() {
                       width: '36px',
                       height: '36px',
                       borderRadius: '50%',
-                      background: '#1B273D',
+                      background: isLight ? '#F5F4EE' : '#1B273D',
                       display: 'grid',
                       placeItems: 'center',
-                      color: '#94A3B8',
                       fontSize: '14px',
                     }}
                   >
@@ -683,7 +1002,7 @@ export default function SuperadminPage() {
                   </div>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '20px', fontWeight: 700, color: '#F8FAFC' }}>
+                      <span style={{ fontSize: '20px', fontWeight: 700, color: textPrimary }}>
                         {openDealsCount}
                       </span>
                       <span
@@ -692,27 +1011,27 @@ export default function SuperadminPage() {
                           fontWeight: 700,
                           padding: '2px 9px',
                           borderRadius: '999px',
-                          background: '#9CE2C6',
-                          color: '#0B291E',
+                          background: '#0E7C5B',
+                          color: '#FFFFFF',
                         }}
                       >
                         {readyDeals.length} ready
                       </span>
                     </div>
-                    <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '1px' }}>
-                      Open tickets · Tenant deals
+                    <div style={{ fontSize: '11.5px', color: textSecondary, marginTop: '1px' }}>
+                      Open tenant deal tickets (Drag & Drop enabled)
                     </div>
                   </div>
                 </div>
 
-                {/* KPI Pill 2: 15 min [On target] Average ticket time */}
+                {/* KPI Pill 2 */}
                 <div
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '12px',
-                    background: '#131C2E',
-                    border: '1px solid rgba(255,255,255,0.07)',
+                    background: surfaceBg,
+                    border: `1px solid ${surfaceBorder}`,
                     borderRadius: '999px',
                     padding: '10px 18px 10px 12px',
                   }}
@@ -722,10 +1041,9 @@ export default function SuperadminPage() {
                       width: '36px',
                       height: '36px',
                       borderRadius: '50%',
-                      background: '#1B273D',
+                      background: isLight ? '#F5F4EE' : '#1B273D',
                       display: 'grid',
                       placeItems: 'center',
-                      color: '#94A3B8',
                       fontSize: '14px',
                     }}
                   >
@@ -733,7 +1051,9 @@ export default function SuperadminPage() {
                   </div>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '20px', fontWeight: 700, color: '#F8FAFC' }}>15 min</span>
+                      <span style={{ fontSize: '20px', fontWeight: 700, color: textPrimary }}>
+                        15 min
+                      </span>
                       <span
                         style={{
                           fontSize: '11px',
@@ -747,63 +1067,31 @@ export default function SuperadminPage() {
                         On target
                       </span>
                     </div>
-                    <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '1px' }}>
-                      Average ticket / SLA time today
-                    </div>
-                  </div>
-                </div>
-
-                {/* KPI Pill 3: 2 [Chase] Late · over 15 min */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    background: '#131C2E',
-                    border: '1px solid rgba(255,255,255,0.07)',
-                    borderRadius: '999px',
-                    padding: '10px 18px 10px 12px',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '50%',
-                      background: '#1B273D',
-                      display: 'grid',
-                      placeItems: 'center',
-                      color: '#F3A68F',
-                      fontSize: '14px',
-                    }}
-                  >
-                    ⚠️
-                  </div>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '20px', fontWeight: 700, color: '#F8FAFC' }}>2</span>
-                      <span
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          padding: '2px 9px',
-                          borderRadius: '999px',
-                          background: '#F3A68F',
-                          color: '#2A120B',
-                        }}
-                      >
-                        Chase
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '1px' }}>
-                      Late · over 15 min follow-up
+                    <div style={{ fontSize: '11.5px', color: textSecondary, marginTop: '1px' }}>
+                      Average onboarding SLA response
                     </div>
                   </div>
                 </div>
               </div>
+
+              <button
+                onClick={() => setShowNewDealModal(true)}
+                style={{
+                  background: isLight ? '#161920' : '#F3A68F',
+                  color: isLight ? '#FFFFFF' : '#0F172A',
+                  border: 'none',
+                  borderRadius: '999px',
+                  padding: '10px 18px',
+                  fontSize: '12.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                + New tenant deal
+              </button>
             </div>
 
-            {/* Row 2: Search Bar + Channel Filter Pills + Station Select + Board/List Toggle */}
+            {/* Row 2: Search Bar + Channel Filter Pills + Board/List Toggle */}
             <div
               style={{
                 display: 'flex',
@@ -814,56 +1102,54 @@ export default function SuperadminPage() {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', flex: 1 }}>
-                {/* Search Input Pill */}
                 <div
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
-                    background: '#131C2E',
-                    border: '1px solid rgba(255,255,255,0.08)',
+                    background: surfaceBg,
+                    border: `1px solid ${surfaceBorder}`,
                     borderRadius: '999px',
                     padding: '8px 16px',
                     minWidth: '250px',
                   }}
                 >
-                  <span style={{ color: '#64748B', fontSize: '13px' }}>🔍</span>
+                  <span style={{ color: textSecondary, fontSize: '13px' }}>🔍</span>
                   <input
                     id="tavola-deal-search"
                     type="text"
-                    placeholder="Ticket, table, tenant, guest or dish..."
+                    placeholder="Search ticket, tenant brand, PIC or package..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     style={{
                       background: 'transparent',
                       border: 'none',
                       outline: 'none',
-                      color: '#F8FAFC',
+                      color: textPrimary,
                       fontSize: '12.5px',
                       width: '100%',
                     }}
                   />
                 </div>
 
-                {/* Filter Chips Matching Screenshot 1 */}
                 {[
-                  { id: 'All', label: 'All', icon: '⊞', count: deals.length },
+                  { id: 'All', label: 'All Deals', icon: '⊞', count: deals.length },
                   {
                     id: 'Dine-in',
-                    label: 'Dine-in · Franchise',
-                    icon: '🍴',
+                    label: 'Franchise HQ',
+                    icon: '🏢',
                     count: deals.filter((d) => d.channel_type === 'Dine-in').length,
                   },
                   {
                     id: 'Takeaway',
-                    label: 'Takeaway · Pro',
-                    icon: '🛍️',
+                    label: 'Pro Suite',
+                    icon: '⚡',
                     count: deals.filter((d) => d.channel_type === 'Takeaway').length,
                   },
                   {
                     id: 'Delivery',
-                    label: 'Delivery · Starter',
-                    icon: '🛵',
+                    label: 'Starter Cloud',
+                    icon: '🌱',
                     count: deals.filter((d) => d.channel_type === 'Delivery').length,
                   },
                 ].map((chip) => {
@@ -878,11 +1164,9 @@ export default function SuperadminPage() {
                         gap: '7px',
                         padding: '7px 14px',
                         borderRadius: '999px',
-                        border: active
-                          ? '1px solid #F3A68F'
-                          : '1px solid rgba(255,255,255,0.08)',
-                        background: active ? '#F3A68F' : '#131C2E',
-                        color: active ? '#0F172A' : '#CBD5E1',
+                        border: `1px solid ${active ? '#161920' : surfaceBorder}`,
+                        background: active ? '#161920' : surfaceBg,
+                        color: active ? '#FFFFFF' : textPrimary,
                         fontSize: '12px',
                         fontWeight: 600,
                         cursor: 'pointer',
@@ -895,8 +1179,8 @@ export default function SuperadminPage() {
                           padding: '1px 6px',
                           borderRadius: '999px',
                           fontSize: '10.5px',
-                          background: active ? 'rgba(15,23,42,0.15)' : '#1E2C46',
-                          color: active ? '#0F172A' : '#94A3B8',
+                          background: active ? 'rgba(255,255,255,0.2)' : 'rgba(20,23,29,0.06)',
+                          color: active ? '#FFFFFF' : textSecondary,
                         }}
                       >
                         {chip.count}
@@ -904,37 +1188,15 @@ export default function SuperadminPage() {
                     </button>
                   );
                 })}
-
-                {/* Station / Region Dropdown */}
-                <select
-                  value={stationFilter}
-                  onChange={(e) => setStationFilter(e.target.value)}
-                  style={{
-                    padding: '8px 14px',
-                    borderRadius: '999px',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    background: '#131C2E',
-                    color: '#CBD5E1',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <option value="All stations">📍 All stations / regions</option>
-                  <option value="Jabodetabek">📍 Jabodetabek</option>
-                  <option value="Jawa & Bali">📍 Jawa & Bali</option>
-                  <option value="Luar Jawa">📍 Luar Jawa</option>
-                </select>
               </div>
 
-              {/* Board | List Switcher */}
               <div
                 style={{
                   display: 'inline-flex',
-                  background: '#131C2E',
+                  background: surfaceBg,
                   padding: '3px',
                   borderRadius: '999px',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  border: `1px solid ${surfaceBorder}`,
                 }}
               >
                 {['Board', 'List'].map((m) => (
@@ -948,8 +1210,8 @@ export default function SuperadminPage() {
                       fontSize: '12px',
                       fontWeight: 600,
                       cursor: 'pointer',
-                      background: viewMode === m ? '#24324B' : 'transparent',
-                      color: viewMode === m ? '#F8FAFC' : '#64748B',
+                      background: viewMode === m ? '#161920' : 'transparent',
+                      color: viewMode === m ? '#FFFFFF' : textSecondary,
                     }}
                   >
                     {m}
@@ -958,27 +1220,7 @@ export default function SuperadminPage() {
               </div>
             </div>
 
-            {/* Row 3: + New order / + New deal Warm Peach Pill Button */}
-            <div>
-              <button
-                onClick={() => setShowNewDealModal(true)}
-                style={{
-                  background: '#F3A68F',
-                  color: '#0F172A',
-                  border: 'none',
-                  borderRadius: '999px',
-                  padding: '9px 18px',
-                  fontSize: '12.5px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  boxShadow: '0 6px 20px rgba(243, 166, 143, 0.3)',
-                }}
-              >
-                + New order / deal
-              </button>
-            </div>
-
-            {/* Row 4: 4-COLUMN KANBAN BOARD (Exact REA of Screenshot 1) */}
+            {/* Row 3: 4-Column Drag-and-Drop CRM Kanban Board */}
             {viewMode === 'Board' ? (
               <div
                 style={{
@@ -990,723 +1232,299 @@ export default function SuperadminPage() {
                   paddingBottom: '12px',
                 }}
               >
-                {/* ================= COLUMN 1: NEW (Butter Cream `#EADCA6`) ================= */}
-                <div
-                  style={{
-                    background: '#11192B',
-                    border: '1px solid rgba(255,255,255,0.07)',
-                    borderRadius: '20px',
-                    padding: '14px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '2px 4px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span
-                        style={{
-                          width: '8px',
-                          height: '8px',
-                          borderRadius: '50%',
-                          background: '#EADCA6',
-                        }}
-                      />
-                      <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#F8FAFC' }}>New</span>
-                      <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 600 }}>
-                        {newDeals.length}
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 600 }}>
-                      {formatColumnTotal(newDeals)}
-                    </span>
-                  </div>
-
-                  {newDeals.map((deal) => (
+                {[
+                  {
+                    stage: 'new',
+                    title: 'New Lead',
+                    dot: '#EADCA6',
+                    cardBg: '#EADCA6',
+                    cardText: '#18181B',
+                    items: newDeals,
+                    nextStage: 'cooking',
+                    btnLabel: '🔥 Start Demo',
+                  },
+                  {
+                    stage: 'cooking',
+                    title: 'Demo & Setup',
+                    dot: '#EFA892',
+                    cardBg: '#EFA892',
+                    cardText: '#18181B',
+                    items: cookingDeals,
+                    nextStage: 'ready',
+                    btnLabel: '◎ Mark Ready',
+                  },
+                  {
+                    stage: 'ready',
+                    title: 'Trial Ready',
+                    dot: '#BCE3D4',
+                    cardBg: '#BCE3D4',
+                    cardText: '#18181B',
+                    items: readyDeals,
+                    nextStage: 'served',
+                    btnLabel: '✓ Go Live',
+                  },
+                  {
+                    stage: 'served',
+                    title: 'Active Tenant',
+                    dot: '#0E7C5B',
+                    cardBg: '#172237',
+                    cardText: '#F8FAFC',
+                    items: servedDeals,
+                    nextStage: null,
+                    btnLabel: '✓ Paid',
+                  },
+                ].map((col) => {
+                  const isDropOver = dragOverStage === col.stage;
+                  return (
                     <div
-                      key={deal.id}
+                      key={col.stage}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setDragOverStage(col.stage);
+                      }}
+                      onDragLeave={() => setDragOverStage(null)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        handleDropDealOnColumn(col.stage);
+                      }}
                       style={{
-                        background: '#EADCA6',
-                        color: '#18181B',
-                        borderRadius: '16px',
+                        background: isDropOver
+                          ? 'rgba(14, 124, 91, 0.12)'
+                          : isLight
+                          ? '#EAE9E1'
+                          : '#11192B',
+                        border: isDropOver
+                          ? '2px dashed #0E7C5B'
+                          : `1px solid ${surfaceBorder}`,
+                        borderRadius: '20px',
                         padding: '14px',
-                        boxShadow: '0 10px 24px rgba(0,0,0,0.22)',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '10px',
+                        gap: '12px',
+                        minHeight: '420px',
+                        transition: 'background 0.2s ease, border 0.2s ease',
                       }}
                     >
-                      {/* Top Ticket & Timer Row */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '2px 4px',
+                        }}
+                      >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#3F3F46' }}>
-                            {deal.ticket_number}
-                          </span>
                           <span
                             style={{
-                              background: 'rgba(255,255,255,0.65)',
-                              color: '#18181B',
-                              borderRadius: '999px',
-                              padding: '2px 8px',
-                              fontSize: '10.5px',
-                              fontWeight: 700,
-                            }}
-                          >
-                            🕒 {deal.elapsed_minutes} min
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => deleteSuperadminCrmDeal(deal.id).then(fetchAllData)}
-                          title="Delete ticket"
-                          style={{
-                            background: 'rgba(24,24,27,0.08)',
-                            border: 'none',
-                            borderRadius: '50%',
-                            width: '24px',
-                            height: '24px',
-                            cursor: 'pointer',
-                            color: '#3F3F46',
-                            fontSize: '11px',
-                          }}
-                        >
-                          •••
-                        </button>
-                      </div>
-
-                      {/* Table / Tenant Title */}
-                      <div style={{ fontSize: '16px', fontWeight: 800, color: '#18181B', letterSpacing: '-0.01em' }}>
-                        🍴 {deal.table_label}
-                      </div>
-
-                      {/* Alert Badge + Items List */}
-                      <div
-                        style={{
-                          borderTop: '1px solid rgba(24,24,27,0.1)',
-                          borderBottom: '1px solid rgba(24,24,27,0.1)',
-                          padding: '8px 0',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '4px',
-                        }}
-                      >
-                        {deal.alert_badge && (
-                          <div style={{ marginBottom: '3px' }}>
-                            <span
-                              style={{
-                                display: 'inline-block',
-                                background: '#18181B',
-                                color: '#F8FAFC',
-                                borderRadius: '6px',
-                                padding: '2px 8px',
-                                fontSize: '10.5px',
-                                fontWeight: 700,
-                              }}
-                            >
-                              ▲ {deal.alert_badge}
-                            </span>
-                          </div>
-                        )}
-                        {(deal.items || []).map((line, i) => (
-                          <div key={i} style={{ fontSize: '12px', color: '#27272A', fontWeight: 500 }}>
-                            {line}
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Footer: Avatar + Price + Dark `Fire` Button */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div
-                            style={{
-                              width: '26px',
-                              height: '26px',
+                              width: '8px',
+                              height: '8px',
                               borderRadius: '50%',
-                              background: '#18181B',
-                              color: '#EADCA6',
-                              display: 'grid',
-                              placeItems: 'center',
-                              fontSize: '10px',
-                              fontWeight: 800,
+                              background: col.dot,
                             }}
-                          >
-                            {deal.avatar_seed || 'TN'}
-                          </div>
-                          <span style={{ fontSize: '16px', fontWeight: 800, color: '#18181B' }}>
-                            {formatDealPrice(deal)}
+                          />
+                          <span style={{ fontSize: '13.5px', fontWeight: 700, color: textPrimary }}>
+                            {col.title}
+                          </span>
+                          <span style={{ fontSize: '12px', color: textSecondary, fontWeight: 600 }}>
+                            {col.items.length}
                           </span>
                         </div>
-
-                        <button
-                          onClick={() => handleAdvanceDeal(deal, 'cooking')}
-                          style={{
-                            background: '#18181B',
-                            color: '#F8FAFC',
-                            border: 'none',
-                            borderRadius: '999px',
-                            padding: '6px 14px',
-                            fontSize: '11.5px',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                          }}
-                        >
-                          🔥 Fire
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* ================= COLUMN 2: COOKING (Warm Peach `#EFA892`) ================= */}
-                <div
-                  style={{
-                    background: '#11192B',
-                    border: '1px solid rgba(255,255,255,0.07)',
-                    borderRadius: '20px',
-                    padding: '14px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '2px 4px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span
-                        style={{
-                          width: '8px',
-                          height: '8px',
-                          borderRadius: '50%',
-                          background: '#EFA892',
-                        }}
-                      />
-                      <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#F8FAFC' }}>Cooking</span>
-                      <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 600 }}>
-                        {cookingDeals.length}
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 600 }}>
-                      {formatColumnTotal(cookingDeals)}
-                    </span>
-                  </div>
-
-                  {cookingDeals.map((deal) => (
-                    <div
-                      key={deal.id}
-                      style={{
-                        background: '#EFA892',
-                        color: '#18181B',
-                        borderRadius: '16px',
-                        padding: '14px',
-                        boxShadow: '0 10px 24px rgba(0,0,0,0.22)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '10px',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#3F3F46' }}>
-                            {deal.ticket_number}
-                          </span>
-                          <span
-                            style={{
-                              background: 'rgba(255,255,255,0.72)',
-                              color: '#9A3412',
-                              borderRadius: '999px',
-                              padding: '2px 8px',
-                              fontSize: '10.5px',
-                              fontWeight: 700,
-                            }}
-                          >
-                            🕒 {deal.elapsed_minutes} min
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => setElevatedTicket(deal.ticket_number)}
-                          style={{
-                            background: 'rgba(24,24,27,0.08)',
-                            border: 'none',
-                            borderRadius: '50%',
-                            width: '24px',
-                            height: '24px',
-                            cursor: 'pointer',
-                            color: '#3F3F46',
-                            fontSize: '11px',
-                          }}
-                        >
-                          •••
-                        </button>
+                        <span style={{ fontSize: '12px', color: textSecondary, fontWeight: 600 }}>
+                          {formatColumnTotal(col.items)}
+                        </span>
                       </div>
 
-                      <div style={{ fontSize: '16px', fontWeight: 800, color: '#18181B' }}>
-                        🍴 {deal.table_label}
-                      </div>
-
-                      <div
-                        style={{
-                          borderTop: '1px solid rgba(24,24,27,0.1)',
-                          borderBottom: '1px solid rgba(24,24,27,0.1)',
-                          padding: '8px 0',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '4px',
-                        }}
-                      >
-                        {deal.alert_badge && (
-                          <div style={{ marginBottom: '3px' }}>
-                            <span
-                              style={{
-                                display: 'inline-block',
-                                background: '#FEF3C7',
-                                color: '#92400E',
-                                borderRadius: '6px',
-                                padding: '2px 8px',
-                                fontSize: '10.5px',
-                                fontWeight: 700,
-                              }}
-                            >
-                              ▲ {deal.alert_badge}
-                            </span>
-                          </div>
-                        )}
-                        {(deal.items || []).map((line, i) => (
-                          <div key={i} style={{ fontSize: '12px', color: '#27272A', fontWeight: 500 }}>
-                            {line}
-                          </div>
-                        ))}
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div
-                            style={{
-                              width: '26px',
-                              height: '26px',
-                              borderRadius: '50%',
-                              background: '#18181B',
-                              color: '#EFA892',
-                              display: 'grid',
-                              placeItems: 'center',
-                              fontSize: '10px',
-                              fontWeight: 800,
-                            }}
-                          >
-                            {deal.avatar_seed || 'KT'}
-                          </div>
-                          <span style={{ fontSize: '16px', fontWeight: 800, color: '#18181B' }}>
-                            {formatDealPrice(deal)}
-                          </span>
-                        </div>
-
-                        <button
-                          onClick={() => handleAdvanceDeal(deal, 'ready')}
-                          style={{
-                            background: '#FFFFFF',
-                            color: '#18181B',
-                            border: 'none',
-                            borderRadius: '999px',
-                            padding: '6px 13px',
-                            fontSize: '11.5px',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            boxShadow: '0 4px 10px rgba(0,0,0,0.12)',
-                          }}
-                        >
-                          ◎ Mark ready
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* ================= COLUMN 3: READY (Soft Mint `#BCE3D4`) ================= */}
-                <div
-                  style={{
-                    background: '#11192B',
-                    border: '1px solid rgba(255,255,255,0.07)',
-                    borderRadius: '20px',
-                    padding: '14px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px',
-                    position: 'relative',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '2px 4px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span
-                        style={{
-                          width: '8px',
-                          height: '8px',
-                          borderRadius: '50%',
-                          background: '#BCE3D4',
-                        }}
-                      />
-                      <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#F8FAFC' }}>Ready</span>
-                      <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 600 }}>
-                        {readyDeals.length}
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 600 }}>
-                      {formatColumnTotal(readyDeals)}
-                    </span>
-                  </div>
-
-                  {readyDeals.map((deal) => {
-                    const isElevated = deal.ticket_number === elevatedTicket;
-                    return (
-                      <div
-                        key={deal.id}
-                        onClick={() => setElevatedTicket(isElevated ? null : deal.ticket_number)}
-                        style={{
-                          background: '#BCE3D4',
-                          color: '#18181B',
-                          borderRadius: '16px',
-                          padding: '14px',
-                          boxShadow: isElevated
-                            ? '0 26px 55px rgba(0,0,0,0.65), 0 0 0 2px #FFF'
-                            : '0 10px 24px rgba(0,0,0,0.22)',
-                          transform: isElevated ? 'translate(-24px, -6px) rotate(-1.5deg) scale(1.03)' : 'none',
-                          transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-                          zIndex: isElevated ? 30 : 1,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '10px',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#3F3F46' }}>
-                              {deal.ticket_number}
-                            </span>
-                            <span
-                              style={{
-                                background: 'rgba(255,255,255,0.75)',
-                                color: '#065F46',
-                                borderRadius: '999px',
-                                padding: '2px 8px',
-                                fontSize: '10.5px',
-                                fontWeight: 700,
-                              }}
-                            >
-                              🕒 {deal.elapsed_minutes} min
-                            </span>
-                          </div>
-                          <span style={{ fontSize: '11px', color: '#3F3F46' }}>•••</span>
-                        </div>
-
-                        <div style={{ fontSize: '16px', fontWeight: 800, color: '#18181B' }}>
-                          🍴 {deal.table_label}
-                        </div>
-
+                      {col.items.map((deal) => (
                         <div
+                          key={deal.id}
+                          draggable
+                          onDragStart={() => setDraggedDeal(deal)}
+                          onDragEnd={() => {
+                            setDraggedDeal(null);
+                            setDragOverStage(null);
+                          }}
                           style={{
-                            borderTop: '1px solid rgba(24,24,27,0.1)',
-                            borderBottom: '1px solid rgba(24,24,27,0.1)',
-                            padding: '8px 0',
+                            background: col.cardBg,
+                            color: col.cardText,
+                            borderRadius: '16px',
+                            padding: '14px',
+                            boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '4px',
+                            gap: '10px',
+                            cursor: 'grab',
                           }}
                         >
-                          {deal.alert_badge && (
-                            <div style={{ marginBottom: '3px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '11.5px', fontWeight: 700, opacity: 0.8 }}>
+                                {deal.ticket_number}
+                              </span>
                               <span
                                 style={{
-                                  display: 'inline-block',
-                                  background: '#18181B',
-                                  color: '#F8FAFC',
-                                  borderRadius: '6px',
+                                  background: 'rgba(255,255,255,0.65)',
+                                  color: '#18181B',
+                                  borderRadius: '999px',
                                   padding: '2px 8px',
                                   fontSize: '10.5px',
                                   fontWeight: 700,
                                 }}
                               >
-                                ▲ {deal.alert_badge}
+                                🕒 {deal.elapsed_minutes} min
                               </span>
                             </div>
-                          )}
-                          {(deal.items || []).map((line, i) => (
-                            <div key={i} style={{ fontSize: '12px', color: '#18181B', fontWeight: 500 }}>
-                              {line}
-                            </div>
-                          ))}
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div
+                            <button
+                              onClick={() => deleteSuperadminCrmDeal(deal.id).then(fetchAllData)}
+                              title="Delete deal"
                               style={{
-                                width: '26px',
-                                height: '26px',
+                                background: 'rgba(0,0,0,0.08)',
+                                border: 'none',
                                 borderRadius: '50%',
-                                background: '#065F46',
-                                color: '#BCE3D4',
-                                display: 'grid',
-                                placeItems: 'center',
-                                fontSize: '10px',
-                                fontWeight: 800,
+                                width: '24px',
+                                height: '24px',
+                                cursor: 'pointer',
+                                color: col.cardText,
+                                fontSize: '11px',
                               }}
                             >
-                              {deal.avatar_seed || 'YT'}
-                            </div>
-                            <span style={{ fontSize: '16px', fontWeight: 800, color: '#18181B' }}>
-                              {formatDealPrice(deal)}
-                            </span>
+                              •••
+                            </button>
                           </div>
 
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAdvanceDeal(deal, 'served', true);
-                            }}
-                            style={{
-                              background: '#FFFFFF',
-                              color: '#18181B',
-                              border: 'none',
-                              borderRadius: '999px',
-                              padding: '6px 14px',
-                              fontSize: '11.5px',
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              boxShadow: '0 4px 10px rgba(0,0,0,0.12)',
-                            }}
-                          >
-                            ✓ Served
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* ================= COLUMN 4: SERVED / CLOSED WON (Dark Slate `#1B263B`) ================= */}
-                <div
-                  style={{
-                    background: '#11192B',
-                    border: '1px solid rgba(255,255,255,0.07)',
-                    borderRadius: '20px',
-                    padding: '14px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '2px 4px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span
-                        style={{
-                          width: '8px',
-                          height: '8px',
-                          borderRadius: '50%',
-                          background: '#64748B',
-                        }}
-                      />
-                      <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#F8FAFC' }}>Served</span>
-                      <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 600 }}>
-                        {servedDeals.length}
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 600 }}>
-                      {formatColumnTotal(servedDeals)}
-                    </span>
-                  </div>
-
-                  {servedDeals.map((deal) => (
-                    <div
-                      key={deal.id}
-                      style={{
-                        background: '#172237',
-                        color: '#F8FAFC',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        borderRadius: '16px',
-                        padding: '14px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '10px',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#94A3B8' }}>
-                            {deal.ticket_number}
-                          </span>
-                          <span style={{ fontSize: '10.5px', color: '#64748B', fontWeight: 600 }}>
-                            ✓ {deal.elapsed_minutes} min
-                          </span>
-                        </div>
-                        <span style={{ fontSize: '11px', color: '#64748B' }}>•••</span>
-                      </div>
-
-                      <div style={{ fontSize: '15.5px', fontWeight: 700, color: '#F8FAFC' }}>
-                        👤 {deal.table_label}
-                      </div>
-
-                      <div
-                        style={{
-                          borderTop: '1px solid rgba(255,255,255,0.07)',
-                          borderBottom: '1px solid rgba(255,255,255,0.07)',
-                          padding: '8px 0',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '4px',
-                        }}
-                      >
-                        {deal.alert_badge && (
-                          <div style={{ marginBottom: '3px' }}>
-                            <span
-                              style={{
-                                display: 'inline-block',
-                                background: '#EADCA6',
-                                color: '#18181B',
-                                borderRadius: '6px',
-                                padding: '2px 8px',
-                                fontSize: '10.5px',
-                                fontWeight: 700,
-                              }}
-                            >
-                              ▲ {deal.alert_badge}
-                            </span>
+                          <div style={{ fontSize: '15.5px', fontWeight: 800 }}>
+                            🏪 {deal.table_label}
                           </div>
-                        )}
-                        {(deal.items || []).map((line, i) => (
-                          <div key={i} style={{ fontSize: '12px', color: '#CBD5E1' }}>
-                            {line}
-                          </div>
-                        ))}
-                      </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <div
                             style={{
-                              width: '26px',
-                              height: '26px',
-                              borderRadius: '50%',
-                              background: '#263654',
-                              color: '#F3A68F',
-                              display: 'grid',
-                              placeItems: 'center',
-                              fontSize: '10px',
-                              fontWeight: 800,
+                              borderTop: '1px solid rgba(0,0,0,0.1)',
+                              borderBottom: '1px solid rgba(0,0,0,0.1)',
+                              padding: '8px 0',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '4px',
                             }}
                           >
-                            {deal.avatar_seed || 'LH'}
+                            {deal.alert_badge && (
+                              <div style={{ marginBottom: '3px' }}>
+                                <span
+                                  style={{
+                                    display: 'inline-block',
+                                    background: '#18181B',
+                                    color: '#F8FAFC',
+                                    borderRadius: '6px',
+                                    padding: '2px 8px',
+                                    fontSize: '10.5px',
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  ▲ {deal.alert_badge}
+                                </span>
+                              </div>
+                            )}
+                            {(deal.items || []).map((line, i) => (
+                              <div key={i} style={{ fontSize: '12px', opacity: 0.9, fontWeight: 500 }}>
+                                {line}
+                              </div>
+                            ))}
                           </div>
-                          <span style={{ fontSize: '15.5px', fontWeight: 800, color: '#F8FAFC' }}>
-                            {formatDealPrice(deal)}
-                          </span>
-                        </div>
 
-                        <button
-                          onClick={() => handleTogglePaymentStatus(deal)}
-                          style={{
-                            background:
-                              deal.payment_status === 'Paid'
-                                ? 'rgba(156, 226, 198, 0.14)'
-                                : 'rgba(243, 166, 143, 0.16)',
-                            color: deal.payment_status === 'Paid' ? '#9CE2C6' : '#F3A68F',
-                            border: '1px solid rgba(255,255,255,0.08)',
-                            borderRadius: '999px',
-                            padding: '5px 12px',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {deal.payment_status === 'Paid' ? '✓ Paid' : 'Unpaid'}
-                        </button>
-                      </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div
+                                style={{
+                                  width: '26px',
+                                  height: '26px',
+                                  borderRadius: '50%',
+                                  background: '#18181B',
+                                  color: '#EADCA6',
+                                  display: 'grid',
+                                  placeItems: 'center',
+                                  fontSize: '10px',
+                                  fontWeight: 800,
+                                }}
+                              >
+                                {deal.avatar_seed || 'TN'}
+                              </div>
+                              <span style={{ fontSize: '16px', fontWeight: 800 }}>
+                                {formatDealPrice(deal)}
+                              </span>
+                            </div>
+
+                            {col.nextStage ? (
+                              <button
+                                onClick={() =>
+                                  handleAdvanceDeal(deal, col.nextStage, col.nextStage === 'served')
+                                }
+                                style={{
+                                  background: '#18181B',
+                                  color: '#FFFFFF',
+                                  border: 'none',
+                                  borderRadius: '999px',
+                                  padding: '6px 14px',
+                                  fontSize: '11.5px',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                {col.btnLabel}
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleTogglePaymentStatus(deal)}
+                                style={{
+                                  background:
+                                    deal.payment_status === 'Paid' ? '#0E7C5B' : '#C84B31',
+                                  color: '#FFFFFF',
+                                  border: 'none',
+                                  borderRadius: '999px',
+                                  padding: '5px 12px',
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                {deal.payment_status === 'Paid' ? '✓ Paid' : 'Unpaid'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             ) : (
-              /* LIST VIEW MODE */
+              /* LIST VIEW */
               <div
                 style={{
-                  background: '#121B2D',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: surfaceBg,
+                  border: `1px solid ${surfaceBorder}`,
                   borderRadius: '20px',
                   overflow: 'hidden',
                 }}
               >
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#94A3B8', fontSize: '12px' }}>
+                    <tr style={{ borderBottom: `1px solid ${surfaceBorder}`, color: textSecondary, fontSize: '12px' }}>
                       <th style={{ padding: '14px 18px' }}>Ticket</th>
-                      <th style={{ padding: '14px 18px' }}>Table / Tenant Brand</th>
+                      <th style={{ padding: '14px 18px' }}>Tenant Brand</th>
                       <th style={{ padding: '14px 18px' }}>PIC</th>
-                      <th style={{ padding: '14px 18px' }}>Channel / Plan</th>
+                      <th style={{ padding: '14px 18px' }}>Plan</th>
                       <th style={{ padding: '14px 18px' }}>Stage</th>
                       <th style={{ padding: '14px 18px' }}>Value</th>
-                      <th style={{ padding: '14px 18px' }}>Payment</th>
                       <th style={{ padding: '14px 18px', textAlign: 'right' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredDeals.map((d) => (
-                      <tr key={d.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '13px' }}>
-                        <td style={{ padding: '12px 18px', fontWeight: 700, color: '#F3A68F' }}>{d.ticket_number}</td>
+                      <tr key={d.id} style={{ borderBottom: `1px solid ${surfaceBorder}`, fontSize: '13px' }}>
+                        <td style={{ padding: '12px 18px', fontWeight: 700 }}>{d.ticket_number}</td>
                         <td style={{ padding: '12px 18px', fontWeight: 700 }}>{d.table_label}</td>
-                        <td style={{ padding: '12px 18px', color: '#CBD5E1' }}>{d.pic_name}</td>
-                        <td style={{ padding: '12px 18px', color: '#94A3B8' }}>
-                          {d.channel_type} · {String(d.plan_code).toUpperCase()}
-                        </td>
-                        <td style={{ padding: '12px 18px' }}>
-                          <span
-                            style={{
-                              padding: '3px 10px',
-                              borderRadius: '999px',
-                              fontSize: '11px',
-                              fontWeight: 700,
-                              background:
-                                d.stage === 'new'
-                                  ? '#EADCA6'
-                                  : d.stage === 'cooking'
-                                  ? '#EFA892'
-                                  : d.stage === 'ready'
-                                  ? '#BCE3D4'
-                                  : '#263654',
-                              color: d.stage === 'served' ? '#F8FAFC' : '#18181B',
-                            }}
-                          >
-                            {d.stage.toUpperCase()}
-                          </span>
-                        </td>
+                        <td style={{ padding: '12px 18px', color: textSecondary }}>{d.pic_name}</td>
+                        <td style={{ padding: '12px 18px' }}>{String(d.plan_code).toUpperCase()}</td>
+                        <td style={{ padding: '12px 18px' }}>{d.stage.toUpperCase()}</td>
                         <td style={{ padding: '12px 18px', fontWeight: 700 }}>{formatDealPrice(d)}</td>
-                        <td style={{ padding: '12px 18px' }}>{d.payment_status}</td>
                         <td style={{ padding: '12px 18px', textAlign: 'right' }}>
                           {d.stage !== 'served' && (
                             <button
@@ -1718,8 +1536,8 @@ export default function SuperadminPage() {
                                 )
                               }
                               style={{
-                                background: '#F3A68F',
-                                color: '#0F172A',
+                                background: '#161920',
+                                color: '#FFFFFF',
                                 border: 'none',
                                 borderRadius: '999px',
                                 padding: '5px 12px',
@@ -1741,195 +1559,18 @@ export default function SuperadminPage() {
           </div>
         )}
 
-        {/* =====================================================================
-            TAB: FLOOR PLAN (Exact REA of Screenshot 2)
-           ===================================================================== */}
-        {activeTab === 'floor' && <TavolaFloorPlanView onTriggerToast={triggerToast} />}
-
-        {/* =====================================================================
-            TAB: REPORTS (Exact REA of Screenshot 3)
-           ===================================================================== */}
-        {activeTab === 'reports' && (
-          <TavolaSalesReportsView currency={currency} onTriggerToast={triggerToast} />
-        )}
-
-        {/* =====================================================================
-            TAB: OVERVIEW (Executive Platform & SaaS Summary)
-           ===================================================================== */}
-        {activeTab === 'overview' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
-              <div>
-                <h1
-                  style={{
-                    margin: 0,
-                    fontFamily: 'Georgia, "Times New Roman", serif',
-                    fontSize: '34px',
-                    fontWeight: 400,
-                    color: '#F8FAFC',
-                  }}
-                >
-                  Executive Overview
-                </h1>
-                <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#94A3B8' }}>
-                  Real-time Multi-Tenant SaaS telemetry, CRM deal velocity, and PostgreSQL cluster status
-                </p>
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button
-                  onClick={() => setActiveTab('orders')}
-                  style={{
-                    background: '#F3A68F',
-                    color: '#0F172A',
-                    border: 'none',
-                    borderRadius: '999px',
-                    padding: '9px 18px',
-                    fontSize: '12.5px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Open Kitchen / Deal Board →
-                </button>
-                <button
-                  onClick={() => setActiveTab('floor')}
-                  style={{
-                    background: '#18243A',
-                    color: '#F8FAFC',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '999px',
-                    padding: '9px 18px',
-                    fontSize: '12.5px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Open Floor Plan →
-                </button>
-              </div>
-            </div>
-
-            {/* 4 Pastel Metric Cards */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-                gap: '14px',
-              }}
-            >
-              <div style={{ background: '#EADCA6', color: '#18181B', borderRadius: '18px', padding: '18px 20px' }}>
-                <div style={{ fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase' }}>Total Tenants Terdaftar</div>
-                <div style={{ fontSize: '34px', fontWeight: 800, margin: '6px 0' }}>
-                  {stats?.tenants?.total ?? tenants.length}
-                </div>
-                <div style={{ fontSize: '12px', fontWeight: 600 }}>
-                  {stats?.tenants?.active ?? tenants.length} Active · {stats?.tenants?.suspended ?? 0} Suspended
-                </div>
-              </div>
-
-              <div style={{ background: '#EFA892', color: '#18181B', borderRadius: '18px', padding: '18px 20px' }}>
-                <div style={{ fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase' }}>Open CRM Pipeline Deals</div>
-                <div style={{ fontSize: '34px', fontWeight: 800, margin: '6px 0' }}>{openDealsCount}</div>
-                <div style={{ fontSize: '12px', fontWeight: 600 }}>
-                  {newDeals.length} New · {cookingDeals.length} Demo · {readyDeals.length} Ready
-                </div>
-              </div>
-
-              <div style={{ background: '#BCE3D4', color: '#18181B', borderRadius: '18px', padding: '18px 20px' }}>
-                <div style={{ fontSize: '11.5px', fontWeight: 700, textTransform: 'uppercase' }}>Total Cabang & Staff POS</div>
-                <div style={{ fontSize: '34px', fontWeight: 800, margin: '6px 0' }}>
-                  {stats?.branches?.total ?? 1} Cabang
-                </div>
-                <div style={{ fontSize: '12px', fontWeight: 600 }}>
-                  {stats?.users?.total ?? 4} Akun Staff ({stats?.users?.cashiers ?? 1} Kasir)
-                </div>
-              </div>
-
-              <div
-                style={{
-                  background: '#172237',
-                  color: '#F8FAFC',
-                  border: '1px solid rgba(255,255,255,0.09)',
-                  borderRadius: '18px',
-                  padding: '18px 20px',
-                }}
-              >
-                <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase' }}>
-                  Total Transaksi POS Live
-                </div>
-                <div style={{ fontSize: '34px', fontWeight: 800, margin: '6px 0', color: '#F3A68F' }}>
-                  {stats?.platform?.total_transactions ?? 0} Trx
-                </div>
-                <div style={{ fontSize: '12px', color: '#CBD5E1' }}>
-                  GMV: Rp {Number(stats?.platform?.total_gmv || 0).toLocaleString('id-ID')}
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Navigation Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '14px' }}>
-              {[
-                {
-                  title: 'Kitchen & CRM Deal Board',
-                  desc: 'Kanban 4 kolom (New, Cooking, Ready, Served) untuk memantau pipeline deal tenant dan tiket pesanan.',
-                  tab: 'orders',
-                  badge: `${deals.length} Tiket Aktif`,
-                  color: '#F3A68F',
-                },
-                {
-                  title: 'Interactive Blueprint Floor Plan',
-                  desc: 'Denah meja & klaster outlet interaktif dengan status kapasitas, antrean waitlist, dan penugasan server.',
-                  tab: 'floor',
-                  badge: '12 Node Klaster',
-                  color: '#EADCA6',
-                },
-                {
-                  title: 'SaaS & POS Sales Reports',
-                  desc: 'Analitik pendapatan 90 hari, donut channel mix, heatmap jam tersibuk 7x12, dan prime cost margin.',
-                  tab: 'reports',
-                  badge: 'Export CSV Ready',
-                  color: '#BCE3D4',
-                },
-              ].map((card) => (
-                <div
-                  key={card.tab}
-                  onClick={() => setActiveTab(card.tab)}
-                  style={{
-                    background: '#121B2D',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '18px',
-                    padding: '20px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      padding: '3px 10px',
-                      borderRadius: '999px',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      background: card.color,
-                      color: '#0F172A',
-                      marginBottom: '10px',
-                    }}
-                  >
-                    {card.badge}
-                  </span>
-                  <h3 style={{ margin: '0 0 6px', fontSize: '17px', color: '#F8FAFC' }}>{card.title}</h3>
-                  <p style={{ margin: 0, fontSize: '12.5px', color: '#94A3B8', lineHeight: 1.5 }}>{card.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* =====================================================================
-            TAB: RESERVATIONS / TENANTS DIRECTORY (Live PostgreSQL `tenants` CRUD)
-           ===================================================================== */}
-        {activeTab === 'reservations' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        {/* ===================================================================
+            TAB 4: INBOX [14] (Tenant Onboarding & Support CRM Inbox)
+           =================================================================== */}
+        {activeTab === 'inbox' && (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '18px',
+              animation: 'murmuraFadeSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
               <div>
                 <h1
@@ -1938,158 +1579,257 @@ export default function SuperadminPage() {
                     fontFamily: 'Georgia, "Times New Roman", serif',
                     fontSize: '34px',
                     fontWeight: 400,
-                    color: '#F8FAFC',
+                    color: textPrimary,
                   }}
                 >
-                  Tenants & Subscriptions
+                  Tenant CRM Inbox
                 </h1>
-                <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#94A3B8' }}>
-                  Kelola seluruh tenant restoran aktif, paket langganan (Starter / Pro / Franchise), dan status akses
+                <p style={{ margin: '4px 0 0', fontSize: '13px', color: textSecondary }}>
+                  Pesan langsung dari pemilik restoran, permintaan kustomisasi modul POS, dan tiket onboarding
                 </p>
               </div>
-
               <button
-                onClick={() => setShowOnboardModal(true)}
+                onClick={() => setShowNewDealModal(true)}
                 style={{
-                  background: '#F3A68F',
-                  color: '#0F172A',
-                  border: 'none',
-                  borderRadius: '999px',
                   padding: '9px 18px',
+                  borderRadius: '999px',
+                  border: 'none',
+                  background: '#161920',
+                  color: '#FFFFFF',
                   fontSize: '12.5px',
-                  fontWeight: 700,
+                  fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
-                + Deploy Tenant Baru
+                + Convert Message to Deal
               </button>
             </div>
 
             <div
               style={{
-                background: '#121B2D',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '20px',
-                overflowX: 'auto',
+                display: 'grid',
+                gridTemplateColumns: 'minmax(300px, 380px) 1fr',
+                gap: '18px',
+                alignItems: 'start',
               }}
             >
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#94A3B8', fontSize: '12px' }}>
-                    <th style={{ padding: '14px 18px' }}>ID & Nama Tenant</th>
-                    <th style={{ padding: '14px 18px' }}>Owner / Admin</th>
-                    <th style={{ padding: '14px 18px' }}>Cabang & User</th>
-                    <th style={{ padding: '14px 18px' }}>Paket Langganan</th>
-                    <th style={{ padding: '14px 18px' }}>Status</th>
-                    <th style={{ padding: '14px 18px', textAlign: 'right' }}>Kontrol Cepat</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tenants.map((t) => (
-                    <tr key={t.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '13px' }}>
-                      <td style={{ padding: '14px 18px' }}>
-                        <div style={{ fontWeight: 700, color: '#F8FAFC' }}>{t.name}</div>
-                        <div style={{ fontSize: '11.5px', color: '#64748B' }}>
-                          slug: <code>{t.slug}</code> {t.domain ? `· ${t.domain}` : ''}
+              {/* Left Message List */}
+              <div
+                style={{
+                  background: surfaceBg,
+                  border: `1px solid ${surfaceBorder}`,
+                  borderRadius: '20px',
+                  padding: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                }}
+              >
+                {inboxMessages.map((msg) => {
+                  const active = selectedInboxId === msg.id;
+                  return (
+                    <div
+                      key={msg.id}
+                      onClick={() => setSelectedInboxId(msg.id)}
+                      style={{
+                        padding: '12px',
+                        borderRadius: '14px',
+                        background: active
+                          ? isLight
+                            ? '#EBEAE2'
+                            : '#1E293B'
+                          : 'transparent',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        gap: '10px',
+                        alignItems: 'flex-start',
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '8px',
+                          background: msg.badgeColor,
+                          color: '#FFFFFF',
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          display: 'grid',
+                          placeItems: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {msg.badgeCode}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px' }}>
+                          <strong style={{ fontSize: '12.5px', color: textPrimary }}>{msg.brand}</strong>
+                          <span style={{ fontSize: '10.5px', color: textSecondary }}>{msg.time}</span>
                         </div>
-                      </td>
-                      <td style={{ padding: '14px 18px' }}>
-                        <div style={{ fontWeight: 600, color: '#E2E8F0' }}>{t.owner_name || 'Admin Tenant'}</div>
-                        <div style={{ fontSize: '11.5px', color: '#64748B' }}>{t.owner_email || '-'}</div>
-                      </td>
-                      <td style={{ padding: '14px 18px', color: '#CBD5E1' }}>
-                        {t.branch_count} Cabang · {t.user_count} User
-                      </td>
-                      <td style={{ padding: '14px 18px' }}>
-                        <select
-                          disabled={updatingTenantId === t.id}
-                          value={t.plan_code || 'starter'}
-                          onChange={(e) => handlePlanChange(t.id, e.target.value)}
+                        <div
                           style={{
-                            padding: '6px 12px',
-                            borderRadius: '999px',
-                            border: '1px solid rgba(255,255,255,0.12)',
-                            background:
-                              t.plan_code === 'franchise'
-                                ? '#F3A68F'
-                                : t.plan_code === 'pro'
-                                ? '#EADCA6'
-                                : '#1E2C46',
-                            color: t.plan_code === 'starter' ? '#F8FAFC' : '#0F172A',
-                            fontWeight: 700,
                             fontSize: '12px',
-                            cursor: 'pointer',
+                            fontWeight: 600,
+                            color: textPrimary,
+                            marginTop: '2px',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
                           }}
                         >
-                          <option value="starter">STARTER</option>
-                          <option value="pro">PRO</option>
-                          <option value="franchise">FRANCHISE</option>
-                        </select>
-                      </td>
-                      <td style={{ padding: '14px 18px' }}>
+                          {msg.subject}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: '11px',
+                            color: textSecondary,
+                            marginTop: '2px',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {msg.snippet}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Right Selected Message Detail */}
+              {(() => {
+                const msg = inboxMessages.find((m) => m.id === selectedInboxId) || inboxMessages[0];
+                return (
+                  <div
+                    style={{
+                      background: surfaceBg,
+                      border: `1px solid ${surfaceBorder}`,
+                      borderRadius: '20px',
+                      padding: '24px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '16px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <span
                           style={{
-                            padding: '4px 10px',
-                            borderRadius: '999px',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            background: t.status === 'active' ? 'rgba(156,226,198,0.16)' : 'rgba(243,166,143,0.18)',
-                            color: t.status === 'active' ? '#9CE2C6' : '#F3A68F',
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '10px',
+                            background: msg.badgeColor,
+                            color: '#FFFFFF',
+                            fontSize: '14px',
+                            fontWeight: 800,
+                            display: 'grid',
+                            placeItems: 'center',
                           }}
                         >
-                          {String(t.status || 'active').toUpperCase()}
+                          {msg.badgeCode}
                         </span>
-                      </td>
-                      <td style={{ padding: '14px 18px', textAlign: 'right' }}>
-                        {t.status === 'active' ? (
-                          <button
-                            disabled={updatingTenantId === t.id}
-                            onClick={() => handleStatusChange(t.id, 'suspended')}
-                            style={{
-                              background: 'rgba(243,166,143,0.15)',
-                              color: '#F3A68F',
-                              border: '1px solid rgba(243,166,143,0.3)',
-                              borderRadius: '999px',
-                              padding: '5px 12px',
-                              fontSize: '11.5px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Suspend
-                          </button>
-                        ) : (
-                          <button
-                            disabled={updatingTenantId === t.id}
-                            onClick={() => handleStatusChange(t.id, 'active')}
-                            style={{
-                              background: '#BCE3D4',
-                              color: '#0F172A',
-                              border: 'none',
-                              borderRadius: '999px',
-                              padding: '5px 12px',
-                              fontSize: '11.5px',
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Aktifkan
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        <div>
+                          <div style={{ fontSize: '16px', fontWeight: 700, color: textPrimary }}>
+                            {msg.brand} · {msg.sender}
+                          </div>
+                          <div style={{ fontSize: '12px', color: textSecondary }}>
+                            Channel: {msg.channel} · Plan: {msg.plan.toUpperCase()}
+                          </div>
+                        </div>
+                      </div>
+                      <span
+                        style={{
+                          padding: '4px 12px',
+                          borderRadius: '999px',
+                          background: '#E3F5EE',
+                          color: '#0E7C5B',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                        }}
+                      >
+                        ● Active SLA
+                      </span>
+                    </div>
+
+                    <div
+                      style={{
+                        padding: '18px',
+                        borderRadius: '14px',
+                        background: isLight ? '#FAF9F5' : '#182338',
+                        border: `1px solid ${surfaceBorder}`,
+                        fontSize: '13.5px',
+                        lineHeight: 1.6,
+                        color: textPrimary,
+                      }}
+                    >
+                      <div style={{ fontWeight: 700, marginBottom: '8px' }}>{msg.subject}</div>
+                      <div>{msg.snippet}</div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => {
+                          triggerToast(`Approved & scheduled ${msg.brand} request onto Calendar!`);
+                          setActiveTab('calendar');
+                        }}
+                        style={{
+                          padding: '9px 18px',
+                          borderRadius: '999px',
+                          border: 'none',
+                          background: '#0E7C5B',
+                          color: '#FFFFFF',
+                          fontSize: '12.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ✓ Approve & Schedule on Calendar
+                      </button>
+                      <button
+                        onClick={() => {
+                          setNewDealForm((p) => ({
+                            ...p,
+                            table_label: `Table · ${msg.brand}`,
+                            tenant_brand: msg.brand,
+                            pic_name: msg.sender,
+                            plan_code: msg.plan,
+                          }));
+                          setShowNewDealModal(true);
+                        }}
+                        style={{
+                          padding: '9px 18px',
+                          borderRadius: '999px',
+                          border: `1px solid ${surfaceBorder}`,
+                          background: surfaceBg,
+                          color: textPrimary,
+                          fontSize: '12.5px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        + Push to Deals Board
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
 
-        {/* =====================================================================
-            TAB: MENU (SaaS Packages & Pricing Tiers)
-           ===================================================================== */}
-        {activeTab === 'menu' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        {/* ===================================================================
+            TAB 5: APPROVALS [5] (Tenant Plan Upgrades & Pricing Menu)
+           =================================================================== */}
+        {activeTab === 'approvals' && (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px',
+              animation: 'murmuraFadeSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
+          >
             <div>
               <h1
                 style={{
@@ -2097,13 +1837,13 @@ export default function SuperadminPage() {
                   fontFamily: 'Georgia, "Times New Roman", serif',
                   fontSize: '34px',
                   fontWeight: 400,
-                  color: '#F8FAFC',
+                  color: textPrimary,
                 }}
               >
-                SaaS Packages & Pricing Menu
+                Approvals & SaaS Packages
               </h1>
-              <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#94A3B8' }}>
-                Katalog paket berlangganan Santapos untuk penawaran CRM Deal Board
+              <p style={{ margin: '4px 0 0', fontSize: '13px', color: textSecondary }}>
+                Persetujuan upgrade paket tenant (Starter, Pro, Franchise) dan katalog harga langganan
               </p>
             </div>
 
@@ -2132,7 +1872,7 @@ export default function SuperadminPage() {
                     'Hingga 5 Cabang & 25 Akun Staff',
                     'Manajemen Stok Bahan Baku & HPP Resep',
                     'Integrasi Midtrans QRIS & Webhook Otomatis',
-                    'AI Smart Assistant & Kitchen Display System',
+                    'Interactive Floor Plan & Kitchen Display System',
                   ],
                 },
                 {
@@ -2211,11 +1951,35 @@ export default function SuperadminPage() {
           </div>
         )}
 
-        {/* =====================================================================
-            TAB: INVENTORY (Database & Cloud Storage + Midtrans Gateway Shortcut)
-           ===================================================================== */}
-        {activeTab === 'inventory' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        {/* ===================================================================
+            TAB 6: ANALYTICS (Sales & Revenue Reports)
+           =================================================================== */}
+        {activeTab === 'reports' && (
+          <div
+            style={{
+              background: '#0F172A',
+              borderRadius: '24px',
+              padding: '24px',
+              color: '#F8FAFC',
+              boxShadow: '0 16px 40px rgba(15, 23, 42, 0.18)',
+            }}
+          >
+            <TavolaSalesReportsView currency={currency} onTriggerToast={triggerToast} />
+          </div>
+        )}
+
+        {/* ===================================================================
+            TAB 7: LISTENING · TENANTS DIRECTORY & DATABASE ENGINE
+           =================================================================== */}
+        {activeTab === 'listening' && (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '24px',
+              animation: 'murmuraFadeSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
               <div>
                 <h1
@@ -2224,102 +1988,185 @@ export default function SuperadminPage() {
                     fontFamily: 'Georgia, "Times New Roman", serif',
                     fontSize: '34px',
                     fontWeight: 400,
-                    color: '#F8FAFC',
+                    color: textPrimary,
                   }}
                 >
-                  Database, Cloud Storage & Payment Gateway
+                  Active Tenants & Database Infrastructure
                 </h1>
-                <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#94A3B8' }}>
-                  Konfigurasi koneksi PostgreSQL (Supabase / Neon), 1-Click Schema Migration, S3 Bucket, dan Rekonsiliasi Midtrans
+                <p style={{ margin: '4px 0 0', fontSize: '13px', color: textSecondary }}>
+                  Kelola seluruh tenant restoran aktif, paket langganan, dan konfigurasi PostgreSQL / Supabase Storage
                 </p>
               </div>
 
-              <Link
-                href="/dashboard/payment-gateway"
-                style={{
-                  background: '#F3A68F',
-                  color: '#0F172A',
-                  textDecoration: 'none',
-                  borderRadius: '999px',
-                  padding: '9px 18px',
-                  fontSize: '12.5px',
-                  fontWeight: 700,
-                }}
-              >
-                💳 Buka Audit & Sync Midtrans →
-              </Link>
-            </div>
-
-            <DatabaseSettingsPanel />
-          </div>
-        )}
-
-        {/* =====================================================================
-            TAB: STAFF (Account Managers & Live Staff Overview)
-           ===================================================================== */}
-        {activeTab === 'staff' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-            <div>
-              <h1
-                style={{
-                  margin: 0,
-                  fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '34px',
-                  fontWeight: 400,
-                  color: '#F8FAFC',
-                }}
-              >
-                Staff & Account Managers
-              </h1>
-              <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#94A3B8' }}>
-                Tim onboarding SaaS Superadmin dan ringkasan pengguna aktif lintas tenant
-              </p>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '14px' }}>
-              {[
-                { name: 'Super Admin Santapos', email: 'superadmin@santapos.id', role: 'SUPERADMIN', badge: '#F3A68F' },
-                { name: 'Admin Demo Resto', email: 'admin@santapos.id', role: 'ADMIN TOKO', badge: '#EADCA6' },
-                { name: 'Kasir Cabang Utama', email: 'kasir@santapos.id', role: 'KASIR POS', badge: '#BCE3D4' },
-                { name: 'Tim Dapur (KDS)', email: 'kitchen@santapos.id', role: 'KITCHEN', badge: '#93C5FD' },
-              ].map((u) => (
-                <div
-                  key={u.email}
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <Link
+                  href="/superadmin/inspector"
                   style={{
-                    background: '#121B2D',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '18px',
-                    padding: '18px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
+                    background: '#0E7C5B',
+                    color: '#FFFFFF',
+                    textDecoration: 'none',
+                    borderRadius: '999px',
+                    padding: '9px 18px',
+                    fontSize: '12.5px',
+                    fontWeight: 700,
                   }}
                 >
-                  <span
-                    style={{
-                      alignSelf: 'flex-start',
-                      padding: '3px 10px',
-                      borderRadius: '999px',
-                      fontSize: '10.5px',
-                      fontWeight: 800,
-                      background: u.badge,
-                      color: '#0F172A',
-                    }}
-                  >
-                    {u.role}
-                  </span>
-                  <div style={{ fontSize: '16px', fontWeight: 700, color: '#F8FAFC' }}>{u.name}</div>
-                  <div style={{ fontSize: '12px', color: '#94A3B8' }}>{u.email}</div>
-                  <div style={{ fontSize: '11px', color: '#9CE2C6', marginTop: '4px' }}>● Ready · Password: santapos123</div>
-                </div>
-              ))}
+                  🖥️ Inspect Role Admin / Kasir / Kitchen ↗
+                </Link>
+                <button
+                  onClick={() => setShowOnboardModal(true)}
+                  style={{
+                    background: '#161920',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: '999px',
+                    padding: '9px 18px',
+                    fontSize: '12.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  + Deploy Tenant Baru
+                </button>
+              </div>
+            </div>
+
+            {/* Tenants Table */}
+            <div
+              style={{
+                background: surfaceBg,
+                border: `1px solid ${surfaceBorder}`,
+                borderRadius: '20px',
+                overflowX: 'auto',
+              }}
+            >
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${surfaceBorder}`, color: textSecondary, fontSize: '12px' }}>
+                    <th style={{ padding: '14px 18px' }}>Nama Tenant</th>
+                    <th style={{ padding: '14px 18px' }}>Owner / Admin</th>
+                    <th style={{ padding: '14px 18px' }}>Cabang & User</th>
+                    <th style={{ padding: '14px 18px' }}>Paket Langganan</th>
+                    <th style={{ padding: '14px 18px' }}>Status</th>
+                    <th style={{ padding: '14px 18px', textAlign: 'right' }}>Kontrol Cepat</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tenants.map((t) => (
+                    <tr key={t.id} style={{ borderBottom: `1px solid ${surfaceBorder}`, fontSize: '13px' }}>
+                      <td style={{ padding: '14px 18px' }}>
+                        <div style={{ fontWeight: 700, color: textPrimary }}>{t.name}</div>
+                        <div style={{ fontSize: '11.5px', color: textSecondary }}>
+                          slug: <code>{t.slug}</code>
+                        </div>
+                      </td>
+                      <td style={{ padding: '14px 18px' }}>
+                        <div style={{ fontWeight: 600, color: textPrimary }}>{t.owner_name || 'Admin Tenant'}</div>
+                        <div style={{ fontSize: '11.5px', color: textSecondary }}>{t.owner_email || '-'}</div>
+                      </td>
+                      <td style={{ padding: '14px 18px', color: textSecondary }}>
+                        {t.branch_count} Cabang · {t.user_count} User
+                      </td>
+                      <td style={{ padding: '14px 18px' }}>
+                        <select
+                          disabled={updatingTenantId === t.id}
+                          value={t.plan_code || 'starter'}
+                          onChange={(e) => handlePlanChange(t.id, e.target.value)}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '999px',
+                            border: `1px solid ${surfaceBorder}`,
+                            background:
+                              t.plan_code === 'franchise'
+                                ? '#BCE3D4'
+                                : t.plan_code === 'pro'
+                                ? '#EFA892'
+                                : '#EADCA6',
+                            color: '#14171D',
+                            fontWeight: 700,
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <option value="starter">STARTER</option>
+                          <option value="pro">PRO</option>
+                          <option value="franchise">FRANCHISE</option>
+                        </select>
+                      </td>
+                      <td style={{ padding: '14px 18px' }}>
+                        <span
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: '999px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            background: t.status === 'active' ? '#E3F5EE' : '#FDECE8',
+                            color: t.status === 'active' ? '#0E7C5B' : '#C84B31',
+                          }}
+                        >
+                          {String(t.status || 'active').toUpperCase()}
+                        </span>
+                      </td>
+                      <td style={{ padding: '14px 18px', textAlign: 'right' }}>
+                        {t.status === 'active' ? (
+                          <button
+                            disabled={updatingTenantId === t.id}
+                            onClick={() => handleStatusChange(t.id, 'suspended')}
+                            style={{
+                              background: '#FDECE8',
+                              color: '#C84B31',
+                              border: 'none',
+                              borderRadius: '999px',
+                              padding: '5px 12px',
+                              fontSize: '11.5px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Suspend
+                          </button>
+                        ) : (
+                          <button
+                            disabled={updatingTenantId === t.id}
+                            onClick={() => handleStatusChange(t.id, 'active')}
+                            style={{
+                              background: '#0E7C5B',
+                              color: '#FFFFFF',
+                              border: 'none',
+                              borderRadius: '999px',
+                              padding: '5px 12px',
+                              fontSize: '11.5px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Aktifkan
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Database Settings Panel */}
+            <div
+              style={{
+                background: '#0F172A',
+                borderRadius: '22px',
+                padding: '22px',
+                color: '#F8FAFC',
+              }}
+            >
+              <DatabaseSettingsPanel />
             </div>
           </div>
         )}
       </main>
 
       {/* =====================================================================
-          MODAL: + NEW ORDER / CRM DEAL
+          MODAL: + NEW TENANT DEAL
          ===================================================================== */}
       {showNewDealModal && (
         <div
@@ -2327,7 +2174,7 @@ export default function SuperadminPage() {
             position: 'fixed',
             inset: 0,
             zIndex: 80,
-            background: 'rgba(8, 13, 24, 0.78)',
+            background: 'rgba(8, 13, 24, 0.65)',
             backdropFilter: 'blur(6px)',
             display: 'grid',
             placeItems: 'center',
@@ -2339,43 +2186,56 @@ export default function SuperadminPage() {
             style={{
               width: '100%',
               maxWidth: '480px',
-              background: '#131C2E',
-              border: '1px solid rgba(255,255,255,0.12)',
+              background: surfaceBg,
+              color: textPrimary,
+              border: `1px solid ${surfaceBorder}`,
               borderRadius: '22px',
               padding: '24px',
               display: 'flex',
               flexDirection: 'column',
               gap: '12px',
-              boxShadow: '0 24px 60px rgba(0,0,0,0.6)',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '18px', color: '#F8FAFC' }}>+ New Kitchen Ticket / Tenant Deal</h3>
+              <h3 style={{ margin: 0, fontSize: '18px' }}>+ New Tenant Deal / Rollout</h3>
               <button
                 type="button"
                 onClick={() => setShowNewDealModal(false)}
-                style={{ background: 'transparent', border: 'none', color: '#94A3B8', fontSize: '18px', cursor: 'pointer' }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: textSecondary,
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                }}
               >
                 ✕
               </button>
             </div>
 
             <div>
-              <label style={{ fontSize: '11.5px', color: '#94A3B8' }}>Table / Label Kartu</label>
+              <label style={{ fontSize: '11.5px', color: textSecondary }}>Nama Brand Restoran / Deal</label>
               <input
                 type="text"
                 required
-                placeholder="Contoh: Table 8 · Hoka Hoka Bento"
+                placeholder="Contoh: Ember & Oak · Kemang Flagship"
                 value={newDealForm.table_label}
-                onChange={(e) => setNewDealForm((p) => ({ ...p, table_label: e.target.value, tenant_brand: e.target.value }))}
+                onChange={(e) =>
+                  setNewDealForm((p) => ({
+                    ...p,
+                    table_label: e.target.value,
+                    tenant_brand: e.target.value,
+                  }))
+                }
                 style={{
                   width: '100%',
                   marginTop: '4px',
                   padding: '9px 12px',
                   borderRadius: '10px',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  background: '#0C1322',
-                  color: '#F8FAFC',
+                  border: `1px solid ${surfaceBorder}`,
+                  background: isLight ? '#FAF9F5' : '#0C1322',
+                  color: textPrimary,
                   fontSize: '13px',
                 }}
               />
@@ -2383,10 +2243,10 @@ export default function SuperadminPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <div>
-                <label style={{ fontSize: '11.5px', color: '#94A3B8' }}>Nama PIC / Guest</label>
+                <label style={{ fontSize: '11.5px', color: textSecondary }}>Nama PIC / Owner</label>
                 <input
                   type="text"
-                  placeholder="Contoh: Hendra Wijaya"
+                  placeholder="Contoh: Rio Pratama"
                   value={newDealForm.pic_name}
                   onChange={(e) => setNewDealForm((p) => ({ ...p, pic_name: e.target.value }))}
                   style={{
@@ -2394,16 +2254,16 @@ export default function SuperadminPage() {
                     marginTop: '4px',
                     padding: '9px 12px',
                     borderRadius: '10px',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    background: '#0C1322',
-                    color: '#F8FAFC',
+                    border: `1px solid ${surfaceBorder}`,
+                    background: isLight ? '#FAF9F5' : '#0C1322',
+                    color: textPrimary,
                     fontSize: '13px',
                   }}
                 />
               </div>
 
               <div>
-                <label style={{ fontSize: '11.5px', color: '#94A3B8' }}>Nilai ($ USD)</label>
+                <label style={{ fontSize: '11.5px', color: textSecondary }}>Nilai Kontrak ($ USD)</label>
                 <input
                   type="number"
                   value={newDealForm.amount_usd}
@@ -2413,63 +2273,17 @@ export default function SuperadminPage() {
                     marginTop: '4px',
                     padding: '9px 12px',
                     borderRadius: '10px',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    background: '#0C1322',
-                    color: '#F8FAFC',
+                    border: `1px solid ${surfaceBorder}`,
+                    background: isLight ? '#FAF9F5' : '#0C1322',
+                    color: textPrimary,
                     fontSize: '13px',
                   }}
                 />
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              <div>
-                <label style={{ fontSize: '11.5px', color: '#94A3B8' }}>Channel</label>
-                <select
-                  value={newDealForm.channel_type}
-                  onChange={(e) => setNewDealForm((p) => ({ ...p, channel_type: e.target.value }))}
-                  style={{
-                    width: '100%',
-                    marginTop: '4px',
-                    padding: '9px 12px',
-                    borderRadius: '10px',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    background: '#0C1322',
-                    color: '#F8FAFC',
-                    fontSize: '13px',
-                  }}
-                >
-                  <option value="Dine-in">Dine-in · Franchise</option>
-                  <option value="Takeaway">Takeaway · Pro</option>
-                  <option value="Delivery">Delivery · Starter</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '11.5px', color: '#94A3B8' }}>Paket SaaS</label>
-                <select
-                  value={newDealForm.plan_code}
-                  onChange={(e) => setNewDealForm((p) => ({ ...p, plan_code: e.target.value }))}
-                  style={{
-                    width: '100%',
-                    marginTop: '4px',
-                    padding: '9px 12px',
-                    borderRadius: '10px',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    background: '#0C1322',
-                    color: '#F8FAFC',
-                    fontSize: '13px',
-                  }}
-                >
-                  <option value="franchise">Franchise</option>
-                  <option value="pro">Pro</option>
-                  <option value="starter">Starter</option>
-                </select>
-              </div>
-            </div>
-
             <div>
-              <label style={{ fontSize: '11.5px', color: '#94A3B8' }}>Item Pesanan / Modul (1 per baris)</label>
+              <label style={{ fontSize: '11.5px', color: textSecondary }}>Modul & Kebutuhan Tenant (1 per baris)</label>
               <textarea
                 rows={4}
                 value={newDealForm.items_text}
@@ -2479,9 +2293,9 @@ export default function SuperadminPage() {
                   marginTop: '4px',
                   padding: '9px 12px',
                   borderRadius: '10px',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  background: '#0C1322',
-                  color: '#F8FAFC',
+                  border: `1px solid ${surfaceBorder}`,
+                  background: isLight ? '#FAF9F5' : '#0C1322',
+                  color: textPrimary,
                   fontSize: '12.5px',
                 }}
               />
@@ -2492,9 +2306,9 @@ export default function SuperadminPage() {
                 type="button"
                 onClick={() => setShowNewDealModal(false)}
                 style={{
-                  background: '#1E2C46',
-                  color: '#CBD5E1',
-                  border: 'none',
+                  background: 'transparent',
+                  color: textSecondary,
+                  border: `1px solid ${surfaceBorder}`,
                   borderRadius: '999px',
                   padding: '8px 16px',
                   fontSize: '12.5px',
@@ -2506,8 +2320,8 @@ export default function SuperadminPage() {
               <button
                 type="submit"
                 style={{
-                  background: '#F3A68F',
-                  color: '#0F172A',
+                  background: '#0E7C5B',
+                  color: '#FFFFFF',
                   border: 'none',
                   borderRadius: '999px',
                   padding: '8px 20px',
@@ -2516,7 +2330,7 @@ export default function SuperadminPage() {
                   cursor: 'pointer',
                 }}
               >
-                Simpan ke Board
+                Simpan Deal
               </button>
             </div>
           </form>
@@ -2532,7 +2346,7 @@ export default function SuperadminPage() {
             position: 'fixed',
             inset: 0,
             zIndex: 80,
-            background: 'rgba(8, 13, 24, 0.78)',
+            background: 'rgba(8, 13, 24, 0.65)',
             backdropFilter: 'blur(6px)',
             display: 'grid',
             placeItems: 'center',
@@ -2544,8 +2358,9 @@ export default function SuperadminPage() {
             style={{
               width: '100%',
               maxWidth: '440px',
-              background: '#131C2E',
-              border: '1px solid rgba(255,255,255,0.12)',
+              background: surfaceBg,
+              color: textPrimary,
+              border: `1px solid ${surfaceBorder}`,
               borderRadius: '22px',
               padding: '24px',
               display: 'flex',
@@ -2553,7 +2368,7 @@ export default function SuperadminPage() {
               gap: '12px',
             }}
           >
-            <h3 style={{ margin: 0, fontSize: '18px', color: '#F8FAFC' }}>Deploy Tenant Restoran Baru</h3>
+            <h3 style={{ margin: 0, fontSize: '18px' }}>Deploy Tenant Restoran Baru</h3>
             <input
               type="text"
               required
@@ -2563,9 +2378,9 @@ export default function SuperadminPage() {
               style={{
                 padding: '9px 12px',
                 borderRadius: '10px',
-                border: '1px solid rgba(255,255,255,0.12)',
-                background: '#0C1322',
-                color: '#F8FAFC',
+                border: `1px solid ${surfaceBorder}`,
+                background: isLight ? '#FAF9F5' : '#0C1322',
+                color: textPrimary,
               }}
             />
             <input
@@ -2577,9 +2392,9 @@ export default function SuperadminPage() {
               style={{
                 padding: '9px 12px',
                 borderRadius: '10px',
-                border: '1px solid rgba(255,255,255,0.12)',
-                background: '#0C1322',
-                color: '#F8FAFC',
+                border: `1px solid ${surfaceBorder}`,
+                background: isLight ? '#FAF9F5' : '#0C1322',
+                color: textPrimary,
               }}
             />
             <input
@@ -2591,9 +2406,9 @@ export default function SuperadminPage() {
               style={{
                 padding: '9px 12px',
                 borderRadius: '10px',
-                border: '1px solid rgba(255,255,255,0.12)',
-                background: '#0C1322',
-                color: '#F8FAFC',
+                border: `1px solid ${surfaceBorder}`,
+                background: isLight ? '#FAF9F5' : '#0C1322',
+                color: textPrimary,
               }}
             />
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
@@ -2601,9 +2416,9 @@ export default function SuperadminPage() {
                 type="button"
                 onClick={() => setShowOnboardModal(false)}
                 style={{
-                  background: '#1E2C46',
-                  color: '#CBD5E1',
-                  border: 'none',
+                  background: 'transparent',
+                  color: textSecondary,
+                  border: `1px solid ${surfaceBorder}`,
                   borderRadius: '999px',
                   padding: '8px 16px',
                   cursor: 'pointer',
@@ -2614,8 +2429,8 @@ export default function SuperadminPage() {
               <button
                 type="submit"
                 style={{
-                  background: '#BCE3D4',
-                  color: '#0F172A',
+                  background: '#0E7C5B',
+                  color: '#FFFFFF',
                   border: 'none',
                   borderRadius: '999px',
                   padding: '8px 18px',
@@ -2631,7 +2446,7 @@ export default function SuperadminPage() {
       )}
 
       {/* =====================================================================
-          BOTTOM FLOATING TOAST WITH [Undo] BUTTON (Exact Match to Screenshots 2 & 3)
+          BOTTOM FLOATING TOAST WITH [Undo] BUTTON
          ===================================================================== */}
       {toastInfo.visible && (
         <div
@@ -2641,14 +2456,14 @@ export default function SuperadminPage() {
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 60,
-            background: '#152036',
+            background: '#161920',
             border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: '999px',
             padding: '8px 10px 8px 16px',
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
-            boxShadow: '0 16px 40px rgba(0,0,0,0.55)',
+            boxShadow: '0 16px 40px rgba(20, 23, 29, 0.35)',
           }}
         >
           <span
@@ -2656,8 +2471,8 @@ export default function SuperadminPage() {
               width: '18px',
               height: '18px',
               borderRadius: '50%',
-              background: 'rgba(156, 226, 198, 0.2)',
-              color: '#9CE2C6',
+              background: '#0E7C5B',
+              color: '#FFFFFF',
               display: 'grid',
               placeItems: 'center',
               fontSize: '11px',
@@ -2666,7 +2481,7 @@ export default function SuperadminPage() {
           >
             ✓
           </span>
-          <span style={{ fontSize: '12.5px', color: '#E2E8F0', fontWeight: 500 }}>
+          <span style={{ fontSize: '12.5px', color: '#F8FAFC', fontWeight: 500 }}>
             {toastInfo.message}
           </span>
           {toastInfo.undoAction && (
@@ -2676,9 +2491,9 @@ export default function SuperadminPage() {
                 setToastInfo((prev) => ({ ...prev, undoAction: null, message: 'Action undone' }));
               }}
               style={{
-                background: 'rgba(234, 220, 166, 0.2)',
-                color: '#EADCA6',
-                border: '1px solid rgba(234, 220, 166, 0.35)',
+                background: 'rgba(242, 178, 73, 0.2)',
+                color: '#F2B249',
+                border: '1px solid rgba(242, 178, 73, 0.4)',
                 borderRadius: '999px',
                 padding: '4px 12px',
                 fontSize: '11.5px',
@@ -2694,7 +2509,7 @@ export default function SuperadminPage() {
             style={{
               background: 'transparent',
               border: 'none',
-              color: '#64748B',
+              color: '#94A3B8',
               fontSize: '12px',
               cursor: 'pointer',
               padding: '0 4px',

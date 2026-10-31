@@ -31,7 +31,8 @@ const menus = [
   { href: '/admin/landing-page-settings', label: 'Landing Page', roles: ['admin'],        anim: 'bounce' },
   { href: '/admin/login-page-settings', label: 'Login Page',   roles: ['admin'],          anim: 'slide'  },
   { href: '/admin/settings',            label: 'Pengaturan',   roles: ['admin'],          anim: 'spin'   },
-  { href: '/superadmin',                label: 'SaaS Superadmin', roles: ['superadmin'],  anim: 'bounce' },
+  { href: '/superadmin',                label: 'SaaS Superadmin CRM', roles: ['superadmin'],  anim: 'bounce' },
+  { href: '/superadmin/inspector',      label: 'Live 3-Role Inspector', roles: ['superadmin'], anim: 'pulse'  },
 ];
 
 // ── Unique SVG icons ──────────────────────────────────────────
@@ -304,6 +305,7 @@ const iconMap = {
   '/admin/landing-page-settings': LandingIcon,
   '/admin/login-page-settings':   LoginPageIcon,
   '/superadmin':                  SuperadminIcon,
+  '/superadmin/inspector':        SuperadminIcon,
 };
 
 // ── Global keyframes (inject sekali) ─────────────────────────
@@ -673,7 +675,7 @@ export default function Sidebar() {
     } catch (_) {}
     router.refresh?.();
   };
-  const visible      = menus.filter(m => m.roles.includes(user?.role));
+  const visible      = menus.filter(m => user?.role === 'superadmin' || m.roles.includes(user?.role));
   const logoSrc      = resolveAssetUrl(settings?.logo_url, '/images/assets/logo.png');
   const primaryColor = settings?.gold || DEFAULT_SETTINGS.gold;
   const initials     = user?.name
