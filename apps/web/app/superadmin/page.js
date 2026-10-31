@@ -2336,17 +2336,12 @@ export default function SuperadminPage() {
             TAB 6: ANALYTICS (Sales & Revenue Reports)
            =================================================================== */}
         {activeTab === 'reports' && (
-          <div
-            style={{
-              background: '#0F172A',
-              borderRadius: '24px',
-              padding: '24px',
-              color: '#F8FAFC',
-              boxShadow: '0 16px 40px rgba(15, 23, 42, 0.18)',
-            }}
-          >
-            <TavolaSalesReportsView currency={currency} onTriggerToast={triggerToast} />
-          </div>
+          <TavolaSalesReportsView
+            theme={theme}
+            currency={currency}
+            selectedTenantFilter={selectedTenantFilter}
+            onTriggerToast={triggerToast}
+          />
         )}
 
         {/* ===================================================================
