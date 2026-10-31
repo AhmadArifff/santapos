@@ -175,6 +175,7 @@ export default function TavolaSalesReportsView({
   theme = 'murmura',
   currency = 'USD',
   selectedTenantFilter = 'All tenants',
+  fontFamily,
   onTriggerToast,
 }) {
   const isLight = theme === 'murmura';
@@ -195,8 +196,8 @@ export default function TavolaSalesReportsView({
   const buttonPillBg = isLight ? 'rgba(20, 23, 29, 0.04)' : '#1B2840';
   const coralLineColor = isLight ? '#D94E34' : '#F3A68F';
   const coralAreaGrad = isLight ? '#D94E34' : '#F3A68F';
-  const fontSans = 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  const fontSerif = 'Georgia, "Times New Roman", serif';
+  const fontSans = fontFamily?.body || 'var(--font-plus-jakarta), -apple-system, sans-serif';
+  const fontSerif = fontFamily?.display || 'var(--font-plus-jakarta), -apple-system, sans-serif';
 
   const formatMoney = (usdVal) => {
     const scaled = Math.round(usdVal * multiplier);
@@ -527,6 +528,7 @@ export default function TavolaSalesReportsView({
       >
         {/* Left Card: Revenue Spline Chart */}
         <div
+          className="murmura-card-vibrate"
           style={{
             background: cardBg,
             border: `1px solid ${cardBorder}`,
@@ -838,6 +840,7 @@ export default function TavolaSalesReportsView({
 
         {/* Right Card: Channel Mix Donut Chart */}
         <div
+          className="murmura-card-vibrate"
           style={{
             background: cardBg,
             border: `1px solid ${cardBorder}`,

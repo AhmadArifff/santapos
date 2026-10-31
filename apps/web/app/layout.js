@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono, Playfair_Display, DM_Sans, Bebas_Neue } from "next/font/google";
+import { Geist, Geist_Mono, Playfair_Display, DM_Sans, Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegister from "@/components/ui/ServiceWorkerRegister";
 import WebsiteThemeRuntime from "@/components/ui/WebsiteThemeRuntime";
@@ -17,6 +17,11 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 const playfairDisplay = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
 const bebasNeue = Bebas_Neue({ subsets: ["latin"], variable: "--font-bebas", weight: "400" });
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-plus-jakarta",
+  weight: ["400", "500", "600", "700", "800"],
+});
 
 export async function generateMetadata() {
   const settings = await getPublicSeoSettings();
@@ -105,7 +110,7 @@ export default async function RootLayout({ children }) {
       </head>
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} ${dmSans.variable} ${bebasNeue.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} ${dmSans.variable} ${bebasNeue.variable} ${plusJakartaSans.variable} antialiased`}
       >
         <SettingsProvider>
           <WebsiteThemeRuntime />

@@ -253,10 +253,13 @@ const INITIAL_UNSCHEDULED_DRAFTS = [
 export default function MurmuraCalendarView({
   theme = 'murmura',
   selectedTenantFilter = 'All tenants',
+  fontFamily,
   onOpenNewDeal,
   onTriggerToast,
 }) {
   const isLight = theme === 'murmura';
+  const fontDisplay = fontFamily?.display || 'var(--font-plus-jakarta), -apple-system, sans-serif';
+  const fontBody = fontFamily?.body || 'var(--font-plus-jakarta), -apple-system, sans-serif';
 
   // 'Week' (Gambar 2 & 3) | 'Month' (Gambar 4) | 'List'
   const [calendarMode, setCalendarMode] = useState('Week');
@@ -399,7 +402,7 @@ export default function MurmuraCalendarView({
   const activeColBg = isLight ? '#F8F7F2' : '#162033';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', fontFamily: fontBody }}>
       {/* =====================================================================
           ROW 1: "Publishing calendar" + 4 KPI METRICS (Exact Match to Screenshots 2–4)
          ===================================================================== */}
@@ -411,13 +414,13 @@ export default function MurmuraCalendarView({
           gap: '20px',
         }}
       >
-        {/* Editorial Serif Title with Clip-Mask Entrance (Exact Match to Gambar 2 -> 3) */}
+        {/* Editorial Title with Clip-Mask Entrance (Exact Match to Gambar 2 -> 3) */}
         <div style={{ overflow: 'hidden', paddingBottom: '2px' }}>
           <h1
             key={replaySeed}
             style={{
               margin: 0,
-              fontFamily: 'Georgia, "Times New Roman", serif',
+              fontFamily: fontDisplay,
               fontSize: 'clamp(30px, 2.6vw, 37px)',
               fontWeight: 400,
               lineHeight: 1.02,

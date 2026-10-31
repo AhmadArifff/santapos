@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 
 :root {
   --gold: #C9A84C;
@@ -2824,5 +2824,62 @@ body {
   .not-found-home-link {
     width: 100%;
     max-width: 280px;
+  }
+}
+
+
+/* ===== MURMURA & TAVOLA SUPERADMIN DYNAMIC MOTIONS & INTERACTIONS ===== */
+@keyframes murmuraSmoothVibrate {
+  0% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+  18% {
+    transform: translateY(-2px) scale(1.006) rotate(-0.35deg);
+  }
+  36% {
+    transform: translateY(-3.5px) scale(1.012) rotate(0.35deg);
+  }
+  54% {
+    transform: translateY(-3px) scale(1.01) rotate(-0.15deg);
+  }
+  72% {
+    transform: translateY(-3px) scale(1.01) rotate(0.12deg);
+  }
+  100% {
+    transform: translateY(-3px) scale(1.01) rotate(0deg);
+  }
+}
+
+.murmura-card-vibrate {
+  transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1), box-shadow 0.28s ease, border-color 0.2s ease;
+  will-change: transform, box-shadow;
+}
+
+.murmura-card-vibrate:hover {
+  animation: murmuraSmoothVibrate 0.45s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.16) !important;
+}
+
+/* Drag & Drop Board Visual Enhancements */
+.kanban-card-dragging {
+  opacity: 0.65 !important;
+  transform: scale(1.03) rotate(2deg) !important;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3) !important;
+  cursor: grabbing !important;
+  filter: brightness(1.08);
+}
+
+.kanban-col-drop-over {
+  animation: murmuraPulseDropTarget 1.2s infinite alternate ease-in-out;
+}
+
+@keyframes murmuraPulseDropTarget {
+  0% {
+    border-color: rgba(14, 124, 91, 0.4);
+    background-color: rgba(14, 124, 91, 0.06);
+  }
+  100% {
+    border-color: rgba(14, 124, 91, 0.95);
+    background-color: rgba(14, 124, 91, 0.16);
   }
 }

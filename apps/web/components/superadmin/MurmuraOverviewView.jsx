@@ -184,11 +184,14 @@ export default function MurmuraOverviewView({
   selectedTenantFilter = 'All tenants',
   deals = [],
   tenants = [],
+  fontFamily,
   onOpenNewDeal,
   onNavigateTab,
   onTriggerToast,
 }) {
   const isLight = theme === 'murmura';
+  const fontDisplay = fontFamily?.display || 'var(--font-plus-jakarta), -apple-system, sans-serif';
+  const fontBody = fontFamily?.body || 'var(--font-plus-jakarta), -apple-system, sans-serif';
 
   // Live countdown timer state (starts at 19h 34m 42s matching Screenshot 1)
   const [secondsLeft, setSecondsLeft] = useState(19 * 3600 + 34 * 60 + 42);
@@ -303,6 +306,7 @@ export default function MurmuraOverviewView({
         flexDirection: 'column',
         gap: '22px',
         animation: 'murmuraFadeSlideIn 0.38s cubic-bezier(0.16, 1, 0.3, 1)',
+        fontFamily: fontBody,
       }}
     >
       {/* =====================================================================
@@ -326,12 +330,12 @@ export default function MurmuraOverviewView({
             flexWrap: 'wrap',
           }}
         >
-          {/* Editorial Serif Greeting with Clip-Mask Entrance */}
+          {/* Editorial Greeting with Clip-Mask Entrance */}
           <div style={{ overflow: 'hidden', paddingBottom: '2px' }}>
             <h1
               style={{
                 margin: 0,
-                fontFamily: 'Georgia, "Times New Roman", serif',
+                fontFamily: fontDisplay,
                 fontSize: 'clamp(30px, 2.7vw, 38px)',
                 fontWeight: 400,
                 lineHeight: 1.04,
@@ -600,6 +604,7 @@ export default function MurmuraOverviewView({
 
           {/* HERO DARK CHARCOAL DEPLOYMENT CARD (Exact Match to Screenshot 1) */}
           <div
+            className="murmura-card-vibrate"
             style={{
               background: '#181C23',
               borderRadius: '18px',
@@ -928,6 +933,7 @@ export default function MurmuraOverviewView({
                   key={item.id}
                   onClick={() => handlePromoteComingUpToHero(item)}
                   title="Click to inspect in Up Next hero viewer"
+                  className="murmura-card-vibrate"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -1098,6 +1104,7 @@ export default function MurmuraOverviewView({
               return (
                 <div
                   key={item.id}
+                  className="murmura-card-vibrate"
                   style={{
                     padding: '14px',
                     borderRadius: '16px',
@@ -1176,6 +1183,7 @@ export default function MurmuraOverviewView({
             return (
               <div
                 key={item.id}
+                className="murmura-card-vibrate"
                 style={{
                   padding: '14px',
                   borderRadius: '16px',

@@ -144,6 +144,102 @@ export default function SuperadminPage() {
   // 3-Role Operational Switcher Menu (Admin / Kasir / Kitchen)
   const [showRoleSwitcherMenu, setShowRoleSwitcherMenu] = useState(false);
 
+  // Dynamic Font Style (3 Options Switcher with localStorage persistence)
+  const [fontStyle, setFontStyle] = useState('murmura'); // 'murmura' | 'editorial' | 'hightech'
+  const [showAvatarMenu, setShowAvatarMenu] = useState(false);
+  const [showNotificationMenu, setShowNotificationMenu] = useState(false);
+  const [notifFilter, setNotifFilter] = useState('all');
+  const [notificationList, setNotificationList] = useState([
+    {
+      id: 'notif-1',
+      brand: 'Ember & Oak',
+      title: 'Deal #1064 siap cutover',
+      message: 'Onboarding 14 meja Kemang Flagship berhasil diverifikasi ke tahap READY.',
+      time: '2m lalu',
+      unread: true,
+      category: 'deals',
+      badgeColor: '#0E7C5B',
+    },
+    {
+      id: 'notif-2',
+      brand: 'Kitchen KDS Kemang',
+      title: 'Tiket #1069 Meja 1 melewati SLA',
+      message: 'Pesanan sudah 4 menit berada di stasiun Griddle. Perlu monitoring tim dapur.',
+      time: '6m lalu',
+      unread: true,
+      category: 'kds',
+      badgeColor: '#D94E34',
+    },
+    {
+      id: 'notif-3',
+      brand: 'Midtrans QRIS Settlement',
+      title: 'Batch settlement berhasil',
+      message: 'Pencairan dana transaksi QRIS harian Rp 14.850.000 sukses masuk rekening escrow.',
+      time: '24m lalu',
+      unread: true,
+      category: 'finance',
+      badgeColor: '#2563EB',
+    },
+    {
+      id: 'notif-4',
+      brand: 'Ramen Ya! GI',
+      title: 'Permintaan 8 Tablet Meja Self-Order',
+      message: 'Tenant mengajukan penambahan lisensi terminal POS cabang Grand Indonesia.',
+      time: '1h lalu',
+      unread: false,
+      category: 'deals',
+      badgeColor: '#F59E0B',
+    },
+  ]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedFont = localStorage.getItem('santapos_superadmin_font');
+      if (savedFont && ['murmura', 'editorial', 'hightech'].includes(savedFont)) {
+        setFontStyle(savedFont);
+      }
+    }
+  }, []);
+
+  const handleSelectFontStyle = (style) => {
+    setFontStyle(style);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('santapos_superadmin_font', style);
+    }
+    const nameMap = {
+      murmura: 'Murmura Neo-Humanist (Plus Jakarta Sans)',
+      editorial: 'Editorial Luxury Bistro (Playfair + DM Sans)',
+      hightech: 'Swiss Minimalist (Geist Sans + Mono)',
+    };
+    triggerToast(`Font berhasil diganti ke: ${nameMap[style]}`, null, 'Gaya Tipografi Diperbarui');
+  };
+
+  const activeFontFamily = useMemo(() => {
+    if (fontStyle === 'editorial') {
+      return {
+        display: 'var(--font-playfair), Georgia, "Times New Roman", serif',
+        body: 'var(--font-dm-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        mono: 'var(--font-dm-sans), monospace',
+        name: 'Editorial Luxury Bistro',
+      };
+    }
+    if (fontStyle === 'hightech') {
+      return {
+        display: 'var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        body: 'var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        mono: 'var(--font-geist-mono), monospace',
+        name: 'Swiss Minimalist Tech',
+      };
+    }
+    // Default 'murmura'
+    return {
+      display: 'var(--font-plus-jakarta), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      body: 'var(--font-plus-jakarta), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      mono: 'var(--font-geist-mono), monospace',
+      name: 'Murmura Neo-Humanist',
+    };
+  }, [fontStyle]);
+
   // Theme-Matched Non-Blocking Toast with Auto-Dismiss & Undo
   const [toastInfo, setToastInfo] = useState({
     id: 0,
@@ -410,7 +506,7 @@ export default function SuperadminPage() {
           ? 'radial-gradient(circle at 14% 10%, rgba(208, 238, 225, 0.92) 0%, rgba(235, 245, 239, 0.55) 28%, rgba(245, 244, 238, 0) 56%)'
           : undefined,
         color: textPrimary,
-        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        fontFamily: activeFontFamily.body,
         position: 'relative',
         paddingBottom: '90px',
         transition: 'background 0.28s ease, color 0.2s ease',
@@ -983,61 +1079,651 @@ export default function SuperadminPage() {
             {currency === 'USD' ? '$ USD' : 'Rp IDR'}
           </button>
 
-          {/* Notification Bell with Red Dot (Crisp Monochrome SVG) */}
-          <button
-            onClick={() => setActiveTab('inbox')}
-            title="Open Tenant Inbox & Notifications"
-            style={{
-              position: 'relative',
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              border: `1px solid ${surfaceBorder}`,
-              background: surfaceBg,
-              color: textPrimary,
-              cursor: 'pointer',
-              display: 'grid',
-              placeItems: 'center',
-              flexShrink: 0,
-            }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-            <span
-              style={{
-                position: 'absolute',
-                top: '5px',
-                right: '6px',
-                width: '7px',
-                height: '7px',
-                borderRadius: '50%',
-                background: '#C84B31',
-                border: `1.5px solid ${surfaceBg}`,
+          {/* Notification Bell with Red Dot — Standalone Popover (Detached from Inbox tab) */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => {
+                setShowNotificationMenu((prev) => !prev);
+                setShowAvatarMenu(false);
+                setShowRoleSwitcherMenu(false);
               }}
-            />
-          </button>
+              title="Notifikasi Sistem & Alert Operasional"
+              style={{
+                position: 'relative',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                border: `1px solid ${surfaceBorder}`,
+                background: showNotificationMenu
+                  ? isLight
+                    ? '#161920'
+                    : '#F2B249'
+                  : surfaceBg,
+                color: showNotificationMenu
+                  ? isLight
+                    ? '#FFFFFF'
+                    : '#14171D'
+                  : textPrimary,
+                cursor: 'pointer',
+                display: 'grid',
+                placeItems: 'center',
+                flexShrink: 0,
+                transition: 'all 0.18s ease',
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              {notificationList.some((n) => n.unread) && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '5px',
+                    right: '6px',
+                    width: '7px',
+                    height: '7px',
+                    borderRadius: '50%',
+                    background: '#C84B31',
+                    border: `1.5px solid ${surfaceBg}`,
+                  }}
+                />
+              )}
+            </button>
 
-          {/* Profile Avatar */}
-          <div
-            title="Camila · Superadmin Santapos"
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #1E293B 0%, #0E7C5B 100%)',
-              color: '#FFFFFF',
-              display: 'grid',
-              placeItems: 'center',
-              fontSize: '11.5px',
-              fontWeight: 800,
-              border: `2px solid ${surfaceBg}`,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-              flexShrink: 0,
-            }}
-          >
-            CA
+            {/* Standalone Notification Popover Menu */}
+            {showNotificationMenu && (
+              <>
+                <div
+                  onClick={() => setShowNotificationMenu(false)}
+                  style={{ position: 'fixed', inset: 0, zIndex: 90 }}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 10px)',
+                    right: 0,
+                    width: '390px',
+                    maxWidth: '92vw',
+                    background: isLight ? '#FFFFFF' : '#111827',
+                    border: isLight
+                      ? '1px solid rgba(20, 23, 29, 0.12)'
+                      : '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRadius: '22px',
+                    padding: '16px',
+                    boxShadow: isLight
+                      ? '0 24px 60px rgba(20, 23, 29, 0.18)'
+                      : '0 24px 60px rgba(0, 0, 0, 0.7)',
+                    zIndex: 95,
+                    animation: 'murmuraCardSpringPop 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginBottom: '12px',
+                      paddingBottom: '10px',
+                      borderBottom: `1px solid ${surfaceBorder}`,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: 700, color: textPrimary }}>
+                        Notifikasi Sistem & Alert
+                      </span>
+                      <span
+                        style={{
+                          background: '#E7F7EF',
+                          color: '#0D7A57',
+                          padding: '1px 7px',
+                          borderRadius: '999px',
+                          fontSize: '10.5px',
+                          fontWeight: 700,
+                        }}
+                      >
+                        {notificationList.filter((n) => n.unread).length} Baru
+                      </span>
+                    </div>
+                    <button
+                      onClick={() =>
+                        setNotificationList((prev) => prev.map((n) => ({ ...n, unread: false })))
+                      }
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: textSecondary,
+                        fontSize: '11px',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Tandai dibaca
+                    </button>
+                  </div>
+
+                  {/* Filter Pills: Semua · Deals · KDS · Finansial */}
+                  <div style={{ display: 'flex', gap: '4px', marginBottom: '12px' }}>
+                    {[
+                      { id: 'all', label: 'Semua' },
+                      { id: 'deals', label: 'Deals CRM' },
+                      { id: 'kds', label: 'Kitchen KDS' },
+                      { id: 'finance', label: 'Finansial' },
+                    ].map((f) => (
+                      <button
+                        key={f.id}
+                        onClick={() => setNotifFilter(f.id)}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: '999px',
+                          border: 'none',
+                          fontSize: '11px',
+                          fontWeight: notifFilter === f.id ? 700 : 500,
+                          cursor: 'pointer',
+                          background:
+                            notifFilter === f.id
+                              ? isLight
+                                ? '#161920'
+                                : '#F2B249'
+                              : isLight
+                              ? 'rgba(20,23,29,0.05)'
+                              : '#1E293B',
+                          color:
+                            notifFilter === f.id
+                              ? isLight
+                                ? '#FFFFFF'
+                                : '#14171D'
+                              : textSecondary,
+                        }}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* List of Notification Items */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      maxHeight: '320px',
+                      overflowY: 'auto',
+                    }}
+                  >
+                    {notificationList
+                      .filter((n) => notifFilter === 'all' || n.category === notifFilter)
+                      .map((item) => (
+                        <div
+                          key={item.id}
+                          className="murmura-card-vibrate"
+                          style={{
+                            padding: '10px 12px',
+                            borderRadius: '14px',
+                            background: item.unread
+                              ? isLight
+                                ? '#FAF9F6'
+                                : 'rgba(255,255,255,0.05)'
+                              : 'transparent',
+                            border: `1px solid ${
+                              item.unread ? (isLight ? '#E5E7EB' : 'rgba(255,255,255,0.1)') : 'transparent'
+                            }`,
+                            display: 'flex',
+                            gap: '10px',
+                            alignItems: 'flex-start',
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              background: item.badgeColor,
+                              marginTop: '5px',
+                              flexShrink: 0,
+                            }}
+                          />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginBottom: '2px',
+                              }}
+                            >
+                              <span style={{ fontSize: '11px', fontWeight: 700, color: item.badgeColor }}>
+                                {item.brand}
+                              </span>
+                              <span style={{ fontSize: '10px', color: textMuted }}>
+                                {item.time}
+                              </span>
+                            </div>
+                            <div
+                              style={{
+                                fontSize: '12px',
+                                fontWeight: 650,
+                                color: textPrimary,
+                                lineHeight: 1.3,
+                              }}
+                            >
+                              {item.title}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: '11px',
+                                color: textSecondary,
+                                marginTop: '2px',
+                                lineHeight: 1.35,
+                              }}
+                            >
+                              {item.message}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+
+                  {/* Footer Action: Open Full Inbox */}
+                  <div
+                    style={{
+                      marginTop: '12px',
+                      paddingTop: '10px',
+                      borderTop: `1px solid ${surfaceBorder}`,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <button
+                      onClick={() => {
+                        setActiveTab('inbox');
+                        setShowNotificationMenu(false);
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#0E7C5B',
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
+                    >
+                      Buka Tab Inbox Selengkapnya →
+                    </button>
+                    <span style={{ fontSize: '10.5px', color: textMuted }}>
+                      Real-time Alerts
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Profile Avatar with Popover (Profile, Settings, 3-Option Font Switcher) */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => {
+                setShowAvatarMenu((prev) => !prev);
+                setShowNotificationMenu(false);
+                setShowRoleSwitcherMenu(false);
+              }}
+              title="Buka Pengaturan Profil & Tipografi"
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #1E293B 0%, #0E7C5B 100%)',
+                color: '#FFFFFF',
+                display: 'grid',
+                placeItems: 'center',
+                fontSize: '11.5px',
+                fontWeight: 800,
+                border: showAvatarMenu ? '2px solid #0E7C5B' : `2px solid ${surfaceBg}`,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+                flexShrink: 0,
+                cursor: 'pointer',
+                transition: 'transform 0.18s ease',
+              }}
+            >
+              CA
+            </button>
+
+            {/* Avatar Popover Menu */}
+            {showAvatarMenu && (
+              <>
+                <div
+                  onClick={() => setShowAvatarMenu(false)}
+                  style={{ position: 'fixed', inset: 0, zIndex: 90 }}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 10px)',
+                    right: 0,
+                    width: '350px',
+                    maxWidth: '92vw',
+                    background: isLight ? '#FFFFFF' : '#111827',
+                    border: isLight
+                      ? '1px solid rgba(20, 23, 29, 0.12)'
+                      : '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRadius: '22px',
+                    padding: '18px',
+                    boxShadow: isLight
+                      ? '0 28px 64px rgba(20, 23, 29, 0.18)'
+                      : '0 28px 64px rgba(0, 0, 0, 0.7)',
+                    zIndex: 95,
+                    animation: 'murmuraCardSpringPop 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
+                >
+                  {/* User Profile Header */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      paddingBottom: '14px',
+                      borderBottom: `1px solid ${surfaceBorder}`,
+                      marginBottom: '14px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #1E293B 0%, #0E7C5B 100%)',
+                        color: '#FFFFFF',
+                        display: 'grid',
+                        placeItems: 'center',
+                        fontSize: '14px',
+                        fontWeight: 800,
+                        flexShrink: 0,
+                        boxShadow: '0 4px 12px rgba(14, 124, 91, 0.25)',
+                      }}
+                    >
+                      CA
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 700, color: textPrimary }}>
+                          Camila Santapos
+                        </span>
+                        <span
+                          style={{
+                            background: '#0E7C5B',
+                            color: '#FFFFFF',
+                            fontSize: '9.5px',
+                            fontWeight: 700,
+                            padding: '1px 6px',
+                            borderRadius: '999px',
+                          }}
+                        >
+                          Superadmin
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '11.5px', color: textSecondary, marginTop: '2px' }}>
+                        camila@santapos.com
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SECTION 1: 3-OPTION FONT TYPE SELECTOR */}
+                  <div style={{ marginBottom: '16px' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: '8px',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.06em',
+                          color: '#0E7C5B',
+                        }}
+                      >
+                        Gaya Tipografi Dashboard
+                      </span>
+                      <span style={{ fontSize: '10.5px', color: textMuted }}>
+                        3 Opsi Estetik
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {[
+                        {
+                          id: 'murmura',
+                          name: 'Murmura Neo-Humanist',
+                          fonts: 'Plus Jakarta Sans · Hangat & Modern',
+                          tag: 'Default Rekomendasi',
+                          preview: 'Aa 123',
+                          fontFamilyStr: 'var(--font-plus-jakarta), sans-serif',
+                        },
+                        {
+                          id: 'editorial',
+                          name: 'Editorial Luxury Bistro',
+                          fonts: 'Playfair Display + DM Sans · Michelin Vibe',
+                          tag: 'Luxury Boutique',
+                          preview: 'Aa 123',
+                          fontFamilyStr: 'var(--font-playfair), Georgia, serif',
+                        },
+                        {
+                          id: 'hightech',
+                          name: 'Swiss Minimalist Tech',
+                          fonts: 'Geist Sans + Mono · High-Tech Precision',
+                          tag: 'Precision Swiss',
+                          preview: 'Aa 123',
+                          fontFamilyStr: 'var(--font-geist-sans), sans-serif',
+                        },
+                      ].map((item) => {
+                        const isSelected = fontStyle === item.id;
+                        return (
+                          <div
+                            key={item.id}
+                            onClick={() => handleSelectFontStyle(item.id)}
+                            className="murmura-card-vibrate"
+                            style={{
+                              padding: '9px 12px',
+                              borderRadius: '12px',
+                              border: isSelected
+                                ? '1.5px solid #0E7C5B'
+                                : `1px solid ${surfaceBorder}`,
+                              background: isSelected
+                                ? isLight
+                                  ? '#EBF7F2'
+                                  : 'rgba(14, 124, 91, 0.16)'
+                                : isLight
+                                ? '#FAF9F6'
+                                : '#1A2333',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: '10px',
+                            }}
+                          >
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div
+                                style={{
+                                  fontSize: '12.5px',
+                                  fontWeight: 700,
+                                  color: textPrimary,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                }}
+                              >
+                                <span>{item.name}</span>
+                                {isSelected && (
+                                  <span style={{ color: '#0E7C5B', fontSize: '12px' }}>✓</span>
+                                )}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: '10.5px',
+                                  color: textSecondary,
+                                  marginTop: '2px',
+                                }}
+                              >
+                                {item.fonts}
+                              </div>
+                            </div>
+                            <span
+                              style={{
+                                fontFamily: item.fontFamilyStr,
+                                fontSize: '13px',
+                                fontWeight: 700,
+                                color: textPrimary,
+                                background: isLight ? '#FFFFFF' : '#0F172A',
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                border: `1px solid ${surfaceBorder}`,
+                                flexShrink: 0,
+                              }}
+                            >
+                              {item.preview}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* SECTION 2: TEMA & PREFERENSI */}
+                  <div
+                    style={{
+                      borderTop: `1px solid ${surfaceBorder}`,
+                      paddingTop: '12px',
+                      marginBottom: '14px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        color: textMuted,
+                        marginBottom: '8px',
+                      }}
+                    >
+                      Pengaturan Tampilan
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <button
+                        onClick={() => setTheme((t) => (t === 'murmura' ? 'tavola' : 'murmura'))}
+                        style={{
+                          padding: '7px 10px',
+                          borderRadius: '10px',
+                          border: `1px solid ${surfaceBorder}`,
+                          background: isLight ? '#FAF9F6' : '#1A2333',
+                          color: textPrimary,
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                        }}
+                      >
+                        Tema: {isLight ? '☀️ Light' : '🌙 Dark'}
+                      </button>
+                      <button
+                        onClick={() => setCurrency((c) => (c === 'USD' ? 'IDR' : 'USD'))}
+                        style={{
+                          padding: '7px 10px',
+                          borderRadius: '10px',
+                          border: `1px solid ${surfaceBorder}`,
+                          background: isLight ? '#FAF9F6' : '#1A2333',
+                          color: textPrimary,
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                        }}
+                      >
+                        Mata Uang: {currency}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* SECTION 3: AKSI NAVIGASI & SIGN OUT */}
+                  <div
+                    style={{
+                      borderTop: `1px solid ${surfaceBorder}`,
+                      paddingTop: '10px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                    }}
+                  >
+                    <Link
+                      href="/dashboard"
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: '10px',
+                        textDecoration: 'none',
+                        color: textPrimary,
+                        fontSize: '11.5px',
+                        fontWeight: 600,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <span>Dashboard Operasional (Admin · Kasir · Kitchen)</span>
+                      <span>↗</span>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setActiveTab('listening');
+                        setShowAvatarMenu(false);
+                      }}
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: '10px',
+                        border: 'none',
+                        background: 'none',
+                        color: textPrimary,
+                        fontSize: '11.5px',
+                        fontWeight: 600,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        width: '100%',
+                      }}
+                    >
+                      <span>Database & Storage Settings</span>
+                      <span>⚙️</span>
+                    </button>
+                    <Link
+                      href="/login"
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: '10px',
+                        textDecoration: 'none',
+                        color: '#D94E34',
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginTop: '4px',
+                      }}
+                    >
+                      <span>Keluar (Sign Out)</span>
+                      <span>⏻</span>
+                    </Link>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -1299,6 +1985,7 @@ export default function SuperadminPage() {
             selectedTenantFilter={selectedTenantFilter}
             deals={deals}
             tenants={tenants}
+            fontFamily={activeFontFamily}
             onOpenNewDeal={() => setShowNewDealModal(true)}
             onNavigateTab={(tabId) => setActiveTab(tabId)}
             onTriggerToast={triggerToast}
@@ -1312,6 +1999,7 @@ export default function SuperadminPage() {
           <MurmuraCalendarView
             theme={theme}
             selectedTenantFilter={selectedTenantFilter}
+            fontFamily={activeFontFamily}
             onOpenNewDeal={() => setShowNewDealModal(true)}
             onTriggerToast={triggerToast}
           />
@@ -1329,7 +2017,7 @@ export default function SuperadminPage() {
               animation: 'murmuraFadeSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
           >
-            {/* Row 1: 2-Line Serif Title + 3 Inline KPI Pills */}
+            {/* Row 1: 2-Line Title + 3 Inline KPI Pills */}
             <div
               style={{
                 display: 'flex',
@@ -1343,7 +2031,7 @@ export default function SuperadminPage() {
                 <h1
                   style={{
                     margin: 0,
-                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    fontFamily: activeFontFamily.display,
                     fontSize: '34px',
                     fontWeight: 400,
                     lineHeight: 1.02,
@@ -1668,6 +2356,7 @@ export default function SuperadminPage() {
                         e.preventDefault();
                         handleDropDealOnColumn(col.stage);
                       }}
+                      className={isDropOver ? 'kanban-col-drop-over' : ''}
                       style={{
                         background: isDropOver
                           ? 'rgba(14, 124, 91, 0.12)'
@@ -1715,6 +2404,29 @@ export default function SuperadminPage() {
                         </span>
                       </div>
 
+                      {col.items.length === 0 && (
+                        <div
+                          style={{
+                            padding: '28px 14px',
+                            borderRadius: '14px',
+                            border: `1.5px dashed ${isDropOver ? '#0E7C5B' : surfaceBorder}`,
+                            background: isDropOver ? 'rgba(14, 124, 91, 0.08)' : 'transparent',
+                            textAlign: 'center',
+                            color: textSecondary,
+                            fontSize: '11.5px',
+                            fontWeight: 500,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '6px',
+                            animation: 'murmuraFadeSlideIn 0.3s ease',
+                          }}
+                        >
+                          <span style={{ fontSize: '16px' }}>📥</span>
+                          <span>Tarik & lepas kartu deal ke sini</span>
+                        </div>
+                      )}
+
                       {col.items.map((deal) => (
                         <div
                           key={deal.id}
@@ -1724,21 +2436,32 @@ export default function SuperadminPage() {
                             setDraggedDeal(null);
                             setDragOverStage(null);
                           }}
+                          className={`murmura-card-vibrate ${draggedDeal?.id === deal.id ? 'kanban-card-dragging' : ''}`}
                           style={{
                             background: col.cardBg,
                             color: col.cardText,
                             borderRadius: '16px',
                             padding: '14px',
-                            boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
+                            boxShadow: draggedDeal?.id === deal.id
+                              ? '0 24px 48px rgba(0,0,0,0.3)'
+                              : '0 8px 20px rgba(0,0,0,0.12)',
                             display: 'flex',
                             flexDirection: 'column',
                             gap: '10px',
-                            cursor: 'grab',
+                            cursor: draggedDeal?.id === deal.id ? 'grabbing' : 'grab',
+                            transition: 'transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1), box-shadow 0.2s ease, opacity 0.2s ease',
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ fontSize: '11.5px', fontWeight: 700, opacity: 0.8 }}>
+                              <span
+                                style={{
+                                  fontSize: '11.5px',
+                                  fontWeight: 700,
+                                  opacity: 0.85,
+                                  fontFamily: activeFontFamily.mono,
+                                }}
+                              >
                                 {deal.ticket_number}
                               </span>
                               <span
@@ -1772,7 +2495,13 @@ export default function SuperadminPage() {
                             </button>
                           </div>
 
-                          <div style={{ fontSize: '15.5px', fontWeight: 800 }}>
+                          <div
+                            style={{
+                              fontSize: '15px',
+                              fontWeight: 700,
+                              fontFamily: activeFontFamily.display,
+                            }}
+                          >
                             🏪 {deal.table_label}
                           </div>
 
@@ -1957,7 +2686,7 @@ export default function SuperadminPage() {
                 <h1
                   style={{
                     margin: 0,
-                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    fontFamily: activeFontFamily.display,
                     fontSize: '34px',
                     fontWeight: 400,
                     color: textPrimary,
@@ -2215,7 +2944,7 @@ export default function SuperadminPage() {
               <h1
                 style={{
                   margin: 0,
-                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontFamily: activeFontFamily.display,
                   fontSize: '34px',
                   fontWeight: 400,
                   color: textPrimary,
@@ -2340,6 +3069,7 @@ export default function SuperadminPage() {
             theme={theme}
             currency={currency}
             selectedTenantFilter={selectedTenantFilter}
+            fontFamily={activeFontFamily}
             onTriggerToast={triggerToast}
           />
         )}
@@ -2361,7 +3091,7 @@ export default function SuperadminPage() {
                 <h1
                   style={{
                     margin: 0,
-                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    fontFamily: activeFontFamily.display,
                     fontSize: '34px',
                     fontWeight: 400,
                     color: textPrimary,
