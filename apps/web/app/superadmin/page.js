@@ -20,12 +20,12 @@ import MurmuraCalendarView from '@/components/superadmin/MurmuraCalendarView';
 
 const MURMURA_NAV_TABS = [
   { id: 'overview', label: 'Overview' },
-  { id: 'orders', label: 'Compose · Deals' },
+  { id: 'orders', label: 'Compose' },
   { id: 'calendar', label: 'Calendar' },
   { id: 'inbox', label: 'Inbox', badge: 14, badgeBg: '#F2B249' },
   { id: 'approvals', label: 'Approvals', badge: 5, badgeBg: '#F2B249' },
   { id: 'reports', label: 'Analytics' },
-  { id: 'listening', label: 'Listening · DB' },
+  { id: 'listening', label: 'Listening' },
 ];
 
 const INITIAL_INBOX_MESSAGES = [
@@ -441,23 +441,22 @@ export default function SuperadminPage() {
       `}</style>
 
       {/* =====================================================================
-          TOP FLOATING NAVIGATION BAR (Single-Row Murmura Bar + 3-Role Switcher)
+          TOP FLOATING NAVIGATION BAR (Exact Restoration of Murmura Screenshots 1–4)
          ===================================================================== */}
       <header
         style={{
           position: 'sticky',
           top: 0,
           zIndex: 55,
-          padding: '12px 24px',
+          padding: '14px 28px 12px 28px',
           background: isLight
             ? 'linear-gradient(180deg, rgba(245, 244, 238, 0.96) 0%, rgba(245, 244, 238, 0.85) 85%, transparent 100%)'
             : 'linear-gradient(180deg, rgba(11,17,30,0.96) 0%, rgba(11,17,30,0.82) 85%, transparent 100%)',
           backdropFilter: 'blur(14px)',
-          display: 'flex',
+          display: 'grid',
+          gridTemplateColumns: 'auto 1fr auto',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '10px',
-          flexWrap: 'nowrap',
+          gap: '16px',
         }}
       >
         {/* Left Brand Logo (`murmura` / `santapos` with Dark Rounded Square Icon) */}
@@ -469,7 +468,7 @@ export default function SuperadminPage() {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '9px',
+            gap: '10px',
             cursor: 'pointer',
             flexShrink: 0,
           }}
@@ -483,16 +482,16 @@ export default function SuperadminPage() {
               color: '#FFFFFF',
               display: 'grid',
               placeItems: 'center',
-              fontWeight: 800,
-              fontSize: '14px',
-              boxShadow: '0 4px 12px rgba(22, 25, 32, 0.2)',
+              boxShadow: '0 4px 12px rgba(22, 25, 32, 0.18)',
             }}
           >
-            ∿
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 12c2.5-4 5.5-4 8 0s5.5 4 8 0 3.5-2 4-2" />
+            </svg>
           </div>
           <span
             style={{
-              fontSize: '18px',
+              fontSize: '18.5px',
               fontWeight: 700,
               letterSpacing: '-0.03em',
               color: textPrimary,
@@ -507,9 +506,9 @@ export default function SuperadminPage() {
           style={{
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'center',
             gap: '2px',
             flexWrap: 'nowrap',
-            overflowX: 'auto',
           }}
         >
           {MURMURA_NAV_TABS.map((tab) => {
@@ -519,10 +518,10 @@ export default function SuperadminPage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 style={{
-                  padding: '6px 12px',
+                  padding: '7px 14px',
                   borderRadius: '999px',
                   border: 'none',
-                  fontSize: '12.5px',
+                  fontSize: '13px',
                   fontWeight: active ? 600 : 500,
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
@@ -538,7 +537,7 @@ export default function SuperadminPage() {
                     : textSecondary,
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '5px',
+                  gap: '6px',
                   transition: 'all 0.18s ease',
                 }}
               >
@@ -546,12 +545,13 @@ export default function SuperadminPage() {
                 {tab.badge && (
                   <span
                     style={{
-                      padding: '1px 6px',
+                      padding: '1px 6.5px',
                       borderRadius: '999px',
                       background: tab.badgeBg || '#F2B249',
                       color: '#14171D',
-                      fontSize: '10px',
+                      fontSize: '10.5px',
                       fontWeight: 800,
+                      lineHeight: 1.35,
                     }}
                   >
                     {tab.badge}
@@ -562,28 +562,29 @@ export default function SuperadminPage() {
           })}
         </nav>
 
-        {/* Right Controls: `[All brands ▾]` + `[🏪 Switch Menu 3-Role ▾]` + `[$ USD]` + Notification Bell + Avatar */}
+        {/* Right Controls: `[All brands ▾]` + `[3-Role Hub ▾]` + `[$ USD]` + Bell + Avatar */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'flex-end',
             gap: '8px',
             flexWrap: 'nowrap',
             flexShrink: 0,
             position: 'relative',
           }}
         >
-          {/* All brands / tenants pill selector (Exact Match to Screenshots 1–4) */}
+          {/* All brands / tenants pill selector (Constrained width — Exact Match to Screenshots 1–4) */}
           <div
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: '7px',
               padding: '4px 10px 4px 5px',
               borderRadius: '999px',
               background: surfaceBg,
               border: `1px solid ${surfaceBorder}`,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
             }}
           >
             <span
@@ -593,17 +594,24 @@ export default function SuperadminPage() {
                 borderRadius: '50%',
                 background: '#161920',
                 color: '#FFFFFF',
-                fontSize: '10.5px',
                 display: 'grid',
                 placeItems: 'center',
+                flexShrink: 0,
               }}
             >
-              🏪
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                <rect x="14" y="14" width="7" height="7" rx="1.5" />
+              </svg>
             </span>
             <select
               value={selectedTenantFilter}
               onChange={(e) => setSelectedTenantFilter(e.target.value)}
               style={{
+                width: '88px',
+                maxWidth: '88px',
                 border: 'none',
                 outline: 'none',
                 background: 'transparent',
@@ -611,6 +619,7 @@ export default function SuperadminPage() {
                 fontSize: '12px',
                 fontWeight: 600,
                 cursor: 'pointer',
+                textOverflow: 'ellipsis',
               }}
             >
               <option value="All tenants">All brands</option>
@@ -626,16 +635,17 @@ export default function SuperadminPage() {
             </select>
           </div>
 
-          {/* PROMINENT SWITCHER TO UNIFIED 3-ROLE DASHBOARD (Admin · Kasir · Kitchen) */}
+          {/* COMPACT SWITCHER TO UNIFIED 3-ROLE DASHBOARD (Admin · Kasir · Kitchen) */}
           <div style={{ position: 'relative' }}>
             <button
               type="button"
               onClick={() => setShowRoleSwitcherMenu((prev) => !prev)}
+              title="Switch ke Dashboard Gabungan 3-Role (Admin · Kasir POS · Kitchen KDS)"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
-                padding: '6px 13px',
+                padding: '6px 12px',
                 borderRadius: '999px',
                 border: '1px solid rgba(14, 124, 91, 0.35)',
                 background: '#0E7C5B',
@@ -644,218 +654,274 @@ export default function SuperadminPage() {
                 fontWeight: 700,
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
-                boxShadow: '0 4px 14px rgba(14, 124, 91, 0.25)',
+                boxShadow: '0 4px 12px rgba(14, 124, 91, 0.22)',
               }}
             >
-              <span>🎛️</span>
-              <span>Menu 3-Role (Admin · Kasir · Kitchen)</span>
-              <span style={{ fontSize: '10px', opacity: 0.9 }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="9" rx="1.5" />
+                <rect x="14" y="3" width="7" height="5" rx="1.5" />
+                <rect x="14" y="12" width="7" height="9" rx="1.5" />
+                <rect x="3" y="16" width="7" height="5" rx="1.5" />
+              </svg>
+              <span>3-Role Hub</span>
+              <span style={{ fontSize: '9px', opacity: 0.9 }}>
                 {showRoleSwitcherMenu ? '▴' : '▾'}
               </span>
             </button>
 
             {/* 3-ROLE OPERATIONAL SWITCHER POPOVER MENU */}
             {showRoleSwitcherMenu && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 10px)',
-                  right: 0,
-                  width: '720px',
-                  maxWidth: '92vw',
-                  background: isLight ? '#FFFFFF' : '#111827',
-                  border: isLight
-                    ? '1px solid rgba(20, 23, 29, 0.12)'
-                    : '1px solid rgba(255, 255, 255, 0.12)',
-                  borderRadius: '22px',
-                  padding: '18px',
-                  boxShadow: isLight
-                    ? '0 28px 64px rgba(20, 23, 29, 0.18)'
-                    : '0 28px 64px rgba(0, 0, 0, 0.65)',
-                  zIndex: 95,
-                  animation: 'murmuraCardSpringPop 0.24s cubic-bezier(0.22, 1, 0.36, 1)',
-                }}
-              >
-                {/* Top Action Banner: Open Unified 3-Role Dashboard (/dashboard) */}
+              <>
+                <div
+                  onClick={() => setShowRoleSwitcherMenu(false)}
+                  style={{
+                    position: 'fixed',
+                    inset: 0,
+                    zIndex: 90,
+                  }}
+                />
                 <div
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '12px',
-                    padding: '12px 16px',
-                    borderRadius: '16px',
-                    background: isLight
-                      ? 'linear-gradient(135deg, #EAF6F0 0%, #F5F4EE 100%)'
-                      : 'linear-gradient(135deg, rgba(14,124,91,0.22) 0%, rgba(30,41,59,0.65) 100%)',
+                    position: 'absolute',
+                    top: 'calc(100% + 10px)',
+                    right: 0,
+                    width: '720px',
+                    maxWidth: '92vw',
+                    background: isLight ? '#FFFFFF' : '#111827',
                     border: isLight
-                      ? '1px solid rgba(14, 124, 91, 0.2)'
-                      : '1px solid rgba(52, 211, 153, 0.25)',
-                    marginBottom: '14px',
-                    flexWrap: 'wrap',
+                      ? '1px solid rgba(20, 23, 29, 0.12)'
+                      : '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRadius: '22px',
+                    padding: '18px',
+                    boxShadow: isLight
+                      ? '0 28px 64px rgba(20, 23, 29, 0.18)'
+                      : '0 28px 64px rgba(0, 0, 0, 0.65)',
+                    zIndex: 95,
+                    animation: 'murmuraCardSpringPop 0.24s cubic-bezier(0.22, 1, 0.36, 1)',
                   }}
                 >
-                  <div>
-                    <div
-                      style={{
-                        fontSize: '13.5px',
-                        fontWeight: 800,
-                        color: textPrimary,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '7px',
-                      }}
-                    >
-                      <span>🏪</span>
-                      <span>Dashboard Operasional Gabungan 3-Role (Admin · Kasir · Kitchen)</span>
-                    </div>
-                    <div style={{ fontSize: '11.5px', color: textSecondary, marginTop: '2px' }}>
-                      Seluruh menu Admin Cabang, Kasir POS + Pilih Meja, dan Kitchen KDS telah disatukan & dirapikan di Dashboard.
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Link
-                      href="/dashboard"
-                      style={{
-                        padding: '8px 15px',
-                        borderRadius: '999px',
-                        background: '#0E7C5B',
-                        color: '#FFFFFF',
-                        textDecoration: 'none',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        whiteSpace: 'nowrap',
-                        boxShadow: '0 4px 12px rgba(14, 124, 91, 0.25)',
-                      }}
-                    >
-                      🏪 Buka Dashboard 3-Role (/dashboard) ↗
-                    </Link>
-                    <Link
-                      href="/superadmin/inspector"
-                      style={{
-                        padding: '8px 13px',
-                        borderRadius: '999px',
-                        background: isLight ? '#161920' : '#1E293B',
-                        color: '#FFFFFF',
-                        textDecoration: 'none',
-                        fontSize: '11.5px',
-                        fontWeight: 700,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      🖥️ Inspector Split-View ↗
-                    </Link>
-                  </div>
-                </div>
-
-                {/* 3 Organized Role Columns */}
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                    gap: '12px',
-                  }}
-                >
-                  {/* Column 1: Role Admin */}
+                  {/* Top Action Banner: Open Unified 3-Role Dashboard (/dashboard) */}
                   <div
                     style={{
-                      padding: '12px',
-                      borderRadius: '14px',
-                      background: isLight ? '#FAF9F5' : '#0F172A',
-                      border: `1px solid ${surfaceBorder}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                      padding: '12px 16px',
+                      borderRadius: '16px',
+                      background: isLight
+                        ? 'linear-gradient(135deg, #EAF6F0 0%, #F5F4EE 100%)'
+                        : 'linear-gradient(135deg, rgba(14,124,91,0.22) 0%, rgba(30,41,59,0.65) 100%)',
+                      border: isLight
+                        ? '1px solid rgba(14, 124, 91, 0.2)'
+                        : '1px solid rgba(52, 211, 153, 0.25)',
+                      marginBottom: '14px',
+                      flexWrap: 'wrap',
                     }}
                   >
-                    <div
-                      style={{
-                        fontSize: '11px',
-                        fontWeight: 800,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.06em',
-                        color: '#2563EB',
-                        marginBottom: '8px',
-                      }}
-                    >
-                      🛡️ 1. Role Admin Cabang
+                    <div>
+                      <div
+                        style={{
+                          fontSize: '13.5px',
+                          fontWeight: 800,
+                          color: textPrimary,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '7px',
+                        }}
+                      >
+                        <span>Dashboard Operasional Gabungan 3-Role (Admin · Kasir · Kitchen)</span>
+                      </div>
+                      <div style={{ fontSize: '11.5px', color: textSecondary, marginTop: '2px' }}>
+                        Seluruh menu Admin Cabang, Kasir POS + Pilih Meja, dan Kitchen KDS telah disatukan & dirapikan di Dashboard.
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                      {[
-                        { label: '📊 Dashboard (3-Role Hub)', href: '/dashboard' },
-                        { label: '🍔 Produk & Menu', href: '/products' },
-                        { label: '📈 Laporan & Analitik', href: '/reports' },
-                        { label: '🧾 Riwayat Transaksi POS', href: '/transactions' },
-                        { label: '🎟️ Vocher & Diskon', href: '/discounts' },
-                        { label: '💳 Payment & QRIS', href: '/payment-settings' },
-                        { label: '👥 Tim & Jadwal Kasir', href: '/users' },
-                        { label: '⚙️ Pengaturan Sistem', href: '/settings' },
-                      ].map((item) => (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          style={{
-                            padding: '6px 9px',
-                            borderRadius: '9px',
-                            textDecoration: 'none',
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            color: textPrimary,
-                            background: isLight ? '#FFFFFF' : '#1E293B',
-                            border: `1px solid ${surfaceBorder}`,
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                          }}
-                        >
-                          <span>{item.label}</span>
-                          <span style={{ fontSize: '10px', color: textSecondary }}>↗</span>
-                        </Link>
-                      ))}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Link
+                        href="/dashboard"
+                        style={{
+                          padding: '8px 15px',
+                          borderRadius: '999px',
+                          background: '#0E7C5B',
+                          color: '#FFFFFF',
+                          textDecoration: 'none',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          whiteSpace: 'nowrap',
+                          boxShadow: '0 4px 12px rgba(14, 124, 91, 0.25)',
+                        }}
+                      >
+                        Buka Dashboard 3-Role (/dashboard) ↗
+                      </Link>
+                      <Link
+                        href="/superadmin/inspector"
+                        style={{
+                          padding: '8px 13px',
+                          borderRadius: '999px',
+                          background: isLight ? '#161920' : '#1E293B',
+                          color: '#FFFFFF',
+                          textDecoration: 'none',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        Inspector Split-View ↗
+                      </Link>
                     </div>
                   </div>
 
-                  {/* Column 2: Role Kasir & POS */}
+                  {/* 3 Organized Role Columns */}
                   <div
                     style={{
-                      padding: '12px',
-                      borderRadius: '14px',
-                      background: isLight ? '#FAF9F5' : '#0F172A',
-                      border: `1px solid ${surfaceBorder}`,
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                      gap: '12px',
                     }}
                   >
+                    {/* Column 1: Role Admin */}
                     <div
                       style={{
-                        fontSize: '11px',
-                        fontWeight: 800,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.06em',
-                        color: '#0E7C5B',
-                        marginBottom: '8px',
+                        padding: '12px',
+                        borderRadius: '14px',
+                        background: isLight ? '#FAF9F5' : '#0F172A',
+                        border: `1px solid ${surfaceBorder}`,
                       }}
                     >
-                      💳 2. Role Kasir & POS
+                      <div
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.06em',
+                          color: '#2563EB',
+                          marginBottom: '8px',
+                        }}
+                      >
+                        1. Role Admin Cabang
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                        {[
+                          { label: 'Dashboard (3-Role Hub)', href: '/dashboard' },
+                          { label: 'Produk & Menu', href: '/products' },
+                          { label: 'Laporan & Analitik', href: '/reports' },
+                          { label: 'Riwayat Transaksi POS', href: '/transactions' },
+                          { label: 'Vocher & Diskon', href: '/discounts' },
+                          { label: 'Payment & QRIS', href: '/payment-settings' },
+                          { label: 'Tim & Jadwal Kasir', href: '/users' },
+                          { label: 'Pengaturan Sistem', href: '/settings' },
+                        ].map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            style={{
+                              padding: '6px 9px',
+                              borderRadius: '9px',
+                              textDecoration: 'none',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              color: textPrimary,
+                              background: isLight ? '#FFFFFF' : '#1E293B',
+                              border: `1px solid ${surfaceBorder}`,
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <span>{item.label}</span>
+                            <span style={{ fontSize: '10px', color: textSecondary }}>↗</span>
+                          </Link>
+                        ))}
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {[
-                        {
-                          label: '🖥️ Kasir POS & Pilih Meja',
-                          desc: 'Pilih Menu → Denah Meja (Kapasitas) → Bayar',
-                          href: '/pos',
-                        },
-                        {
-                          label: '📱 Pesanan Meja QR',
-                          desc: 'Monitoring pesanan pelanggan dari QR meja',
-                          href: '/table-orders',
-                        },
-                        {
-                          label: '📦 Stok & Request Bahan',
-                          desc: 'Pengecekan stok kasir & permintaan gudang',
-                          href: '/stock',
-                        },
-                      ].map((item) => (
+
+                    {/* Column 2: Role Kasir & POS */}
+                    <div
+                      style={{
+                        padding: '12px',
+                        borderRadius: '14px',
+                        background: isLight ? '#FAF9F5' : '#0F172A',
+                        border: `1px solid ${surfaceBorder}`,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.06em',
+                          color: '#0E7C5B',
+                          marginBottom: '8px',
+                        }}
+                      >
+                        2. Role Kasir & POS
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {[
+                          {
+                            label: 'Kasir POS & Pilih Meja',
+                            desc: 'Pilih Menu → Denah Meja (Kapasitas) → Bayar',
+                            href: '/pos',
+                          },
+                          {
+                            label: 'Pesanan Meja QR',
+                            desc: 'Monitoring pesanan pelanggan dari QR meja',
+                            href: '/table-orders',
+                          },
+                          {
+                            label: 'Stok & Request Bahan',
+                            desc: 'Pengecekan stok kasir & permintaan gudang',
+                            href: '/stock',
+                          },
+                        ].map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            style={{
+                              padding: '9px 10px',
+                              borderRadius: '10px',
+                              textDecoration: 'none',
+                              color: textPrimary,
+                              background: isLight ? '#FFFFFF' : '#1E293B',
+                              border: `1px solid ${surfaceBorder}`,
+                              display: 'block',
+                            }}
+                          >
+                            <div style={{ fontSize: '12px', fontWeight: 700 }}>{item.label}</div>
+                            <div style={{ fontSize: '10.5px', color: textSecondary, marginTop: '2px' }}>
+                              {item.desc}
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Column 3: Role Kitchen (KDS) */}
+                    <div
+                      style={{
+                        padding: '12px',
+                        borderRadius: '14px',
+                        background: isLight ? '#FAF9F5' : '#0F172A',
+                        border: `1px solid ${surfaceBorder}`,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.06em',
+                          color: '#D97706',
+                          marginBottom: '8px',
+                        }}
+                      >
+                        3. Role Kitchen (KDS)
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         <Link
-                          key={item.href}
-                          href={item.href}
+                          href="/kitchen"
                           style={{
-                            padding: '9px 10px',
+                            padding: '10px',
                             borderRadius: '10px',
                             textDecoration: 'none',
                             color: textPrimary,
@@ -864,79 +930,37 @@ export default function SuperadminPage() {
                             display: 'block',
                           }}
                         >
-                          <div style={{ fontSize: '12px', fontWeight: 700 }}>{item.label}</div>
-                          <div style={{ fontSize: '10.5px', color: textSecondary, marginTop: '2px' }}>
-                            {item.desc}
+                          <div style={{ fontSize: '12px', fontWeight: 700 }}>
+                            Layar Dapur (Orders & Floor)
+                          </div>
+                          <div style={{ fontSize: '10.5px', color: textSecondary, marginTop: '3px' }}>
+                            Kanban tiket masakan 4 kolom (New · Cooking · Ready · Served) + Floor Plan Drag & Drop
                           </div>
                         </Link>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Column 3: Role Kitchen (KDS) */}
-                  <div
-                    style={{
-                      padding: '12px',
-                      borderRadius: '14px',
-                      background: isLight ? '#FAF9F5' : '#0F172A',
-                      border: `1px solid ${surfaceBorder}`,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: '11px',
-                        fontWeight: 800,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.06em',
-                        color: '#D97706',
-                        marginBottom: '8px',
-                      }}
-                    >
-                      🍳 3. Role Kitchen (KDS)
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <Link
-                        href="/kitchen"
-                        style={{
-                          padding: '10px',
-                          borderRadius: '10px',
-                          textDecoration: 'none',
-                          color: textPrimary,
-                          background: isLight ? '#FFFFFF' : '#1E293B',
-                          border: `1px solid ${surfaceBorder}`,
-                          display: 'block',
-                        }}
-                      >
-                        <div style={{ fontSize: '12px', fontWeight: 700 }}>
-                          🔥 Layar Dapur (Orders & Floor)
-                        </div>
-                        <div style={{ fontSize: '10.5px', color: textSecondary, marginTop: '3px' }}>
-                          Kanban tiket masakan 4 kolom (New · Cooking · Ready · Served) + Floor Plan Drag & Drop
-                        </div>
-                      </Link>
-                      <Link
-                        href="/dashboard"
-                        style={{
-                          padding: '10px',
-                          borderRadius: '10px',
-                          textDecoration: 'none',
-                          color: textPrimary,
-                          background: isLight ? '#FFFFFF' : '#1E293B',
-                          border: `1px solid ${surfaceBorder}`,
-                          display: 'block',
-                        }}
-                      >
-                        <div style={{ fontSize: '12px', fontWeight: 700 }}>
-                          🎛️ Buka di Dalam Dashboard Hub
-                        </div>
-                        <div style={{ fontSize: '10.5px', color: textSecondary, marginTop: '3px' }}>
-                          Lihat gabungan Admin, Kasir POS, dan Kitchen KDS dalam 1 halaman Dashboard
-                        </div>
-                      </Link>
+                        <Link
+                          href="/dashboard"
+                          style={{
+                            padding: '10px',
+                            borderRadius: '10px',
+                            textDecoration: 'none',
+                            color: textPrimary,
+                            background: isLight ? '#FFFFFF' : '#1E293B',
+                            border: `1px solid ${surfaceBorder}`,
+                            display: 'block',
+                          }}
+                        >
+                          <div style={{ fontSize: '12px', fontWeight: 700 }}>
+                            Buka di Dalam Dashboard Hub
+                          </div>
+                          <div style={{ fontSize: '10.5px', color: textSecondary, marginTop: '3px' }}>
+                            Lihat gabungan Admin, Kasir POS, dan Kitchen KDS dalam 1 halaman Dashboard
+                          </div>
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
 
@@ -959,7 +983,7 @@ export default function SuperadminPage() {
             {currency === 'USD' ? '$ USD' : 'Rp IDR'}
           </button>
 
-          {/* Notification Bell with Red Dot */}
+          {/* Notification Bell with Red Dot (Crisp Monochrome SVG) */}
           <button
             onClick={() => setActiveTab('inbox')}
             title="Open Tenant Inbox & Notifications"
@@ -974,11 +998,13 @@ export default function SuperadminPage() {
               cursor: 'pointer',
               display: 'grid',
               placeItems: 'center',
-              fontSize: '13px',
               flexShrink: 0,
             }}
           >
-            🔔
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
             <span
               style={{
                 position: 'absolute',
@@ -1017,23 +1043,23 @@ export default function SuperadminPage() {
       </header>
 
       {/* =====================================================================
-          LEFT VERTICAL CHARCOAL PILL DOCK (Exact Match to Screenshots 1–4)
+          LEFT VERTICAL CHARCOAL PILL DOCK (Monochrome Stroke SVGs — Exact Match to Screenshots 1–4)
          ===================================================================== */}
       <aside
         style={{
           position: 'fixed',
           left: '16px',
-          top: '53%',
+          top: '50%',
           transform: 'translateY(-50%)',
           zIndex: 40,
           background: '#181A1F',
           borderRadius: '999px',
-          padding: '10px 7px',
+          padding: '8px 6px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '10px',
-          boxShadow: '0 18px 40px rgba(20, 23, 29, 0.25)',
+          gap: '6px',
+          boxShadow: '0 16px 36px rgba(20, 23, 29, 0.22)',
         }}
       >
         {/* 1. Search */}
@@ -1047,19 +1073,21 @@ export default function SuperadminPage() {
           }}
           title="Search Deals & Tenants"
           style={{
-            width: '34px',
-            height: '34px',
+            width: '30px',
+            height: '30px',
             borderRadius: '50%',
             border: 'none',
             background: 'transparent',
-            color: '#94A3B8',
+            color: '#9CA3AF',
             cursor: 'pointer',
             display: 'grid',
             placeItems: 'center',
-            fontSize: '14px',
           }}
         >
-          🔍
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
         </button>
 
         {/* 2. Prominent Warm Amber "+" Action Button (Exact Match to Screenshots 1–4) */}
@@ -1067,8 +1095,8 @@ export default function SuperadminPage() {
           onClick={() => setShowNewDealModal(true)}
           title="Create New Tenant Deal / Post"
           style={{
-            width: '36px',
-            height: '36px',
+            width: '32px',
+            height: '32px',
             borderRadius: '50%',
             border: 'none',
             background: '#F2B249',
@@ -1076,9 +1104,9 @@ export default function SuperadminPage() {
             cursor: 'pointer',
             display: 'grid',
             placeItems: 'center',
-            fontSize: '18px',
+            fontSize: '17px',
             fontWeight: 700,
-            boxShadow: '0 4px 14px rgba(242, 178, 73, 0.4)',
+            boxShadow: '0 4px 12px rgba(242, 178, 73, 0.35)',
           }}
         >
           +
@@ -1089,19 +1117,21 @@ export default function SuperadminPage() {
           onClick={() => setActiveTab('overview')}
           title="Overview · Up Next Queue"
           style={{
-            width: '34px',
-            height: '34px',
+            width: '30px',
+            height: '30px',
             borderRadius: '50%',
             border: 'none',
-            background: activeTab === 'overview' ? 'rgba(255,255,255,0.12)' : 'transparent',
-            color: activeTab === 'overview' ? '#FFFFFF' : '#94A3B8',
+            background: activeTab === 'overview' ? 'rgba(255,255,255,0.14)' : 'transparent',
+            color: activeTab === 'overview' ? '#FFFFFF' : '#9CA3AF',
             cursor: 'pointer',
             display: 'grid',
             placeItems: 'center',
-            fontSize: '14px',
           }}
         >
-          🕒
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <polyline points="12 7 12 12 15 15" />
+          </svg>
         </button>
 
         {/* 4. Calendar / Onboarding Roadmap */}
@@ -1109,47 +1139,53 @@ export default function SuperadminPage() {
           onClick={() => setActiveTab('calendar')}
           title="Publishing & Onboarding Calendar"
           style={{
-            width: '34px',
-            height: '34px',
+            width: '30px',
+            height: '30px',
             borderRadius: '50%',
             border: 'none',
-            background: activeTab === 'calendar' ? 'rgba(255,255,255,0.12)' : 'transparent',
-            color: activeTab === 'calendar' ? '#FFFFFF' : '#94A3B8',
+            background: activeTab === 'calendar' ? 'rgba(255,255,255,0.14)' : 'transparent',
+            color: activeTab === 'calendar' ? '#FFFFFF' : '#9CA3AF',
             cursor: 'pointer',
             display: 'grid',
             placeItems: 'center',
-            fontSize: '14px',
           }}
         >
-          🗓️
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
         </button>
 
-        {/* 5. Pen / Deals Board with Red Notification Dot */}
+        {/* 5. Pen / Compose Deals Board with Red Notification Dot */}
         <button
           onClick={() => setActiveTab('orders')}
           title="Compose · Tenant Deals Kanban Board"
           style={{
             position: 'relative',
-            width: '34px',
-            height: '34px',
+            width: '30px',
+            height: '30px',
             borderRadius: '50%',
             border: 'none',
-            background: activeTab === 'orders' ? 'rgba(255,255,255,0.12)' : 'transparent',
-            color: activeTab === 'orders' ? '#FFFFFF' : '#94A3B8',
+            background: activeTab === 'orders' ? 'rgba(255,255,255,0.14)' : 'transparent',
+            color: activeTab === 'orders' ? '#FFFFFF' : '#9CA3AF',
             cursor: 'pointer',
             display: 'grid',
             placeItems: 'center',
-            fontSize: '14px',
           }}
         >
-          ✒️
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+          </svg>
           <span
             style={{
               position: 'absolute',
-              top: '5px',
-              right: '5px',
-              width: '7px',
-              height: '7px',
+              top: '4px',
+              right: '4px',
+              width: '6px',
+              height: '6px',
               borderRadius: '50%',
               background: '#C84B31',
             }}
@@ -1161,19 +1197,20 @@ export default function SuperadminPage() {
           onClick={() => setActiveTab('approvals')}
           title="Tenant Approvals & SLA"
           style={{
-            width: '34px',
-            height: '34px',
+            width: '30px',
+            height: '30px',
             borderRadius: '50%',
             border: 'none',
-            background: activeTab === 'approvals' ? 'rgba(255,255,255,0.12)' : 'transparent',
-            color: activeTab === 'approvals' ? '#FFFFFF' : '#94A3B8',
+            background: activeTab === 'approvals' ? 'rgba(255,255,255,0.14)' : 'transparent',
+            color: activeTab === 'approvals' ? '#FFFFFF' : '#9CA3AF',
             cursor: 'pointer',
             display: 'grid',
             placeItems: 'center',
-            fontSize: '14px',
           }}
         >
-          🛡️
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
         </button>
 
         {/* 7. Settings / Database & Tenants */}
@@ -1181,40 +1218,22 @@ export default function SuperadminPage() {
           onClick={() => setActiveTab('listening')}
           title="Tenants Directory & Database Settings"
           style={{
-            width: '34px',
-            height: '34px',
+            width: '30px',
+            height: '30px',
             borderRadius: '50%',
             border: 'none',
-            background: activeTab === 'listening' ? 'rgba(255,255,255,0.12)' : 'transparent',
-            color: activeTab === 'listening' ? '#FFFFFF' : '#94A3B8',
+            background: activeTab === 'listening' ? 'rgba(255,255,255,0.14)' : 'transparent',
+            color: activeTab === 'listening' ? '#FFFFFF' : '#9CA3AF',
             cursor: 'pointer',
             display: 'grid',
             placeItems: 'center',
-            fontSize: '14px',
           }}
         >
-          ⚙️
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
         </button>
-
-        {/* 7B. Switch to Unified 3-Role Operational Dashboard (Admin · Kasir · Kitchen) */}
-        <Link
-          href="/dashboard"
-          title="Buka Dashboard Gabungan 3-Role (Admin · Kasir POS · Kitchen KDS)"
-          style={{
-            width: '34px',
-            height: '34px',
-            borderRadius: '50%',
-            background: '#0E7C5B',
-            color: '#FFFFFF',
-            textDecoration: 'none',
-            display: 'grid',
-            placeItems: 'center',
-            fontSize: '14px',
-            boxShadow: '0 4px 12px rgba(14, 124, 91, 0.35)',
-          }}
-        >
-          🎛️
-        </Link>
 
         {/* 8. Theme Switcher (Moon / Sun — exact bottom icon in Screenshots 1–4) */}
         <button
@@ -1229,19 +1248,34 @@ export default function SuperadminPage() {
           }}
           title="Toggle Theme (Murmura Cream / Tavola Dark)"
           style={{
-            width: '34px',
-            height: '34px',
+            width: '30px',
+            height: '30px',
             borderRadius: '50%',
             border: 'none',
-            background: 'rgba(255,255,255,0.08)',
-            color: '#F2B249',
+            background: 'rgba(255,255,255,0.06)',
+            color: '#9CA3AF',
             cursor: 'pointer',
             display: 'grid',
             placeItems: 'center',
-            fontSize: '14px',
           }}
         >
-          {isLight ? '☾' : '☼'}
+          {isLight ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F2B249" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+          )}
         </button>
       </aside>
 
@@ -1252,7 +1286,7 @@ export default function SuperadminPage() {
         style={{
           maxWidth: '1440px',
           margin: '0 auto',
-          padding: '8px 28px 40px 78px',
+          padding: '8px 28px 40px 76px',
         }}
       >
         {/* ===================================================================

@@ -401,213 +401,264 @@ export default function MurmuraCalendarView({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
       {/* =====================================================================
-          ROW 1: "Publishing calendar" + 4 KPI METRICS + WEEK/MONTH/LIST TOGGLE
+          ROW 1: "Publishing calendar" + 4 KPI METRICS (Exact Match to Screenshots 2–4)
+         ===================================================================== */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(175px, 210px) repeat(4, minmax(140px, 1fr))',
+          alignItems: 'center',
+          gap: '20px',
+        }}
+      >
+        {/* Editorial Serif Title with Clip-Mask Entrance (Exact Match to Gambar 2 -> 3) */}
+        <div style={{ overflow: 'hidden', paddingBottom: '2px' }}>
+          <h1
+            key={replaySeed}
+            style={{
+              margin: 0,
+              fontFamily: 'Georgia, "Times New Roman", serif',
+              fontSize: 'clamp(30px, 2.6vw, 37px)',
+              fontWeight: 400,
+              lineHeight: 1.02,
+              letterSpacing: '-0.025em',
+              color: textPrimary,
+              transform: animStage === 0 ? 'translateY(28%)' : 'translateY(0%)',
+              opacity: animStage === 0 ? 0.78 : 1,
+              transition: 'transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease',
+            }}
+          >
+            Publishing
+            <br />
+            calendar
+          </h1>
+        </div>
+
+        {/* 4 Inline KPI Counters with Monochrome Stroke SVGs (Exact Match to Screenshots 2, 3, 4) */}
+        {[
+          {
+            val: kpiScheduled,
+            label: 'Scheduled this week',
+            svg: (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+            ),
+          },
+          {
+            val: kpiAwaiting,
+            label: 'Awaiting approval',
+            svg: (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                <polyline points="9 12 11 14 15 10" />
+              </svg>
+            ),
+          },
+          {
+            val: kpiPublished,
+            label: 'Published this week',
+            svg: (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+            ),
+          },
+          {
+            val: kpiEmptyDays,
+            label: 'Empty days in the next 7',
+            svg: (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+            ),
+          },
+        ].map((kpi, idx) => (
+          <div
+            key={idx}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              opacity: idx === 3 && animStage === 0 ? 0.35 : 1,
+              transition: 'opacity 0.35s ease',
+            }}
+          >
+            <div
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '50%',
+                background: isLight ? 'rgba(255, 255, 255, 0.78)' : 'rgba(255,255,255,0.06)',
+                border: `1px solid ${surfaceBorder}`,
+                display: 'grid',
+                placeItems: 'center',
+                color: textSecondary,
+                flexShrink: 0,
+              }}
+            >
+              {kpi.svg}
+            </div>
+            <div>
+              <div
+                style={{
+                  fontSize: '20px',
+                  fontWeight: 700,
+                  color: textPrimary,
+                  fontVariantNumeric: 'tabular-nums',
+                  lineHeight: 1.15,
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                {kpi.val}
+              </div>
+              <div style={{ fontSize: '11.5px', color: textSecondary, marginTop: '2px' }}>
+                {kpi.label}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* =====================================================================
+          ROW 1B: RIGHT-ALIGNED VIEW CONTROLS ([Week | Month | List] [< Today >] [+ New post])
+          (Exact Position from Reference Screenshots 3 & 4)
          ===================================================================== */}
       <div
         style={{
           display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '16px',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          gap: '8px',
+          marginTop: '-6px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '32px', flexWrap: 'wrap' }}>
-          {/* Editorial Serif Title with Clip-Mask Entrance (Exact Match to Gambar 2 -> 3) */}
-          <div style={{ overflow: 'hidden', paddingBottom: '2px' }}>
-            <h1
-              key={replaySeed}
-              style={{
-                margin: 0,
-                fontFamily: 'Georgia, "Times New Roman", serif',
-                fontSize: 'clamp(30px, 2.7vw, 38px)',
-                fontWeight: 400,
-                lineHeight: 1.02,
-                letterSpacing: '-0.025em',
-                color: textPrimary,
-                transform: animStage === 0 ? 'translateY(28%)' : 'translateY(0%)',
-                opacity: animStage === 0 ? 0.78 : 1,
-                transition: 'transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease',
-              }}
-            >
-              Publishing
-              <br />
-              calendar
-            </h1>
-          </div>
+        {/* Subtle Replay Choreographed Animation Button (Gambar 2 -> Gambar 3) */}
+        <button
+          onClick={handleReplayTransition}
+          title="Replay Gambar 2 (Sebelum Tampil) -> Gambar 3 (Sesudah Tampil) Animation"
+          style={{
+            padding: '6px 12px',
+            borderRadius: '999px',
+            border: `1px solid ${surfaceBorder}`,
+            background: surfaceBg,
+            color: textSecondary,
+            fontSize: '11.5px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '5px',
+          }}
+        >
+          <span>↻</span>
+          <span>Replay</span>
+        </button>
 
-          {/* 4 Inline KPI Counters (3 -> 5, 2 -> 5, 3 -> 9, 0 -> 3) */}
-          {[
-            { icon: '🗓️', val: kpiScheduled, label: 'Scheduled this week' },
-            { icon: '🛡️', val: kpiAwaiting, label: 'Awaiting approval' },
-            { icon: '🚀', val: kpiPublished, label: 'Published this week' },
-            { icon: '⊞', val: kpiEmptyDays, label: 'Empty days in the next 7' },
-          ].map((kpi, idx) => (
-            <div
-              key={idx}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                opacity: idx === 3 && animStage === 0 ? 0.35 : 1,
-                transition: 'opacity 0.35s ease',
-              }}
-            >
-              <div
+        {/* Week | Month | List Segmented Switcher */}
+        <div
+          style={{
+            display: 'inline-flex',
+            background: isLight ? 'rgba(20, 23, 29, 0.05)' : '#182338',
+            borderRadius: '999px',
+            padding: '3px',
+            border: `1px solid ${surfaceBorder}`,
+          }}
+        >
+          {['Week', 'Month', 'List'].map((mode) => {
+            const active = calendarMode === mode;
+            return (
+              <button
+                key={mode}
+                onClick={() => setCalendarMode(mode)}
                 style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  background: isLight ? 'rgba(20, 23, 29, 0.04)' : 'rgba(255,255,255,0.06)',
-                  border: `1px solid ${surfaceBorder}`,
-                  display: 'grid',
-                  placeItems: 'center',
-                  fontSize: '14px',
-                  color: textSecondary,
+                  padding: '5px 14px',
+                  borderRadius: '999px',
+                  border: 'none',
+                  background: active ? surfaceBg : 'transparent',
+                  color: active ? textPrimary : textSecondary,
+                  fontSize: '12px',
+                  fontWeight: active ? 700 : 500,
+                  cursor: 'pointer',
+                  boxShadow: active ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
                 }}
               >
-                {kpi.icon}
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: '20px',
-                    fontWeight: 700,
-                    color: textPrimary,
-                    fontVariantNumeric: 'tabular-nums',
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  {kpi.val}
-                </div>
-                <div style={{ fontSize: '11.5px', color: textSecondary }}>{kpi.label}</div>
-              </div>
-            </div>
-          ))}
+                {mode}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Right Controls: Replay Animation + [Week | Month | List] + [< Today >] + [+ New post] */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          {/* Replay Choreographed Animation Button (Gambar 2 -> Gambar 3) */}
+        {/* < Today > Navigation */}
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
           <button
             onClick={handleReplayTransition}
-            title="Replay Gambar 2 (Sebelum Tampil) -> Gambar 3 (Sesudah Tampil) Animation"
             style={{
-              padding: '7px 12px',
-              borderRadius: '999px',
+              width: '30px',
+              height: '30px',
+              borderRadius: '50%',
               border: `1px solid ${surfaceBorder}`,
-              background: isLight ? '#E3F5EE' : 'rgba(14, 124, 91, 0.22)',
-              color: '#0E7C5B',
-              fontSize: '11.5px',
-              fontWeight: 700,
+              background: surfaceBg,
+              color: textPrimary,
               cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '5px',
             }}
           >
-            <span>✨</span>
-            <span>Replay Transition</span>
+            ‹
           </button>
-
-          {/* Week | Month | List Segmented Switcher */}
-          <div
-            style={{
-              display: 'inline-flex',
-              background: isLight ? 'rgba(20, 23, 29, 0.05)' : '#182338',
-              borderRadius: '999px',
-              padding: '3px',
-              border: `1px solid ${surfaceBorder}`,
-            }}
-          >
-            {['Week', 'Month', 'List'].map((mode) => {
-              const active = calendarMode === mode;
-              return (
-                <button
-                  key={mode}
-                  onClick={() => setCalendarMode(mode)}
-                  style={{
-                    padding: '5px 14px',
-                    borderRadius: '999px',
-                    border: 'none',
-                    background: active ? surfaceBg : 'transparent',
-                    color: active ? textPrimary : textSecondary,
-                    fontSize: '12px',
-                    fontWeight: active ? 700 : 500,
-                    cursor: 'pointer',
-                    boxShadow: active ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
-                  }}
-                >
-                  {mode}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* < Today > Navigation */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <button
-              onClick={handleReplayTransition}
-              style={{
-                width: '30px',
-                height: '30px',
-                borderRadius: '50%',
-                border: `1px solid ${surfaceBorder}`,
-                background: surfaceBg,
-                color: textPrimary,
-                cursor: 'pointer',
-              }}
-            >
-              ‹
-            </button>
-            <button
-              onClick={handleReplayTransition}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '999px',
-                border: `1px solid ${surfaceBorder}`,
-                background: surfaceBg,
-                color: textPrimary,
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Today
-            </button>
-            <button
-              onClick={handleReplayTransition}
-              style={{
-                width: '30px',
-                height: '30px',
-                borderRadius: '50%',
-                border: `1px solid ${surfaceBorder}`,
-                background: surfaceBg,
-                color: textPrimary,
-                cursor: 'pointer',
-              }}
-            >
-              ›
-            </button>
-          </div>
-
-          {/* + New post / deal */}
           <button
-            onClick={onOpenNewDeal}
+            onClick={handleReplayTransition}
             style={{
-              padding: '8px 16px',
+              padding: '6px 14px',
               borderRadius: '999px',
-              border: 'none',
-              background: isLight ? '#161920' : '#F2B249',
-              color: isLight ? '#FFFFFF' : '#14171D',
-              fontSize: '12.5px',
+              border: `1px solid ${surfaceBorder}`,
+              background: surfaceBg,
+              color: textPrimary,
+              fontSize: '12px',
               fontWeight: 600,
               cursor: 'pointer',
             }}
           >
-            + New post
+            Today
+          </button>
+          <button
+            onClick={handleReplayTransition}
+            style={{
+              width: '30px',
+              height: '30px',
+              borderRadius: '50%',
+              border: `1px solid ${surfaceBorder}`,
+              background: surfaceBg,
+              color: textPrimary,
+              cursor: 'pointer',
+            }}
+          >
+            ›
           </button>
         </div>
+
+        {/* + New post / deal */}
+        <button
+          onClick={onOpenNewDeal}
+          style={{
+            padding: '7px 16px',
+            borderRadius: '999px',
+            border: 'none',
+            background: isLight ? '#161920' : '#F2B249',
+            color: isLight ? '#FFFFFF' : '#14171D',
+            fontSize: '12.5px',
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          + New post
+        </button>
       </div>
 
       {/* =====================================================================
