@@ -189,6 +189,10 @@ export const getSuperadminTenants = () => api.get('/superadmin/tenants');
 export const updateSuperadminTenantPlan = (id, plan_code) => api.patch(`/superadmin/tenants/${id}/plan`, { plan_code });
 export const updateSuperadminTenantStatus = (id, status) => api.patch(`/superadmin/tenants/${id}/status`, { status });
 export const getFranchiseHqReport = () => api.get('/reports/franchise-hq');
+export const getSuperadminCrmDeals = () => api.get('/superadmin/crm-deals');
+export const createSuperadminCrmDeal = (data) => api.post('/superadmin/crm-deals', data);
+export const updateSuperadminCrmDeal = (id, data) => api.patch(`/superadmin/crm-deals/${id}`, data);
+export const deleteSuperadminCrmDeal = (id) => api.delete(`/superadmin/crm-deals/${id}`);
 
 
 // Database & Cloud Storage Management
