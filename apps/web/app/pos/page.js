@@ -16,6 +16,7 @@ import PaymentModal from '@/components/pos/PaymentModal';
 import Receipt      from '@/components/pos/Receipt';
 import ProductCard  from '@/components/pos/ProductCard';
 import PrintReceiptModal from '@/components/pos/PrintReceiptModal';
+import InteractiveFloorPlanSelector from '@/components/pos/InteractiveFloorPlanSelector';
 import { playOrderNotificationSound, playCheckoutSuccessSound } from '@/lib/soundNotification';
 import { useReactToPrint } from 'react-to-print';
 import AdminLayout  from '@/components/layout/AdminLayout';
@@ -173,6 +174,9 @@ export default function PosPage() {
   const [diningTables, setDiningTables] = useState([]);
   const [bundlePrograms, setBundlePrograms] = useState([]);
   const [selectedTableId, setSelectedTableId] = useState('');
+  const [selectedTableLabel, setSelectedTableLabel] = useState('Meja 12');
+  const [posViewTab, setPosViewTab] = useState('menu'); // 'menu' | 'floor'
+  const [guestCount, setGuestCount] = useState(4);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
   const [prevPendingCount, setPrevPendingCount] = useState(0);
@@ -655,6 +659,50 @@ export default function PosPage() {
                 <span className="text-slate-500 text-xs capitalize mt-0.5">{dateStr}</span>
               </div>
 
+              {/* Tavola Floating Pill Mode Switcher: Menu vs Floor Plan */}
+              <div
+                style={{
+                  display: 'inline-flex',
+                  background: '#131C2E',
+                  padding: '4px',
+                  borderRadius: '999px',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setPosViewTab('menu')}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '999px',
+                    border: 'none',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: posViewTab === 'menu' ? '#F3A68F' : 'transparent',
+                    color: posViewTab === 'menu' ? '#0F172A' : '#94A3B8',
+                  }}
+                >
+                  🍴 Menu Produk
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPosViewTab('floor')}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '999px',
+                    border: 'none',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: posViewTab === 'floor' ? '#F3A68F' : 'transparent',
+                    color: posViewTab === 'floor' ? '#0F172A' : '#94A3B8',
+                  }}
+                >
+                  🗺️ Floor Plan & Meja ({selectedTableLabel || 'Takeaway'})
+                </button>
+              </div>
+
               <div className="flex-1" />
 
               {/* ── ADMIN: Pilih sumber stok ── */}
@@ -857,8 +905,28 @@ export default function PosPage() {
 
 
 
-            {/* ── PRODUCT GRID ── */}
+            {/* ── PRODUCT GRID OR FLOOR PLAN VIEW ── */}
             <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4" data-tour="pos-product-section">
+              {posViewTab === 'floor' ? (
+                <div className="space-y-4 pb-8">
+                  <InteractiveFloorPlanSelector
+                    tables={diningTables}
+                    selectedTableId={selectedTableId}
+                    onSelectTable={(dbId, nodeMeta) => {
+                      setSelectedTableId(dbId || '');
+                      setSelectedTableLabel(nodeMeta ? `Meja ${nodeMeta.number}` : 'Takeaway');
+                    }}
+                    guestCount={guestCount}
+                    onGuestCountChange={setGuestCount}
+                    showWaitlistAndServers={true}
+                    onConfirmAndProceed={() => {
+                      if (items.length > 0) openPaymentModal();
+                      else setPosViewTab('menu');
+                    }}
+                  />
+                </div>
+              ) : (
+                <>
               {!loading && (
                 <div className="mb-3 flex flex-wrap items-center gap-2 text-xs" data-tour="pos-product-count">
                 <p className="text-slate-600">
@@ -960,6 +1028,8 @@ export default function PosPage() {
                 }
               </div>
               <div className="h-4 lg:hidden" />
+                </>
+              )}
             </div>
 
             {/* ── MOBILE BOTTOM BAR ── */}
@@ -973,7 +1043,7 @@ export default function PosPage() {
                     <div className="w-7 h-7 bg-white/20 rounded-xl flex items-center justify-center text-sm font-black">
                       {itemCount}
                     </div>
-                    <span className="text-sm">Lihat Pesanan</span>
+                    <span className="text-sm">Pilih Meja & Bayar</span>
                   </div>
                   <span className="font-black">Rp {total.toLocaleString('id-ID')}</span>
                 </button>
@@ -983,7 +1053,7 @@ export default function PosPage() {
 
           {/* ── DESKTOP CART ── */}
           <div className="hidden lg:flex" data-tour="pos-desktop-cart">
-            <Cart onCheckout={openPaymentModal} />
+            <Cart onCheckout={openPaymentModal} selectedTableLabel={selectedTableLabel} />
           </div>
 
           {/* ── MOBILE CART DRAWER ── */}
@@ -1011,7 +1081,7 @@ export default function PosPage() {
                   </button>
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <Cart onCheckout={() => { setShowMobileCart(false); openPaymentModal(); }} mobile />
+                  <Cart onCheckout={() => { setShowMobileCart(false); openPaymentModal(); }} selectedTableLabel={selectedTableLabel} mobile />
                 </div>
               </div>
             </>

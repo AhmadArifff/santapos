@@ -2,8 +2,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { previewDiscount } from '@/lib/api';
 import { formatIndonesianPhone, normalizeIndonesianPhoneForSubmit } from '@/lib/phoneFormat';
+import InteractiveFloorPlanSelector from '@/components/pos/InteractiveFloorPlanSelector';
 
-const PECAHAN = [100000, 50000, 20000, 10000, 5000, 2000, 1000, 500, 200, 100, 50];
+const PECAHAN = [100000, 50000, 20000, 10000, 5000, 2000, 1000, 500, 200, 100];
 
 const fmtPecahan = (n) => {
   if (n >= 1000) return `Rp ${(n / 1000).toLocaleString('id-ID')}rb`;
@@ -74,34 +75,6 @@ const getBundleExcludedIds = (breakdown = []) => new Set(
     .filter(Boolean)
 );
 
-const getDiscountScopeTitle = (discountType) => {
-  if (discountType === 'bundle') return 'Menu paket yang mendapat diskon:';
-  if (discountType === 'voucher') return 'Menu yang terkena kode voucher:';
-  if (discountType === 'review_reward') return 'Menu yang terkena reward review:';
-  return 'Menu yang mendapat diskon:';
-};
-
-const getDiscountCardClass = (discountType) => {
-  if (discountType === 'bundle') return 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100/90';
-  if (discountType === 'voucher') return 'border-sky-300/20 bg-sky-400/10 text-sky-100/90';
-  if (discountType === 'review_reward') return 'border-orange-300/20 bg-orange-400/10 text-orange-100/90';
-  return 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100/90';
-};
-
-const getDiscountTitleClass = (discountType) => {
-  if (discountType === 'bundle') return 'text-emerald-200';
-  if (discountType === 'voucher') return 'text-sky-100';
-  if (discountType === 'review_reward') return 'text-orange-200';
-  return 'text-emerald-200';
-};
-
-const getDiscountNote = (component) => {
-  if (component.type === 'bundle') return 'Note: Potongan paket bundle hanya dihitung dari menu paket di atas.';
-  if (component.type === 'voucher') return 'Note: Potongan Kode Vocher dihitung dari menu di luar paket bundle.';
-  if (component.type === 'review_reward') return 'Note: Potongan reward review dihitung dari menu di luar paket bundle.';
-  return 'Note: Potongan diskon dihitung sesuai scope program.';
-};
-
 export default function PaymentModal({
   total,
   itemCount = 0,
@@ -114,8 +87,14 @@ export default function PaymentModal({
   items = [],
   bundleHints = [],
 }) {
-  const [method, setMethod]   = useState('cash');
-  const [tunai, setTunai]     = useState(0);
+  // Step 1: 'floor' (Pilih Meja & Kapasitas Orang) -> Step 2: 'payment' (Metode Pembayaran & Cetak Struk)
+  const [checkoutStep, setCheckoutStep] = useState('floor');
+  const [guestCount, setGuestCount] = useState(4);
+  const [customerName, setCustomerName] = useState('');
+  const [selectedTableMeta, setSelectedTableMeta] = useState({ number: '12', seats: 4, zone: 'Dining room' });
+
+  const [method, setMethod] = useState('cash');
+  const [tunai, setTunai] = useState(0);
   const [tunaiStr, setTunaiStr] = useState('');
   const [pecahanCounts, setPecahanCounts] = useState({});
   const [customerPhone, setCustomerPhone] = useState('+62');
@@ -141,7 +120,7 @@ export default function PaymentModal({
     }),
   }));
   const kembalian = method === 'cash' ? tunai - payableTotal : 0;
-  const canPay    = !processing && (method !== 'cash' || (tunai >= payableTotal));
+  const canPay = !processing && (method !== 'cash' || tunai >= payableTotal);
   const customerPhoneForApi = normalizeIndonesianPhoneForSubmit(customerPhone);
 
   useEffect(() => {
@@ -191,7 +170,7 @@ export default function PaymentModal({
   };
 
   const handleTunaiInput = (val) => {
-    const clean = parseInt(val.replace(/\D/g, '')) || 0;
+    const clean = parseInt(val.replace(/\D/g, ''), 10) || 0;
     setTunai(clean);
     setTunaiStr(clean > 0 ? clean.toLocaleString('id-ID') : '');
     setPecahanCounts({});
@@ -205,272 +184,572 @@ export default function PaymentModal({
   };
 
   const methods = [
-    { id: 'cash',     label: 'Tunai',    icon: '💵' },
-    { id: 'qris',     label: 'QRIS',     icon: '📱' },
-    { id: 'transfer', label: 'Transfer', icon: '🏦' },
+    { id: 'cash', label: 'Tunai (Cash)', icon: '💵' },
+    { id: 'qris', label: 'QRIS Dinamis', icon: '📱' },
+    { id: 'transfer', label: 'Transfer Bank', icon: '🏦' },
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-3 sm:p-4" data-tour="pos-payment-modal">
-      <div className="flex max-h-[calc(100vh-1.5rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl shadow-black/50 sm:max-h-[calc(100vh-2rem)]">
-
-        {/* Header */}
-        <div className="flex shrink-0 items-center justify-between border-b border-slate-700 px-4 py-3 sm:px-5 sm:py-4">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-300">Checkout Kasir</p>
-            <h2 className="mt-0.5 text-lg font-bold text-white">Pembayaran</h2>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-3 sm:p-4"
+      style={{
+        background: 'rgba(8, 13, 24, 0.84)',
+        backdropFilter: 'blur(8px)',
+      }}
+      data-tour="pos-payment-modal"
+    >
+      <div
+        className="flex max-h-[calc(100vh-1.5rem)] w-full max-w-6xl flex-col overflow-hidden shadow-2xl"
+        style={{
+          background: '#0F172A',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '24px',
+        }}
+      >
+        {/* Top Header with Step Pill Navigation */}
+        <div
+          className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-5 py-3.5"
+          style={{
+            background: '#131C2E',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              style={{
+                width: '34px',
+                height: '34px',
+                borderRadius: '10px',
+                background: '#F3A68F',
+                color: '#0F172A',
+                display: 'grid',
+                placeItems: 'center',
+                fontWeight: 900,
+                fontSize: '15px',
+              }}
+            >
+              ✦
+            </div>
+            <div>
+              <p style={{ margin: 0, fontSize: '10px', fontWeight: 800, letterSpacing: '0.16em', color: '#F3A68F', textTransform: 'uppercase' }}>
+                Alur Kasir POS · Meja & Pembayaran
+              </p>
+              <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#F8FAFC' }}>
+                {checkoutStep === 'floor'
+                  ? 'Langkah 1: Pilih Meja Sesuai Kapasitas Tamu'
+                  : 'Langkah 2: Konfirmasi Pembayaran & Cetak Struk'}
+              </h2>
+            </div>
           </div>
+
+          {/* Center Step Switcher Pill */}
+          <div
+            style={{
+              display: 'inline-flex',
+              background: '#0B111E',
+              padding: '4px',
+              borderRadius: '999px',
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setCheckoutStep('floor')}
+              style={{
+                padding: '6px 15px',
+                borderRadius: '999px',
+                border: 'none',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                background: checkoutStep === 'floor' ? '#F3A68F' : 'transparent',
+                color: checkoutStep === 'floor' ? '#0F172A' : '#94A3B8',
+              }}
+            >
+              1. 🗺️ Pilih Meja ({guestCount > 0 ? `${guestCount} Orang` : 'Takeaway'})
+            </button>
+            <button
+              type="button"
+              onClick={() => setCheckoutStep('payment')}
+              style={{
+                padding: '6px 15px',
+                borderRadius: '999px',
+                border: 'none',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                background: checkoutStep === 'payment' ? '#BCE3D4' : 'transparent',
+                color: checkoutStep === 'payment' ? '#0F172A' : '#94A3B8',
+              }}
+            >
+              2. 💳 Bayar ({formatRp(payableTotal)})
+            </button>
+          </div>
+
           <button
+            type="button"
             onClick={onClose}
             disabled={processing}
-            className="text-slate-500 hover:text-slate-300 disabled:cursor-not-allowed disabled:opacity-40 text-xl leading-none transition-colors"
-          >×</button>
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              background: '#1E2C46',
+              border: 'none',
+              color: '#CBD5E1',
+              fontSize: '16px',
+              cursor: 'pointer',
+            }}
+          >
+            ✕
+          </button>
         </div>
 
-        <div className="grid min-h-0 flex-1 content-start gap-4 overflow-y-auto px-4 py-4 sm:px-5 lg:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)]">
-
-          {/* Total Tagihan */}
-          <div className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800 p-4 lg:col-start-2 lg:row-start-1" data-tour="pos-payment-total">
-            <div>
-              <p className="text-slate-400 text-xs uppercase tracking-wide font-medium">Total Tagihan</p>
-              <p className="text-orange-400 text-2xl font-black mt-0.5">
-                Rp {total.toLocaleString('id-ID')}
-              </p>
-              {discountAmount > 0 && (
-                <p className="mt-1 text-xs font-semibold text-emerald-300">
-                  Setelah diskon: Rp {payableTotal.toLocaleString('id-ID')}
-                </p>
-              )}
+        {/* BODY CONTENT */}
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+          {checkoutStep === 'floor' ? (
+            /* ================= STEP 1: INTERACTIVE FLOOR PLAN & CAPACITY SELECTOR ================= */
+            <div className="space-y-4">
+              <InteractiveFloorPlanSelector
+                tables={tables}
+                selectedTableId={selectedTableId}
+                onSelectTable={(dbId, nodeMeta) => {
+                  onSelectTable?.(dbId);
+                  if (nodeMeta) {
+                    setSelectedTableMeta({
+                      number: nodeMeta.number,
+                      seats: nodeMeta.seats,
+                      zone: 'Dining room',
+                    });
+                  } else if (!dbId) {
+                    setSelectedTableMeta(null);
+                  }
+                }}
+                guestCount={guestCount}
+                onGuestCountChange={setGuestCount}
+                customerName={customerName}
+                onCustomerNameChange={setCustomerName}
+                compact={true}
+                showWaitlistAndServers={false}
+                onConfirmAndProceed={() => setCheckoutStep('payment')}
+              />
             </div>
-            <div className="text-right">
-              <p className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-bold text-slate-400">{itemCount} item</p>
-            </div>
-          </div>
-
-          {/* Meja untuk status publik */}
-          {tables.length > 0 && (
-            <div className="lg:col-start-1 lg:row-start-1" data-tour="pos-payment-table">
-              <p className="text-slate-500 text-xs uppercase tracking-wide font-medium mb-2">Meja Pelanggan</p>
-              <select
-                value={selectedTableId || ''}
-                onChange={(e) => onSelectTable?.(e.target.value)}
-                disabled={processing}
-                className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-3 text-sm font-semibold text-white outline-none focus:border-orange-500 disabled:opacity-60"
+          ) : (
+            /* ================= STEP 2: PAYMENT METHOD, VOUCHER, CASH & CHANGE ================= */
+            <div className="grid content-start gap-4 lg:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)]">
+              {/* Selected Table Banner + Total Bill */}
+              <div
+                className="flex items-center justify-between rounded-2xl p-4 lg:col-start-2 lg:row-start-1"
+                style={{
+                  background: '#131C2E',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}
+                data-tour="pos-payment-total"
               >
-                <option value="">Tanpa QR status meja</option>
-                {tables.map((table) => {
-                  const activeOrders = Number(table.active_order_count || 0);
-                  const activeSessions = Number(table.active_session_count || 0);
-                  const busy = Number(table.active_orders || 0) > 0 || activeOrders > 0 || activeSessions > 0;
-                  const busyLabel = activeSessions > 0
-                    ? 'sedang ditempati pelanggan'
-                    : 'ada pesanan aktif';
-                  return (
-                    <option key={table.id} value={table.id} disabled={busy}>
-                      Meja {table.table_number} {table.table_name ? `- ${table.table_name}` : ''}{busy ? ` (${busyLabel})` : ''}
-                    </option>
-                  );
-                })}
-              </select>
-              <p className="mt-1 text-[11px] leading-5 text-slate-500">
-                Jika dipilih, struk akan berisi QR publik untuk pelanggan memantau status pesanan dan mengunduh struk digital.
-              </p>
-            </div>
-          )}
-
-          {/* Voucher */}
-          <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-3 lg:col-start-1 lg:row-start-2" data-tour="pos-payment-discount">
-            <p className="text-slate-500 text-xs uppercase tracking-wide font-medium mb-2">Voucher & Diskon</p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <input
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(formatIndonesianPhone(e.target.value))}
-                disabled={processing}
-                inputMode="numeric"
-                placeholder="+62895-3530-25503"
-                className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white outline-none focus:border-orange-500"
-              />
-              <input
-                value={voucherCode}
-                onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
-                disabled={processing}
-                placeholder="Kode voucher"
-                className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold uppercase text-white outline-none focus:border-orange-500"
-              />
-            </div>
-            <div className="mt-2 max-h-[260px] overflow-y-auto rounded-lg bg-slate-900/70 px-3 py-2 text-xs lg:max-h-[230px]" data-tour="pos-payment-discount-preview">
-              {discountLoading ? (
-                <span className="text-slate-400">Mengecek diskon...</span>
-              ) : discountPreview?.error ? (
-                <span className="text-yellow-300">{discountPreview.message}</span>
-              ) : discountAmount > 0 ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2 text-slate-100">
-                    <span>{discountPreview.label}</span>
-                    <strong className="text-red-300">-{formatRp(discountAmount)}</strong>
-                  </div>
-                  {scopedDiscountBreakdown.map((component) => (
-                    <div
-                      key={`${component.type}-${component.program_id || component.label}`}
-                      className={`rounded-xl border p-2 leading-5 ${getDiscountCardClass(component.type)}`}
-                    >
-                      <div className={`flex justify-between gap-2 font-black ${getDiscountTitleClass(component.type)}`}>
-                        <span>{component.label}</span>
-                        <span className="text-red-300">-{formatRp(component.discount_amount)}</span>
-                      </div>
-                      <p className={`font-black ${getDiscountTitleClass(component.type)}`}>{getDiscountScopeTitle(component.type)}</p>
-                      {component.scopeItems.map((item) => (
-                        <p key={item.id}>{item.name} x{item.qty} - dasar {formatRp(item.subtotal)}</p>
-                      ))}
-                      <p className="mt-1 opacity-75">
-                        {getDiscountNote(component)}
-                        {component.type !== 'bundle' ? ` Dasar potongan ${formatRp(component.discount_base || 0)}.` : ''}
-                      </p>
-                    </div>
-                  ))}
-                  <div className="flex items-center justify-between gap-2 border-t border-slate-700 pt-2 text-emerald-300">
-                    <span>Total bayar</span>
-                    <strong className="text-emerald-200">{formatRp(payableTotal)}</strong>
-                  </div>
+                <div>
+                  <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: '#94A3B8' }}>
+                    Total Tagihan ({itemCount} Menu)
+                  </p>
+                  <p style={{ margin: '4px 0 0', fontSize: '26px', fontWeight: 900, color: '#F3A68F' }}>
+                    {formatRp(total)}
+                  </p>
+                  {discountAmount > 0 && (
+                    <p style={{ margin: '4px 0 0', fontSize: '12px', fontWeight: 700, color: '#9CE2C6' }}>
+                      Setelah diskon: {formatRp(payableTotal)}
+                    </p>
+                  )}
                 </div>
-              ) : bundleHints.some((program) => program.complete) && !customerPhoneForApi ? (
-                <span className="text-yellow-300">Nomor HP wajib diisi agar diskon paket bundle bisa diklaim.</span>
-              ) : bundleHints.some((program) => !program.complete && program.missingProducts?.length) ? (
-                <span className="text-orange-300">
-                  Tambah {bundleHints.find((program) => !program.complete && program.missingProducts?.length)?.missingProducts?.map((item) => `${item.name} x${Math.max(1, Number(item.required_qty || 1) - Number(item.current_qty || 0))}`).join(', ')} untuk membuka diskon paket.
-                </span>
-              ) : (
-                <span className="text-slate-500">Bundle aktif otomatis terdeteksi. Voucher memakai batas klaim berdasarkan nomor HP.</span>
-              )}
-            </div>
-          </div>
 
-          {/* Metode Bayar */}
-          <div className="lg:col-start-1 lg:row-start-3" data-tour="pos-payment-methods">
-            <p className="text-slate-500 text-xs uppercase tracking-wide font-medium mb-2">Metode Bayar</p>
-            <div className="grid grid-cols-3 gap-2">
-              {methods.map(m => (
-                <button
-                  key={m.id}
-                  onClick={() => handleMethod(m.id)}
-                  className={`py-3 rounded-xl text-sm font-semibold transition-all border ${
-                    method === m.id
-                      ? 'bg-orange-500/10 border-orange-500 text-orange-400'
-                      : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
-                  }`}
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => setCheckoutStep('floor')}
+                    style={{
+                      background: '#EFE2A8',
+                      color: '#18181B',
+                      border: 'none',
+                      borderRadius: '12px',
+                      padding: '7px 12px',
+                      fontSize: '11.5px',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {selectedTableMeta && guestCount > 0
+                      ? `🪑 Meja ${selectedTableMeta.number} (${guestCount} Org) ✎`
+                      : '🛍️ Takeaway (Ubah Meja) ✎'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Meja Dropdown Fallback & Confirmation */}
+              <div
+                className="rounded-2xl p-3.5 lg:col-start-1 lg:row-start-1"
+                style={{
+                  background: '#131C2E',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}
+                data-tour="pos-payment-table"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-slate-400 text-xs uppercase tracking-wide font-bold">
+                    Meja & Kapasitas Pelanggan
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setCheckoutStep('floor')}
+                    className="text-xs font-bold text-orange-300 hover:underline"
+                  >
+                    🗺️ Buka Denah Floor Plan →
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <select
+                    value={selectedTableId || ''}
+                    onChange={(e) => onSelectTable?.(e.target.value)}
+                    disabled={processing}
+                    className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm font-semibold text-white outline-none focus:border-orange-400"
+                  >
+                    <option value="">
+                      {selectedTableMeta?.number
+                        ? `Meja ${selectedTableMeta.number} (${guestCount} Tamu - Floor Plan)`
+                        : 'Takeaway / Tanpa Meja'}
+                    </option>
+                    {tables.map((table) => (
+                      <option key={table.id} value={table.id}>
+                        Meja {table.table_number} {table.table_name ? `- ${table.table_name}` : ''}
+                      </option>
+                    ))}
+                  </select>
+
+                  <input
+                    type="text"
+                    placeholder="Nama Tamu (opsional)"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-orange-400"
+                  />
+                </div>
+              </div>
+
+              {/* Voucher & Diskon */}
+              <div
+                className="rounded-2xl p-3.5 lg:col-start-1 lg:row-start-2"
+                style={{
+                  background: '#131C2E',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}
+                data-tour="pos-payment-discount"
+              >
+                <p className="text-slate-400 text-xs uppercase tracking-wide font-bold mb-2">
+                  Voucher & Diskon Otomatis
+                </p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <input
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(formatIndonesianPhone(e.target.value))}
+                    disabled={processing}
+                    inputMode="numeric"
+                    placeholder="+62895-3530-25503"
+                    className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white outline-none focus:border-orange-400"
+                  />
+                  <input
+                    value={voucherCode}
+                    onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                    disabled={processing}
+                    placeholder="KODE VOUCHER"
+                    className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold uppercase text-white outline-none focus:border-orange-400"
+                  />
+                </div>
+
+                <div
+                  className="mt-2 max-h-[180px] overflow-y-auto rounded-xl bg-slate-950/60 px-3 py-2 text-xs"
+                  data-tour="pos-payment-discount-preview"
                 >
-                  <div className="text-xl mb-1">{m.icon}</div>
-                  <div>{m.label}</div>
-                </button>
-              ))}
-            </div>
-          </div>
+                  {discountLoading ? (
+                    <span className="text-slate-400">Mengecek diskon...</span>
+                  ) : discountPreview?.error ? (
+                    <span className="text-yellow-300">{discountPreview.message}</span>
+                  ) : discountAmount > 0 ? (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-2 text-slate-100">
+                        <span>{discountPreview.label}</span>
+                        <strong className="text-red-300">-{formatRp(discountAmount)}</strong>
+                      </div>
+                      {scopedDiscountBreakdown.map((component) => (
+                        <div key={`${component.type}-${component.label}`} className="text-slate-300">
+                          {component.label}: -{formatRp(component.discount_amount)}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-slate-400">
+                      Paket bundle aktif otomatis terdeteksi. Masukkan nomor HP pelanggan untuk klaim voucher.
+                    </span>
+                  )}
+                </div>
+              </div>
 
-          {/* Section Tunai */}
-          {method === 'cash' && (
-            <>
-              {/* Pecahan Uang */}
-              <div className="lg:col-start-2 lg:row-start-2" data-tour="pos-payment-cash-denominations">
-                <p className="text-slate-500 text-xs uppercase tracking-wide font-medium mb-2">Pecahan Uang</p>
-                <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6 lg:grid-cols-4 xl:grid-cols-3">
-                  {PECAHAN.map(p => {
-                    const count = Number(pecahanCounts[p] || 0);
+              {/* Metode Bayar */}
+              <div className="lg:col-start-1 lg:row-start-3" data-tour="pos-payment-methods">
+                <p className="text-slate-400 text-xs uppercase tracking-wide font-bold mb-2">
+                  Pilih Metode Pembayaran
+                </p>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {methods.map((m) => {
+                    const active = method === m.id;
                     return (
                       <button
-                        key={p}
-                        onClick={() => addPecahan(p)}
-                        className="relative rounded-lg border border-slate-700 bg-slate-800 py-2 text-xs font-semibold text-slate-300 transition-all hover:border-orange-500 hover:bg-slate-700 hover:text-orange-400 active:scale-95"
+                        key={m.id}
+                        type="button"
+                        onClick={() => handleMethod(m.id)}
+                        style={{
+                          padding: '12px 10px',
+                          borderRadius: '16px',
+                          border: active ? '2px solid #F3A68F' : '1px solid rgba(255,255,255,0.08)',
+                          background: active ? 'rgba(243, 166, 143, 0.16)' : '#131C2E',
+                          color: active ? '#F3A68F' : '#CBD5E1',
+                          fontWeight: 700,
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
                       >
-                        {count > 0 && (
-                          <span className="absolute -right-1.5 -top-1.5 min-w-6 rounded-full border border-emerald-200/50 bg-emerald-500 px-1.5 py-0.5 text-[10px] font-black leading-none text-white shadow-lg shadow-emerald-950/40">
-                            {count}x
-                          </span>
-                        )}
-                        {fmtPecahan(p)}
+                        <div className="text-xl mb-1">{m.icon}</div>
+                        <div>{m.label}</div>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Input Uang Diterima */}
-              <div className="lg:col-start-2 lg:row-start-3" data-tour="pos-payment-cash-input">
-                <label className="text-slate-500 text-xs uppercase tracking-wide font-medium block mb-2">
-                  Uang Diterima
-                </label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-sm">Rp</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={tunaiStr}
-                    onChange={e => handleTunaiInput(e.target.value)}
-                    placeholder="0"
-                    className="w-full bg-slate-800 border border-slate-600 focus:border-orange-500 text-white font-bold text-lg rounded-xl pl-10 pr-4 py-3 outline-none transition-colors"
-                  />
-                  {tunai > 0 && (
-                    <button
-                      onClick={() => { setTunai(0); setTunaiStr(''); setPecahanCounts({}); }}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-lg transition-colors"
-                    >×</button>
-                  )}
-                </div>
-              </div>
+              {/* Section Tunai */}
+              {method === 'cash' && (
+                <>
+                  <div className="lg:col-start-2 lg:row-start-2" data-tour="pos-payment-cash-denominations">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-slate-400 text-xs uppercase tracking-wide font-bold">
+                        Pecahan Uang Cepat
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTunai(payableTotal);
+                          setTunaiStr(payableTotal.toLocaleString('id-ID'));
+                        }}
+                        style={{
+                          background: '#EADCA6',
+                          color: '#18181B',
+                          border: 'none',
+                          borderRadius: '999px',
+                          padding: '3px 10px',
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ⚡ Uang Pas ({formatRp(payableTotal)})
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5 lg:grid-cols-4">
+                      {PECAHAN.map((p) => {
+                        const count = Number(pecahanCounts[p] || 0);
+                        return (
+                          <button
+                            key={p}
+                            type="button"
+                            onClick={() => addPecahan(p)}
+                            className="relative rounded-xl border border-slate-700 bg-slate-800/90 py-2 text-xs font-bold text-slate-200 transition hover:border-orange-400 hover:text-orange-300"
+                          >
+                            {count > 0 && (
+                              <span className="absolute -right-1.5 -top-1.5 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[10px] font-black text-black">
+                                {count}x
+                              </span>
+                            )}
+                            {fmtPecahan(p)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-              {/* Kembalian */}
-              <div className="lg:col-start-2 lg:row-start-4" data-tour="pos-payment-change">
-                <label className="text-slate-500 text-xs uppercase tracking-wide font-medium block mb-2">
-                  Kembalian
-                </label>
-                <div className={`w-full rounded-xl px-4 py-3 font-black text-lg border transition-colors ${
-                  tunai === 0        ? 'bg-slate-800 border-slate-700 text-slate-500' :
-                  kembalian >= 0     ? 'bg-green-950 border-green-800 text-green-400' :
-                                       'bg-red-950 border-red-800 text-red-400'
-                }`}>
-                  {tunai === 0 ? 'Rp 0' :
-                   kembalian >= 0
-                     ? `Rp ${kembalian.toLocaleString('id-ID')}`
-                     : `Kurang Rp ${Math.abs(kembalian).toLocaleString('id-ID')}`
-                  }
-                </div>
-              </div>
-            </>
-          )}
+                  <div className="lg:col-start-2 lg:row-start-3" data-tour="pos-payment-cash-input">
+                    <label className="text-slate-400 text-xs uppercase tracking-wide font-bold block mb-1.5">
+                      Uang Diterima
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">
+                        Rp
+                      </span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={tunaiStr}
+                        onChange={(e) => handleTunaiInput(e.target.value)}
+                        placeholder="0"
+                        className="w-full bg-slate-900 border border-slate-700 focus:border-orange-400 text-white font-black text-lg rounded-xl pl-10 pr-10 py-3 outline-none"
+                      />
+                      {tunai > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTunai(0);
+                            setTunaiStr('');
+                            setPecahanCounts({});
+                          }}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-lg"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
-          {/* Non-cash info */}
-          {method !== 'cash' && (
-            <div className="rounded-xl border border-slate-700 bg-slate-800 p-4 text-center lg:col-start-2" data-tour="pos-payment-noncash-note">
-              <p className="text-slate-400 text-sm">
-                {method === 'qris' ? '📱 Tunjukkan QR kepada pelanggan' : '🏦 Konfirmasi transfer sebelum proses'}
-              </p>
+                  <div className="lg:col-start-2 lg:row-start-4" data-tour="pos-payment-change">
+                    <label className="text-slate-400 text-xs uppercase tracking-wide font-bold block mb-1.5">
+                      Kembalian
+                    </label>
+                    <div
+                      className={`w-full rounded-xl px-4 py-3 font-black text-lg border ${
+                        tunai === 0
+                          ? 'bg-slate-900 border-slate-800 text-slate-500'
+                          : kembalian >= 0
+                          ? 'bg-emerald-950/60 border-emerald-700 text-emerald-300'
+                          : 'bg-red-950/60 border-red-800 text-red-300'
+                      }`}
+                    >
+                      {tunai === 0
+                        ? 'Rp 0'
+                        : kembalian >= 0
+                        ? `Rp ${kembalian.toLocaleString('id-ID')}`
+                        : `Kurang Rp ${Math.abs(kembalian).toLocaleString('id-ID')}`}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {method !== 'cash' && (
+                <div
+                  className="rounded-2xl border border-slate-700 bg-slate-800/70 p-5 text-center lg:col-start-2"
+                  data-tour="pos-payment-noncash-note"
+                >
+                  <p className="text-slate-200 text-sm font-semibold">
+                    {method === 'qris'
+                      ? '📱 QRIS Dinamis siap ditampilkan pada layar & struk pelanggan'
+                      : '🏦 Silakan verifikasi bukti transfer sebelum menekan tombol Proses'}
+                  </p>
+                </div>
+              )}
             </div>
           )}
-
         </div>
 
-        {/* Footer */}
-        <div className="flex shrink-0 gap-3 border-t border-slate-700 bg-slate-900/95 px-4 py-4 sm:px-5" data-tour="pos-payment-actions">
-          <button
-            onClick={onClose}
-            disabled={processing}
-            className="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-semibold rounded-xl py-3 transition-colors"
-          >
-            Batal
-          </button>
-          <button
-            onClick={() => canPay && onPay(method, tunai, kembalian, {
-              customer_phone: customerPhoneForApi,
-              voucher_code: voucherCode,
-              discount_amount: discountAmount,
-              final_total: payableTotal,
-            })}
-            disabled={!canPay}
-            className="flex-[2] bg-orange-500 hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black rounded-xl py-3 text-base transition-colors"
-          >
-            {processing ? 'Memproses transaksi...' : 'Proses & Cetak Struk'}
-          </button>
-        </div>
+        {/* Bottom Action Footer */}
+        <div
+          className="flex shrink-0 items-center justify-between gap-3 px-5 py-3.5"
+          style={{
+            background: '#131C2E',
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+          }}
+          data-tour="pos-payment-actions"
+        >
+          {checkoutStep === 'floor' ? (
+            <>
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  background: '#1E2C46',
+                  color: '#CBD5E1',
+                  border: 'none',
+                  borderRadius: '999px',
+                  padding: '10px 22px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                ← Kembali ke Menu Produk
+              </button>
 
+              <div className="flex items-center gap-3">
+                <span className="hidden sm:inline text-xs text-slate-400">
+                  {selectedTableMeta && guestCount > 0
+                    ? `Meja ${selectedTableMeta.number} (${guestCount} Kursi) siap digunakan`
+                    : 'Pesanan Takeaway (Tanpa Meja)'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCheckoutStep('payment')}
+                  style={{
+                    background: '#F3A68F',
+                    color: '#0F172A',
+                    border: 'none',
+                    borderRadius: '999px',
+                    padding: '11px 26px',
+                    fontSize: '13.5px',
+                    fontWeight: 900,
+                    cursor: 'pointer',
+                    boxShadow: '0 8px 24px rgba(243, 166, 143, 0.35)',
+                  }}
+                >
+                  Lanjut ke Pembayaran ({formatRp(payableTotal)}) →
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setCheckoutStep('floor')}
+                disabled={processing}
+                style={{
+                  background: '#1E2C46',
+                  color: '#CBD5E1',
+                  border: 'none',
+                  borderRadius: '999px',
+                  padding: '10px 20px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                ← Ubah Meja / Floor Plan
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  canPay &&
+                  onPay(method, tunai, kembalian, {
+                    customer_phone: customerPhoneForApi,
+                    voucher_code: voucherCode,
+                    discount_amount: discountAmount,
+                    final_total: payableTotal,
+                    customer_name: customerName,
+                    guest_count: guestCount,
+                    table_number: selectedTableMeta?.number,
+                  })
+                }
+                disabled={!canPay}
+                style={{
+                  background: canPay ? '#BCE3D4' : '#1E293B',
+                  color: canPay ? '#0F172A' : '#64748B',
+                  border: 'none',
+                  borderRadius: '999px',
+                  padding: '11px 28px',
+                  fontSize: '14px',
+                  fontWeight: 900,
+                  cursor: canPay ? 'pointer' : 'not-allowed',
+                  boxShadow: canPay ? '0 8px 24px rgba(188, 227, 212, 0.3)' : 'none',
+                }}
+              >
+                {processing ? 'Memproses Transaksi...' : '✓ Proses & Cetak Struk'}
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
