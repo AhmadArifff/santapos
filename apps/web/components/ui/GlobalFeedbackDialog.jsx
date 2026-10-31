@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import SuccessModal from '@/components/stock/SuccessModal';
+import { usePathname } from 'next/navigation';
 
 function classifyMessage(message) {
   const text = String(message || '').toLowerCase();
@@ -22,15 +22,17 @@ function classifyMessage(message) {
 function titleFromType(type) {
   if (type === 'error') return 'Terjadi Kesalahan';
   if (type === 'warning') return 'Perlu Diperiksa';
-  return 'Berhasil';
+  return 'Perubahan Disimpan';
 }
 
 export default function GlobalFeedbackDialog() {
-  const [dialog, setDialog] = useState({
+  const pathname = usePathname();
+  const [toast, setToast] = useState({
     isOpen: false,
     type: 'success',
     title: '',
     message: '',
+    key: 0,
   });
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
@@ -52,20 +54,30 @@ export default function GlobalFeedbackDialog() {
   });
   const [promptValue, setPromptValue] = useState('');
   const lastFeedbackRef = useRef({ message: '', time: 0 });
+  const autoDismissTimerRef = useRef(null);
 
-  const openDialog = (payload) => {
+  const openToast = (payload) => {
     const message = String(payload.message || '');
     const now = Date.now();
     const last = lastFeedbackRef.current;
     if (message && last.message === message && now - last.time < 1200) return;
 
     lastFeedbackRef.current = { message, time: now };
-    setDialog({
+    if (autoDismissTimerRef.current) {
+      clearTimeout(autoDismissTimerRef.current);
+    }
+
+    setToast({
       isOpen: true,
-      type: payload.type,
-      title: payload.title,
+      type: payload.type || 'success',
+      title: payload.title || titleFromType(payload.type),
       message,
+      key: now,
     });
+
+    autoDismissTimerRef.current = setTimeout(() => {
+      setToast((prev) => ({ ...prev, isOpen: false }));
+    }, 3800);
   };
 
   useEffect(() => {
@@ -75,42 +87,44 @@ export default function GlobalFeedbackDialog() {
 
     window.alert = (message) => {
       const type = classifyMessage(message);
-      openDialog({
+      openToast({
         type,
         title: titleFromType(type),
         message: String(message || ''),
       });
     };
 
-    window.appConfirm = (message, options = {}) => new Promise((resolve) => {
-      setConfirmDialog({
-        isOpen: true,
-        title: options.title || 'Konfirmasi',
-        message: String(message || ''),
-        confirmText: options.confirmText || 'Ya, lanjutkan',
-        cancelText: options.cancelText || 'Batal',
-        tone: options.tone || 'danger',
-        resolve,
+    window.appConfirm = (message, options = {}) =>
+      new Promise((resolve) => {
+        setConfirmDialog({
+          isOpen: true,
+          title: options.title || 'Konfirmasi',
+          message: String(message || ''),
+          confirmText: options.confirmText || 'Ya, lanjutkan',
+          cancelText: options.cancelText || 'Batal',
+          tone: options.tone || 'danger',
+          resolve,
+        });
       });
-    });
 
-    window.appPrompt = (message, options = {}) => new Promise((resolve) => {
-      setPromptValue(options.defaultValue || '');
-      setPromptDialog({
-        isOpen: true,
-        title: options.title || 'Masukkan Alasan',
-        message: String(message || ''),
-        placeholder: options.placeholder || '',
-        confirmText: options.confirmText || 'Simpan',
-        cancelText: options.cancelText || 'Batal',
-        resolve,
+    window.appPrompt = (message, options = {}) =>
+      new Promise((resolve) => {
+        setPromptValue(options.defaultValue || '');
+        setPromptDialog({
+          isOpen: true,
+          title: options.title || 'Masukkan Alasan',
+          message: String(message || ''),
+          placeholder: options.placeholder || '',
+          confirmText: options.confirmText || 'Simpan',
+          cancelText: options.cancelText || 'Batal',
+          resolve,
+        });
       });
-    });
 
     const handleFeedback = (event) => {
       const detail = event.detail || {};
       const type = detail.type || classifyMessage(detail.message);
-      openDialog({
+      openToast({
         type,
         title: detail.title || titleFromType(type),
         message: detail.message || '',
@@ -120,6 +134,7 @@ export default function GlobalFeedbackDialog() {
     window.addEventListener('app:feedback', handleFeedback);
 
     return () => {
+      if (autoDismissTimerRef.current) clearTimeout(autoDismissTimerRef.current);
       window.alert = nativeAlert;
       if (nativeAppConfirm) window.appConfirm = nativeAppConfirm;
       else delete window.appConfirm;
@@ -140,15 +155,158 @@ export default function GlobalFeedbackDialog() {
     setPromptValue('');
   };
 
+  // Detect whether current route uses light editorial theme (/superadmin) or dark operational theme
+  const isSuperadminRoute = pathname?.startsWith('/superadmin');
+
   return (
     <>
-      <SuccessModal
-        isOpen={dialog.isOpen}
-        requestType={dialog.type}
-        title={dialog.title}
-        message={dialog.message}
-        onClose={() => setDialog((prev) => ({ ...prev, isOpen: false }))}
-      />
+      <style>{`
+        @keyframes globalToastSlideIn {
+          0% { opacity: 0; transform: translateY(16px) scale(0.96); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes globalToastProgress {
+          0% { transform: scaleX(1); }
+          100% { transform: scaleX(0); }
+        }
+      `}</style>
+
+      {/* NON-BLOCKING THEME-AWARE FLOATING TOAST NOTIFICATION */}
+      {toast.isOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '22px',
+            right: '24px',
+            zIndex: 10080,
+            pointerEvents: 'none',
+            maxWidth: '410px',
+            width: 'calc(100vw - 48px)',
+          }}
+        >
+          <div
+            key={toast.key}
+            role="status"
+            aria-live="polite"
+            style={{
+              pointerEvents: 'auto',
+              position: 'relative',
+              overflow: 'hidden',
+              borderRadius: '18px',
+              padding: '14px 16px 16px 16px',
+              background: isSuperadminRoute ? '#FFFFFF' : '#161D2E',
+              color: isSuperadminRoute ? '#14171D' : '#F8FAFC',
+              border:
+                toast.type === 'error'
+                  ? '1px solid rgba(200, 75, 49, 0.45)'
+                  : toast.type === 'warning'
+                  ? '1px solid rgba(242, 178, 73, 0.45)'
+                  : isSuperadminRoute
+                  ? '1px solid rgba(14, 124, 91, 0.25)'
+                  : '1px solid rgba(156, 226, 198, 0.22)',
+              boxShadow: isSuperadminRoute
+                ? '0 18px 40px -8px rgba(20, 23, 29, 0.16), 0 4px 12px rgba(20, 23, 29, 0.06)'
+                : '0 20px 45px rgba(0, 0, 0, 0.55)',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '12px',
+              animation: 'globalToastSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
+          >
+            {/* Status Icon Badge */}
+            <div
+              style={{
+                width: '34px',
+                height: '34px',
+                borderRadius: '10px',
+                flexShrink: 0,
+                display: 'grid',
+                placeItems: 'center',
+                fontSize: '15px',
+                fontWeight: 800,
+                background:
+                  toast.type === 'error'
+                    ? 'rgba(200, 75, 49, 0.14)'
+                    : toast.type === 'warning'
+                    ? 'rgba(242, 178, 73, 0.18)'
+                    : isSuperadminRoute
+                    ? '#E3F5EE'
+                    : 'rgba(156, 226, 198, 0.16)',
+                color:
+                  toast.type === 'error'
+                    ? '#C84B31'
+                    : toast.type === 'warning'
+                    ? '#D97706'
+                    : isSuperadminRoute
+                    ? '#0E7C5B'
+                    : '#9CE2C6',
+              }}
+            >
+              {toast.type === 'error' ? '✕' : toast.type === 'warning' ? '!' : '✓'}
+            </div>
+
+            {/* Text Content */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  letterSpacing: '-0.01em',
+                  color: isSuperadminRoute ? '#14171D' : '#F8FAFC',
+                }}
+              >
+                {toast.title === 'Aksi Berhasil' ? 'Perubahan Disimpan' : toast.title}
+              </div>
+              <div
+                style={{
+                  fontSize: '12px',
+                  lineHeight: 1.4,
+                  marginTop: '2px',
+                  color: isSuperadminRoute ? '#5A6065' : '#94A3B8',
+                }}
+              >
+                {toast.message}
+              </div>
+            </div>
+
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setToast((prev) => ({ ...prev, isOpen: false }))}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: isSuperadminRoute ? '#8C9196' : '#64748B',
+                cursor: 'pointer',
+                fontSize: '13px',
+                padding: '2px 4px',
+                lineHeight: 1,
+              }}
+            >
+              ✕
+            </button>
+
+            {/* Auto-Dismiss Progress Bar */}
+            <div
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: '3px',
+                background:
+                  toast.type === 'error'
+                    ? '#C84B31'
+                    : toast.type === 'warning'
+                    ? '#F2B249'
+                    : '#0E7C5B',
+                transformOrigin: 'left center',
+                animation: 'globalToastProgress 3.8s linear forwards',
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {confirmDialog.isOpen && (
         <DecisionModal

@@ -9,6 +9,7 @@ import {
   getDiscountSummary,
 } from '@/lib/api';
 import { DashboardSkeleton } from '@/components/ui/SectionSkeleton';
+import UnifiedThreeRoleBanner from '@/components/dashboard/UnifiedThreeRoleBanner';
 const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun',
                 'Jul','Agu','Sep','Okt','Nov','Des'];
 const COLORS  = [
@@ -947,6 +948,7 @@ const filteredBestSelling = bestSelling.filter(p => {
     <AdminLayout>
       <div className="max-w-7xl mx-auto space-y-5 pb-8">
 
+        <UnifiedThreeRoleBanner />
         {/* Header */}
         <div data-tour="dashboard-header" className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>

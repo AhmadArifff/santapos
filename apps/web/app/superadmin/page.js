@@ -141,16 +141,35 @@ export default function SuperadminPage() {
     plan_code: 'pro',
   });
 
-  // Bottom Floating Toast with Undo
+  // 3-Role Operational Switcher Menu (Admin / Kasir / Kitchen)
+  const [showRoleSwitcherMenu, setShowRoleSwitcherMenu] = useState(false);
+
+  // Theme-Matched Non-Blocking Toast with Auto-Dismiss & Undo
   const [toastInfo, setToastInfo] = useState({
-    visible: true,
-    message: 'Ember & Oak (#1062) deployment queued · Ready for Superadmin review',
+    id: 0,
+    visible: false,
+    title: 'Perubahan Berhasil Disimpan',
+    message: '',
     undoAction: null,
   });
 
-  const triggerToast = (message, undoAction = null) => {
-    setToastInfo({ visible: true, message, undoAction });
+  const triggerToast = (message, undoAction = null, title = 'Perubahan Berhasil Disimpan') => {
+    setToastInfo({
+      id: Date.now(),
+      visible: true,
+      title,
+      message,
+      undoAction,
+    });
   };
+
+  useEffect(() => {
+    if (!toastInfo.visible) return;
+    const timer = setTimeout(() => {
+      setToastInfo((prev) => ({ ...prev, visible: false }));
+    }, 3800);
+    return () => clearTimeout(timer);
+  }, [toastInfo.id, toastInfo.visible]);
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -411,26 +430,34 @@ export default function SuperadminPage() {
           0% { opacity: 0; transform: translateY(14px) scale(0.95); }
           100% { opacity: 1; transform: translateY(0) scale(1); }
         }
+        @keyframes murmuraToastSlideUp {
+          0% { opacity: 0; transform: translate3d(0, 20px, 0) scale(0.96); }
+          100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+        }
+        @keyframes murmuraToastProgress {
+          0% { transform: scaleX(1); }
+          100% { transform: scaleX(0); }
+        }
       `}</style>
 
       {/* =====================================================================
-          TOP FLOATING NAVIGATION BAR (Exact Match to Murmura Screenshots 1–4)
+          TOP FLOATING NAVIGATION BAR (Single-Row Murmura Bar + 3-Role Switcher)
          ===================================================================== */}
       <header
         style={{
           position: 'sticky',
           top: 0,
-          zIndex: 50,
-          padding: '16px 28px 12px 28px',
+          zIndex: 55,
+          padding: '12px 24px',
           background: isLight
-            ? 'linear-gradient(180deg, rgba(245, 244, 238, 0.92) 0%, rgba(245, 244, 238, 0.72) 85%, transparent 100%)'
-            : 'linear-gradient(180deg, rgba(11,17,30,0.92) 0%, rgba(11,17,30,0.65) 85%, transparent 100%)',
-          backdropFilter: 'blur(12px)',
+            ? 'linear-gradient(180deg, rgba(245, 244, 238, 0.96) 0%, rgba(245, 244, 238, 0.85) 85%, transparent 100%)'
+            : 'linear-gradient(180deg, rgba(11,17,30,0.96) 0%, rgba(11,17,30,0.82) 85%, transparent 100%)',
+          backdropFilter: 'blur(14px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '16px',
-          flexWrap: 'wrap',
+          gap: '10px',
+          flexWrap: 'nowrap',
         }}
       >
         {/* Left Brand Logo (`murmura` / `santapos` with Dark Rounded Square Icon) */}
@@ -442,21 +469,22 @@ export default function SuperadminPage() {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '10px',
+            gap: '9px',
             cursor: 'pointer',
+            flexShrink: 0,
           }}
         >
           <div
             style={{
-              width: '34px',
-              height: '34px',
-              borderRadius: '10px',
+              width: '32px',
+              height: '32px',
+              borderRadius: '9px',
               background: '#161920',
               color: '#FFFFFF',
               display: 'grid',
               placeItems: 'center',
               fontWeight: 800,
-              fontSize: '15px',
+              fontSize: '14px',
               boxShadow: '0 4px 12px rgba(22, 25, 32, 0.2)',
             }}
           >
@@ -464,7 +492,7 @@ export default function SuperadminPage() {
           </div>
           <span
             style={{
-              fontSize: '19px',
+              fontSize: '18px',
               fontWeight: 700,
               letterSpacing: '-0.03em',
               color: textPrimary,
@@ -479,8 +507,9 @@ export default function SuperadminPage() {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '4px',
-            flexWrap: 'wrap',
+            gap: '2px',
+            flexWrap: 'nowrap',
+            overflowX: 'auto',
           }}
         >
           {MURMURA_NAV_TABS.map((tab) => {
@@ -490,12 +519,13 @@ export default function SuperadminPage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 style={{
-                  padding: '8px 16px',
+                  padding: '6px 12px',
                   borderRadius: '999px',
                   border: 'none',
-                  fontSize: '13px',
+                  fontSize: '12.5px',
                   fontWeight: active ? 600 : 500,
                   cursor: 'pointer',
+                  whiteSpace: 'nowrap',
                   background: active
                     ? isLight
                       ? '#161920'
@@ -508,7 +538,7 @@ export default function SuperadminPage() {
                     : textSecondary,
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '6px',
+                  gap: '5px',
                   transition: 'all 0.18s ease',
                 }}
               >
@@ -516,11 +546,11 @@ export default function SuperadminPage() {
                 {tab.badge && (
                   <span
                     style={{
-                      padding: '1px 7px',
+                      padding: '1px 6px',
                       borderRadius: '999px',
                       background: tab.badgeBg || '#F2B249',
                       color: '#14171D',
-                      fontSize: '10.5px',
+                      fontSize: '10px',
                       fontWeight: 800,
                     }}
                   >
@@ -532,13 +562,15 @@ export default function SuperadminPage() {
           })}
         </nav>
 
-        {/* Right Controls: `[All brands ▾]` + `Role Inspector ↗` + Notification Bell + Avatar */}
+        {/* Right Controls: `[All brands ▾]` + `[🏪 Switch Menu 3-Role ▾]` + `[$ USD]` + Notification Bell + Avatar */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '10px',
-            flexWrap: 'wrap',
+            gap: '8px',
+            flexWrap: 'nowrap',
+            flexShrink: 0,
+            position: 'relative',
           }}
         >
           {/* All brands / tenants pill selector (Exact Match to Screenshots 1–4) */}
@@ -546,8 +578,8 @@ export default function SuperadminPage() {
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '8px',
-              padding: '5px 12px 5px 6px',
+              gap: '6px',
+              padding: '4px 10px 4px 5px',
               borderRadius: '999px',
               background: surfaceBg,
               border: `1px solid ${surfaceBorder}`,
@@ -556,12 +588,12 @@ export default function SuperadminPage() {
           >
             <span
               style={{
-                width: '24px',
-                height: '24px',
+                width: '22px',
+                height: '22px',
                 borderRadius: '50%',
                 background: '#161920',
                 color: '#FFFFFF',
-                fontSize: '11px',
+                fontSize: '10.5px',
                 display: 'grid',
                 placeItems: 'center',
               }}
@@ -576,7 +608,7 @@ export default function SuperadminPage() {
                 outline: 'none',
                 background: 'transparent',
                 color: textPrimary,
-                fontSize: '12.5px',
+                fontSize: '12px',
                 fontWeight: 600,
                 cursor: 'pointer',
               }}
@@ -594,41 +626,334 @@ export default function SuperadminPage() {
             </select>
           </div>
 
-          {/* Dedicated Separate Page Link: Live Role System Inspector (Admin / Kasir / Kitchen) */}
-          <Link
-            href="/superadmin/inspector"
-            title="Buka halaman khusus untuk melihat langsung tampilan Role Admin, Kasir POS, dan Kitchen KDS"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '7px 14px',
-              borderRadius: '999px',
-              background: '#0E7C5B',
-              color: '#FFFFFF',
-              textDecoration: 'none',
-              fontSize: '12px',
-              fontWeight: 700,
-              boxShadow: '0 4px 14px rgba(14, 124, 91, 0.25)',
-            }}
-          >
-            <span>🖥️</span>
-            <span>Live 3-Role Inspector ↗</span>
-          </Link>
+          {/* PROMINENT SWITCHER TO UNIFIED 3-ROLE DASHBOARD (Admin · Kasir · Kitchen) */}
+          <div style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setShowRoleSwitcherMenu((prev) => !prev)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 13px',
+                borderRadius: '999px',
+                border: '1px solid rgba(14, 124, 91, 0.35)',
+                background: '#0E7C5B',
+                color: '#FFFFFF',
+                fontSize: '11.5px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                boxShadow: '0 4px 14px rgba(14, 124, 91, 0.25)',
+              }}
+            >
+              <span>🎛️</span>
+              <span>Menu 3-Role (Admin · Kasir · Kitchen)</span>
+              <span style={{ fontSize: '10px', opacity: 0.9 }}>
+                {showRoleSwitcherMenu ? '▴' : '▾'}
+              </span>
+            </button>
+
+            {/* 3-ROLE OPERATIONAL SWITCHER POPOVER MENU */}
+            {showRoleSwitcherMenu && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 10px)',
+                  right: 0,
+                  width: '720px',
+                  maxWidth: '92vw',
+                  background: isLight ? '#FFFFFF' : '#111827',
+                  border: isLight
+                    ? '1px solid rgba(20, 23, 29, 0.12)'
+                    : '1px solid rgba(255, 255, 255, 0.12)',
+                  borderRadius: '22px',
+                  padding: '18px',
+                  boxShadow: isLight
+                    ? '0 28px 64px rgba(20, 23, 29, 0.18)'
+                    : '0 28px 64px rgba(0, 0, 0, 0.65)',
+                  zIndex: 95,
+                  animation: 'murmuraCardSpringPop 0.24s cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
+              >
+                {/* Top Action Banner: Open Unified 3-Role Dashboard (/dashboard) */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    padding: '12px 16px',
+                    borderRadius: '16px',
+                    background: isLight
+                      ? 'linear-gradient(135deg, #EAF6F0 0%, #F5F4EE 100%)'
+                      : 'linear-gradient(135deg, rgba(14,124,91,0.22) 0%, rgba(30,41,59,0.65) 100%)',
+                    border: isLight
+                      ? '1px solid rgba(14, 124, 91, 0.2)'
+                      : '1px solid rgba(52, 211, 153, 0.25)',
+                    marginBottom: '14px',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: '13.5px',
+                        fontWeight: 800,
+                        color: textPrimary,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '7px',
+                      }}
+                    >
+                      <span>🏪</span>
+                      <span>Dashboard Operasional Gabungan 3-Role (Admin · Kasir · Kitchen)</span>
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: textSecondary, marginTop: '2px' }}>
+                      Seluruh menu Admin Cabang, Kasir POS + Pilih Meja, dan Kitchen KDS telah disatukan & dirapikan di Dashboard.
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Link
+                      href="/dashboard"
+                      style={{
+                        padding: '8px 15px',
+                        borderRadius: '999px',
+                        background: '#0E7C5B',
+                        color: '#FFFFFF',
+                        textDecoration: 'none',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        whiteSpace: 'nowrap',
+                        boxShadow: '0 4px 12px rgba(14, 124, 91, 0.25)',
+                      }}
+                    >
+                      🏪 Buka Dashboard 3-Role (/dashboard) ↗
+                    </Link>
+                    <Link
+                      href="/superadmin/inspector"
+                      style={{
+                        padding: '8px 13px',
+                        borderRadius: '999px',
+                        background: isLight ? '#161920' : '#1E293B',
+                        color: '#FFFFFF',
+                        textDecoration: 'none',
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      🖥️ Inspector Split-View ↗
+                    </Link>
+                  </div>
+                </div>
+
+                {/* 3 Organized Role Columns */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                    gap: '12px',
+                  }}
+                >
+                  {/* Column 1: Role Admin */}
+                  <div
+                    style={{
+                      padding: '12px',
+                      borderRadius: '14px',
+                      background: isLight ? '#FAF9F5' : '#0F172A',
+                      border: `1px solid ${surfaceBorder}`,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        color: '#2563EB',
+                        marginBottom: '8px',
+                      }}
+                    >
+                      🛡️ 1. Role Admin Cabang
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                      {[
+                        { label: '📊 Dashboard (3-Role Hub)', href: '/dashboard' },
+                        { label: '🍔 Produk & Menu', href: '/products' },
+                        { label: '📈 Laporan & Analitik', href: '/reports' },
+                        { label: '🧾 Riwayat Transaksi POS', href: '/transactions' },
+                        { label: '🎟️ Vocher & Diskon', href: '/discounts' },
+                        { label: '💳 Payment & QRIS', href: '/payment-settings' },
+                        { label: '👥 Tim & Jadwal Kasir', href: '/users' },
+                        { label: '⚙️ Pengaturan Sistem', href: '/settings' },
+                      ].map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          style={{
+                            padding: '6px 9px',
+                            borderRadius: '9px',
+                            textDecoration: 'none',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            color: textPrimary,
+                            background: isLight ? '#FFFFFF' : '#1E293B',
+                            border: `1px solid ${surfaceBorder}`,
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <span>{item.label}</span>
+                          <span style={{ fontSize: '10px', color: textSecondary }}>↗</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Column 2: Role Kasir & POS */}
+                  <div
+                    style={{
+                      padding: '12px',
+                      borderRadius: '14px',
+                      background: isLight ? '#FAF9F5' : '#0F172A',
+                      border: `1px solid ${surfaceBorder}`,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        color: '#0E7C5B',
+                        marginBottom: '8px',
+                      }}
+                    >
+                      💳 2. Role Kasir & POS
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {[
+                        {
+                          label: '🖥️ Kasir POS & Pilih Meja',
+                          desc: 'Pilih Menu → Denah Meja (Kapasitas) → Bayar',
+                          href: '/pos',
+                        },
+                        {
+                          label: '📱 Pesanan Meja QR',
+                          desc: 'Monitoring pesanan pelanggan dari QR meja',
+                          href: '/table-orders',
+                        },
+                        {
+                          label: '📦 Stok & Request Bahan',
+                          desc: 'Pengecekan stok kasir & permintaan gudang',
+                          href: '/stock',
+                        },
+                      ].map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          style={{
+                            padding: '9px 10px',
+                            borderRadius: '10px',
+                            textDecoration: 'none',
+                            color: textPrimary,
+                            background: isLight ? '#FFFFFF' : '#1E293B',
+                            border: `1px solid ${surfaceBorder}`,
+                            display: 'block',
+                          }}
+                        >
+                          <div style={{ fontSize: '12px', fontWeight: 700 }}>{item.label}</div>
+                          <div style={{ fontSize: '10.5px', color: textSecondary, marginTop: '2px' }}>
+                            {item.desc}
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Column 3: Role Kitchen (KDS) */}
+                  <div
+                    style={{
+                      padding: '12px',
+                      borderRadius: '14px',
+                      background: isLight ? '#FAF9F5' : '#0F172A',
+                      border: `1px solid ${surfaceBorder}`,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        color: '#D97706',
+                        marginBottom: '8px',
+                      }}
+                    >
+                      🍳 3. Role Kitchen (KDS)
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <Link
+                        href="/kitchen"
+                        style={{
+                          padding: '10px',
+                          borderRadius: '10px',
+                          textDecoration: 'none',
+                          color: textPrimary,
+                          background: isLight ? '#FFFFFF' : '#1E293B',
+                          border: `1px solid ${surfaceBorder}`,
+                          display: 'block',
+                        }}
+                      >
+                        <div style={{ fontSize: '12px', fontWeight: 700 }}>
+                          🔥 Layar Dapur (Orders & Floor)
+                        </div>
+                        <div style={{ fontSize: '10.5px', color: textSecondary, marginTop: '3px' }}>
+                          Kanban tiket masakan 4 kolom (New · Cooking · Ready · Served) + Floor Plan Drag & Drop
+                        </div>
+                      </Link>
+                      <Link
+                        href="/dashboard"
+                        style={{
+                          padding: '10px',
+                          borderRadius: '10px',
+                          textDecoration: 'none',
+                          color: textPrimary,
+                          background: isLight ? '#FFFFFF' : '#1E293B',
+                          border: `1px solid ${surfaceBorder}`,
+                          display: 'block',
+                        }}
+                      >
+                        <div style={{ fontSize: '12px', fontWeight: 700 }}>
+                          🎛️ Buka di Dalam Dashboard Hub
+                        </div>
+                        <div style={{ fontSize: '10.5px', color: textSecondary, marginTop: '3px' }}>
+                          Lihat gabungan Admin, Kasir POS, dan Kitchen KDS dalam 1 halaman Dashboard
+                        </div>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Currency Toggle ($ USD / Rp IDR) */}
           <button
             onClick={() => setCurrency((c) => (c === 'USD' ? 'IDR' : 'USD'))}
             title="Switch Currency ($ USD / Rp IDR)"
             style={{
-              padding: '6px 11px',
+              padding: '5px 10px',
               borderRadius: '999px',
               border: `1px solid ${surfaceBorder}`,
               background: surfaceBg,
               color: textPrimary,
-              fontSize: '11.5px',
+              fontSize: '11px',
               fontWeight: 700,
               cursor: 'pointer',
+              whiteSpace: 'nowrap',
             }}
           >
             {currency === 'USD' ? '$ USD' : 'Rp IDR'}
@@ -640,8 +965,8 @@ export default function SuperadminPage() {
             title="Open Tenant Inbox & Notifications"
             style={{
               position: 'relative',
-              width: '34px',
-              height: '34px',
+              width: '32px',
+              height: '32px',
               borderRadius: '50%',
               border: `1px solid ${surfaceBorder}`,
               background: surfaceBg,
@@ -649,7 +974,8 @@ export default function SuperadminPage() {
               cursor: 'pointer',
               display: 'grid',
               placeItems: 'center',
-              fontSize: '14px',
+              fontSize: '13px',
+              flexShrink: 0,
             }}
           >
             🔔
@@ -671,17 +997,18 @@ export default function SuperadminPage() {
           <div
             title="Camila · Superadmin Santapos"
             style={{
-              width: '34px',
-              height: '34px',
+              width: '32px',
+              height: '32px',
               borderRadius: '50%',
               background: 'linear-gradient(135deg, #1E293B 0%, #0E7C5B 100%)',
               color: '#FFFFFF',
               display: 'grid',
               placeItems: 'center',
-              fontSize: '12px',
+              fontSize: '11.5px',
               fontWeight: 800,
               border: `2px solid ${surfaceBg}`,
               boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+              flexShrink: 0,
             }}
           >
             CA
@@ -868,6 +1195,26 @@ export default function SuperadminPage() {
         >
           ⚙️
         </button>
+
+        {/* 7B. Switch to Unified 3-Role Operational Dashboard (Admin · Kasir · Kitchen) */}
+        <Link
+          href="/dashboard"
+          title="Buka Dashboard Gabungan 3-Role (Admin · Kasir POS · Kitchen KDS)"
+          style={{
+            width: '34px',
+            height: '34px',
+            borderRadius: '50%',
+            background: '#0E7C5B',
+            color: '#FFFFFF',
+            textDecoration: 'none',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: '14px',
+            boxShadow: '0 4px 12px rgba(14, 124, 91, 0.35)',
+          }}
+        >
+          🎛️
+        </Link>
 
         {/* 8. Theme Switcher (Moon / Sun — exact bottom icon in Screenshots 1–4) */}
         <button
@@ -2446,77 +2793,169 @@ export default function SuperadminPage() {
       )}
 
       {/* =====================================================================
-          BOTTOM FLOATING TOAST WITH [Undo] BUTTON
+          THEME-MATCHED NON-BLOCKING FLOATING TOAST WITH [Undo] & PROGRESS BAR
          ===================================================================== */}
       {toastInfo.visible && (
         <div
+          key={toastInfo.id}
+          role="status"
+          aria-live="polite"
           style={{
             position: 'fixed',
-            bottom: '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 60,
-            background: '#161920',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '999px',
-            padding: '8px 10px 8px 16px',
+            bottom: '24px',
+            right: '24px',
+            zIndex: 90,
+            maxWidth: '460px',
+            background: isLight
+              ? 'rgba(255, 255, 255, 0.98)'
+              : 'rgba(19, 28, 46, 0.96)',
+            border: isLight
+              ? '1px solid rgba(14, 124, 91, 0.28)'
+              : '1px solid rgba(52, 211, 153, 0.3)',
+            borderRadius: '18px',
+            padding: '13px 16px 16px 16px',
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
-            boxShadow: '0 16px 40px rgba(20, 23, 29, 0.35)',
+            boxShadow: isLight
+              ? '0 22px 48px rgba(20, 23, 29, 0.14), 0 4px 14px rgba(14, 124, 91, 0.12)'
+              : '0 22px 48px rgba(0, 0, 0, 0.55), 0 4px 14px rgba(14, 124, 91, 0.22)',
+            backdropFilter: 'blur(14px)',
+            overflow: 'hidden',
+            animation: 'murmuraToastSlideUp 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards',
           }}
         >
+          {/* Left Emerald Status Icon Badge */}
           <span
             style={{
-              width: '18px',
-              height: '18px',
-              borderRadius: '50%',
-              background: '#0E7C5B',
-              color: '#FFFFFF',
+              width: '34px',
+              height: '34px',
+              borderRadius: '11px',
+              background: isLight ? '#E3F5EE' : 'rgba(14, 124, 91, 0.25)',
+              border: '1px solid rgba(14, 124, 91, 0.35)',
+              color: isLight ? '#0E7C5B' : '#34D399',
               display: 'grid',
               placeItems: 'center',
-              fontSize: '11px',
+              fontSize: '15px',
               fontWeight: 800,
+              flexShrink: 0,
             }}
           >
             ✓
           </span>
-          <span style={{ fontSize: '12.5px', color: '#F8FAFC', fontWeight: 500 }}>
-            {toastInfo.message}
-          </span>
+
+          {/* Title & Message */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: '12.5px',
+                fontWeight: 800,
+                color: textPrimary,
+                letterSpacing: '-0.01em',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <span>{toastInfo.title || 'Perubahan Berhasil Disimpan'}</span>
+              <span
+                style={{
+                  fontSize: '9.5px',
+                  fontWeight: 800,
+                  padding: '1px 7px',
+                  borderRadius: '999px',
+                  background: isLight ? '#E3F5EE' : 'rgba(14, 124, 91, 0.28)',
+                  color: isLight ? '#0E7C5B' : '#6EE7B7',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Synced
+              </span>
+            </div>
+            <div
+              style={{
+                fontSize: '12px',
+                color: textSecondary,
+                fontWeight: 500,
+                marginTop: '2px',
+                lineHeight: 1.4,
+              }}
+            >
+              {toastInfo.message}
+            </div>
+          </div>
+
+          {/* Optional Undo Pill Button */}
           {toastInfo.undoAction && (
             <button
               onClick={() => {
                 toastInfo.undoAction();
-                setToastInfo((prev) => ({ ...prev, undoAction: null, message: 'Action undone' }));
+                setToastInfo((prev) => ({
+                  ...prev,
+                  id: Date.now(),
+                  undoAction: null,
+                  title: 'Perubahan Dibatalkan',
+                  message: 'Status dikembalikan ke posisi sebelumnya',
+                }));
               }}
               style={{
-                background: 'rgba(242, 178, 73, 0.2)',
-                color: '#F2B249',
-                border: '1px solid rgba(242, 178, 73, 0.4)',
+                background: isLight ? '#FEF3C7' : 'rgba(242, 178, 73, 0.2)',
+                color: isLight ? '#B45309' : '#F2B249',
+                border: '1px solid rgba(242, 178, 73, 0.45)',
                 borderRadius: '999px',
-                padding: '4px 12px',
+                padding: '5px 12px',
                 fontSize: '11.5px',
                 fontWeight: 700,
                 cursor: 'pointer',
+                flexShrink: 0,
               }}
             >
-              Undo
+              ↩ Undo
             </button>
           )}
+
+          {/* Close Button */}
           <button
             onClick={() => setToastInfo((prev) => ({ ...prev, visible: false }))}
+            aria-label="Tutup notifikasi"
             style={{
-              background: 'transparent',
+              width: '26px',
+              height: '26px',
+              borderRadius: '8px',
+              background: isLight ? 'rgba(20,23,29,0.05)' : 'rgba(255,255,255,0.06)',
               border: 'none',
-              color: '#94A3B8',
+              color: textSecondary,
               fontSize: '12px',
               cursor: 'pointer',
-              padding: '0 4px',
+              display: 'grid',
+              placeItems: 'center',
+              flexShrink: 0,
             }}
           >
             ✕
           </button>
+
+          {/* Animated 3.8s Progress Bar along Bottom Edge */}
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: '3px',
+              background: isLight ? 'rgba(14,124,91,0.12)' : 'rgba(255,255,255,0.06)',
+            }}
+          >
+            <div
+              style={{
+                width: '100%',
+                height: '100%',
+                background: 'linear-gradient(90deg, #0E7C5B, #10B981, #F2B249)',
+                transformOrigin: 'left center',
+                animation: 'murmuraToastProgress 3.8s linear forwards',
+              }}
+            />
+          </div>
         </div>
       )}
     </div>

@@ -1,9 +1,8 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
-import { useRouter } from 'next/navigation';
 import { useWebsiteSettings, DEFAULT_SETTINGS } from '@/store/settingsStore';
 import { usePWAInstall } from '@/components/ui/PWAInstallPrompt';
 import { resolveAssetUrl } from '@/lib/assetUrl';
@@ -15,24 +14,127 @@ import {
   setMyBranch,
 } from '@/lib/api';
 
-// ── Definisi menu dengan animasi unik tiap item ───────────────
+// ── Definisi menu terstruktur per Role Group ──────────────────
 const menus = [
-  { href: '/pos',                       label: 'Kasir',        roles: ['admin','kasir'], anim: 'pop'    },
-  { href: '/admin/customer-orders',     label: 'Pesanan Meja', roles: ['admin','kasir'], anim: 'pulse'  },
-  { href: '/kitchen',                   label: 'Layar Dapur',  roles: ['admin','kasir','kitchen'], anim: 'bounce' },
-  { href: '/pos/history',               label: 'Riwayat POS',   roles: ['admin'],        anim: 'slide'  },
-  { href: '/dashboard',                 label: 'Dashboard',    roles: ['admin'],          anim: 'bounce' },
-  { href: '/discounts',                 label: 'Vocher & Diskon', roles: ['admin'],       anim: 'pop'    },
-  { href: '/payment',                   label: 'Payment',      roles: ['admin'],          anim: 'pulse'  },
-  { href: '/products',                  label: 'Produk',       roles: ['admin'],          anim: 'flip'   },
-  { href: '/stock',                     label: 'Stok',         roles: ['admin','kasir'],  anim: 'wave'   },
-  { href: '/reports',                   label: 'Laporan',      roles: ['admin'],          anim: 'pulse'  },
-  { href: '/users',                     label: 'Tim Kasir',    roles: ['admin'],          anim: 'shake'  },
-  { href: '/admin/landing-page-settings', label: 'Landing Page', roles: ['admin'],        anim: 'bounce' },
-  { href: '/admin/login-page-settings', label: 'Login Page',   roles: ['admin'],          anim: 'slide'  },
-  { href: '/admin/settings',            label: 'Pengaturan',   roles: ['admin'],          anim: 'spin'   },
-  { href: '/superadmin',                label: 'SaaS Superadmin CRM', roles: ['superadmin'],  anim: 'bounce' },
-  { href: '/superadmin/inspector',      label: 'Live 3-Role Inspector', roles: ['superadmin'], anim: 'pulse'  },
+  // 1. PORTAL SUPERADMIN CRM
+  {
+    href: '/superadmin',
+    label: 'SaaS Superadmin CRM',
+    roles: ['superadmin'],
+    roleGroup: 'superadmin',
+    anim: 'bounce',
+  },
+
+  // 2. ROLE ADMIN (Backoffice, Analitik & Master Data)
+  {
+    href: '/dashboard',
+    label: 'Dashboard (3-Role Hub)',
+    roles: ['admin'],
+    roleGroup: 'admin',
+    anim: 'bounce',
+  },
+  {
+    href: '/products',
+    label: 'Produk & Menu',
+    roles: ['admin'],
+    roleGroup: 'admin',
+    anim: 'flip',
+  },
+  {
+    href: '/reports',
+    label: 'Laporan & Analitik',
+    roles: ['admin'],
+    roleGroup: 'admin',
+    anim: 'pulse',
+  },
+  {
+    href: '/pos/history',
+    label: 'Riwayat Transaksi POS',
+    roles: ['admin'],
+    roleGroup: 'admin',
+    anim: 'slide',
+  },
+  {
+    href: '/discounts',
+    label: 'Vocher & Diskon',
+    roles: ['admin'],
+    roleGroup: 'admin',
+    anim: 'pop',
+  },
+  {
+    href: '/payment',
+    label: 'Payment & QRIS',
+    roles: ['admin'],
+    roleGroup: 'admin',
+    anim: 'pulse',
+  },
+  {
+    href: '/users',
+    label: 'Tim & Jadwal Kasir',
+    roles: ['admin'],
+    roleGroup: 'admin',
+    anim: 'shake',
+  },
+  {
+    href: '/admin/landing-page-settings',
+    label: 'Landing Page',
+    roles: ['admin'],
+    roleGroup: 'admin',
+    anim: 'bounce',
+  },
+  {
+    href: '/admin/login-page-settings',
+    label: 'Login Page',
+    roles: ['admin'],
+    roleGroup: 'admin',
+    anim: 'slide',
+  },
+  {
+    href: '/admin/settings',
+    label: 'Pengaturan Sistem',
+    roles: ['admin'],
+    roleGroup: 'admin',
+    anim: 'spin',
+  },
+
+  // 3. ROLE KASIR (Point of Sale, Pilih Meja & Stok)
+  {
+    href: '/pos',
+    label: 'Kasir POS & Pilih Meja',
+    roles: ['admin', 'kasir'],
+    roleGroup: 'kasir',
+    anim: 'pop',
+  },
+  {
+    href: '/admin/customer-orders',
+    label: 'Pesanan Meja QR',
+    roles: ['admin', 'kasir'],
+    roleGroup: 'kasir',
+    anim: 'pulse',
+  },
+  {
+    href: '/stock',
+    label: 'Stok & Request Bahan',
+    roles: ['admin', 'kasir'],
+    roleGroup: 'kasir',
+    anim: 'wave',
+  },
+
+  // 4. ROLE KITCHEN (Kitchen Board Kanban & Floor Plan)
+  {
+    href: '/kitchen',
+    label: 'Layar Dapur (Orders & Floor)',
+    roles: ['admin', 'kasir', 'kitchen'],
+    roleGroup: 'kitchen',
+    anim: 'bounce',
+  },
+];
+
+const ROLE_GROUP_META = [
+  { id: 'superadmin', title: '👑 PORTAL CRM TENANT', accent: '#10B981' },
+  { id: 'admin', title: '🛡️ ROLE ADMIN CABANG', accent: '#F59E0B' },
+  { id: 'kasir', title: '💳 ROLE KASIR & POS', accent: '#38BDF8' },
+  { id: 'kitchen', title: '🍳 ROLE KITCHEN (KDS)', accent: '#F472B6' },
 ];
 
 // ── Unique SVG icons ──────────────────────────────────────────
@@ -197,7 +299,6 @@ function LoginPageIcon({ active }) {
     </svg>
   );
 }
-
 function LogoutIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -233,6 +334,15 @@ function InstallIcon() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
       stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 3v13M7 11l5 5 5-5M3 19h18"/>
+    </svg>
+  );
+}
+function SuperadminIcon({ active }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke={active ? '#fff' : 'currentColor'} strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
     </svg>
   );
 }
@@ -278,17 +388,6 @@ function BranchSelector({ collapsed, branches, selectedBranchId, onChange }) {
   );
 }
 
-function SuperadminIcon({ active }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-      stroke={active ? '#fff' : 'currentColor'} strokeWidth="1.8"
-      strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-    </svg>
-  );
-}
-
-// Map href ke icon component
 const iconMap = {
   '/pos':                         PosIcon,
   '/admin/customer-orders':       TableOrderIcon,
@@ -308,7 +407,6 @@ const iconMap = {
   '/superadmin/inspector':        SuperadminIcon,
 };
 
-// ── Global keyframes (inject sekali) ─────────────────────────
 const ICON_KEYFRAMES = `
   @keyframes iconPop    { 0%{transform:scale(1)} 40%{transform:scale(1.35)} 70%{transform:scale(0.9)} 100%{transform:scale(1)} }
   @keyframes iconSpin   { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
@@ -325,7 +423,6 @@ const ICON_KEYFRAMES = `
   @keyframes notifBounce{ 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-2px) scale(1.08)} }
 `;
 
-// ── NavItem Component ─────────────────────────────────────────
 function NavBadge({ count, collapsed }) {
   if (!count || Number(count) <= 0) return null;
 
@@ -351,7 +448,7 @@ function NavItem({ menu, active, collapsed, primaryColor, badgeCount = 0, onClic
   const [animClass, setAnimClass] = useState('');
   const [showRipple, setShowRipple] = useState(false);
 
-  const IconCmp = iconMap[menu.href];
+  const IconCmp = iconMap[menu.href] || SuperadminIcon;
 
   const handleClick = () => {
     if (!active) {
@@ -369,12 +466,11 @@ function NavItem({ menu, active, collapsed, primaryColor, badgeCount = 0, onClic
       onClick={handleClick}
       className={`
         relative flex items-center rounded-xl transition-all duration-150 group overflow-visible
-        ${collapsed ? 'justify-center p-[10px]' : 'gap-[10px] px-[10px] py-[9px]'}
-        ${active ? 'text-white' : 'text-white/45 hover:text-white hover:bg-white/5'}
+        ${collapsed ? 'justify-center p-[10px]' : 'gap-[10px] px-[10px] py-[8px]'}
+        ${active ? 'text-white' : 'text-white/55 hover:text-white hover:bg-white/5'}
       `}
       style={active ? { backgroundColor: primaryColor } : {}}
     >
-      {/* Active bar kiri */}
       {active && !collapsed && (
         <span
           className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full bg-white"
@@ -382,7 +478,6 @@ function NavItem({ menu, active, collapsed, primaryColor, badgeCount = 0, onClic
         />
       )}
 
-      {/* Ripple burst saat klik */}
       {showRipple && (
         <span
           className="absolute inset-0 rounded-xl border pointer-events-none"
@@ -393,7 +488,6 @@ function NavItem({ menu, active, collapsed, primaryColor, badgeCount = 0, onClic
         />
       )}
 
-      {/* Icon dengan animasi */}
       <span
         className={`flex-shrink-0 flex items-center justify-center ${animClass}`}
         style={{ width: 20, height: 20, transformOrigin: 'center' }}
@@ -402,7 +496,6 @@ function NavItem({ menu, active, collapsed, primaryColor, badgeCount = 0, onClic
         <IconCmp active={active} />
       </span>
 
-      {/* Label — slide in saat expand */}
       {!collapsed && (
         <span
           className="text-[12.5px] font-medium whitespace-nowrap overflow-hidden"
@@ -414,7 +507,6 @@ function NavItem({ menu, active, collapsed, primaryColor, badgeCount = 0, onClic
 
       <NavBadge count={badgeCount} collapsed={collapsed} />
 
-      {/* Tooltip collapsed */}
       {collapsed && (
         <span className="
           absolute left-full ml-3 px-2.5 py-1.5
@@ -431,55 +523,159 @@ function NavItem({ menu, active, collapsed, primaryColor, badgeCount = 0, onClic
 }
 
 // ── Sidebar content (shared) ──────────────────────────────────
-function SidebarContent({ collapsed, noLogo, pathname, user, settings, visible,
-  logoSrc, initials, primaryColor, onLogout, showInstall, isInstalled,
-  branches, selectedBranchId, onBranchChange, notificationCounts }) {
+function SidebarContent({
+  collapsed,
+  noLogo,
+  pathname,
+  user,
+  settings,
+  visible,
+  logoSrc,
+  initials,
+  primaryColor,
+  onLogout,
+  showInstall,
+  isInstalled,
+  branches,
+  selectedBranchId,
+  onBranchChange,
+  notificationCounts,
+}) {
+  const [roleFilter, setRoleFilter] = useState('all'); // 'all' | 'admin' | 'kasir' | 'kitchen'
+  const isSuperOrAdmin = user?.role === 'superadmin' || user?.role === 'admin';
 
   return (
     <>
       {/* Logo */}
       {!noLogo && (
-        <div className={`border-b border-white/[0.07] ${collapsed ? 'px-2 py-4' : 'px-4 py-5'}`}>
+        <div className={`border-b border-white/[0.07] ${collapsed ? 'px-2 py-4' : 'px-4 py-4'}`}>
           {collapsed ? (
             <div className="flex justify-center">
               <div className="w-9 h-9 rounded-xl overflow-hidden bg-white/10 flex items-center justify-center">
-                <img src={logoSrc} alt="Logo"
+                <img
+                  src={logoSrc}
+                  alt="Logo"
                   className="w-full h-full object-contain p-1"
-                  onError={e => { e.currentTarget.src = '/images/assets/logo.png'; }}
+                  onError={(e) => {
+                    e.currentTarget.src = '/images/assets/logo.png';
+                  }}
                 />
               </div>
             </div>
           ) : (
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl overflow-hidden bg-white/10 flex items-center justify-center shrink-0">
-                <img src={logoSrc} alt="Logo"
+                <img
+                  src={logoSrc}
+                  alt="Logo"
                   className="w-full h-full object-contain p-1"
-                  onError={e => { e.currentTarget.src = '/images/assets/logo.png'; }}
+                  onError={(e) => {
+                    e.currentTarget.src = '/images/assets/logo.png';
+                  }}
                 />
               </div>
               <div className="min-w-0" style={{ animation: 'sidebarLabelIn 0.2s ease-out' }}>
                 <p className="text-white font-bold text-sm leading-tight truncate">
                   {settings?.store_name || 'Santapos POS'}
                 </p>
-                <p className="text-white/40 text-xs">Admin Dashboard</p>
+                <p className="text-white/40 text-xs">
+                  {user?.role === 'superadmin' ? '3-Role Operational Hub' : 'Admin Dashboard'}
+                </p>
               </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Nav */}
-      <nav className={`flex-1 overflow-y-auto scrollbar-none ${collapsed ? 'px-2 py-3' : 'px-2 py-3'} space-y-0.5`}>
-        {visible.map(m => (
-          <NavItem
-            key={m.href}
-            menu={m}
-            active={pathname === m.href}
-            collapsed={collapsed}
-            primaryColor={primaryColor}
-            badgeCount={notificationCounts?.[m.href] || 0}
-          />
-        ))}
+      {/* Quick Switcher Pill to Superadmin CRM + Role Filter Pills (for Superadmin & Admin) */}
+      {!collapsed && isSuperOrAdmin && (
+        <div className="px-2.5 pt-2.5 pb-1 border-b border-white/[0.06] space-y-2">
+          {user?.role === 'superadmin' && (
+            <Link
+              href="/superadmin"
+              className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-white transition-all"
+              style={{
+                background: 'linear-gradient(135deg, #0E7C5B 0%, #095840 100%)',
+                boxShadow: '0 4px 12px rgba(14, 124, 91, 0.35)',
+              }}
+            >
+              <span className="flex items-center gap-2">
+                <span>👑</span>
+                <span>Buka Superadmin CRM</span>
+              </span>
+              <span>↗</span>
+            </Link>
+          )}
+
+          {/* Filter Role Menu Pills: Semua | Admin | Kasir | Kitchen */}
+          <div>
+            <div className="text-[9.5px] font-bold uppercase tracking-wider text-white/35 px-1 mb-1">
+              Filter Menu Role
+            </div>
+            <div className="grid grid-cols-4 gap-1 bg-white/[0.04] p-1 rounded-xl border border-white/[0.07]">
+              {[
+                { id: 'all', label: 'Semua' },
+                { id: 'admin', label: 'Admin' },
+                { id: 'kasir', label: 'Kasir' },
+                { id: 'kitchen', label: 'Dapur' },
+              ].map((tab) => {
+                const active = roleFilter === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setRoleFilter(tab.id)}
+                    className={`py-1 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
+                      active
+                        ? 'bg-amber-500 text-black shadow-sm'
+                        : 'text-white/55 hover:text-white'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Grouped Navigation by Role */}
+      <nav className={`flex-1 overflow-y-auto scrollbar-none ${collapsed ? 'px-2 py-3' : 'px-2 py-2.5'} space-y-3`}>
+        {ROLE_GROUP_META.map((grp) => {
+          if (roleFilter !== 'all' && grp.id !== roleFilter) return null;
+          // Hide superadmin link in the list if already shown in the prominent green button above when expanded
+          const groupMenus = visible.filter(
+            (m) =>
+              m.roleGroup === grp.id &&
+              !(grp.id === 'superadmin' && !collapsed && user?.role === 'superadmin')
+          );
+          if (groupMenus.length === 0) return null;
+
+          return (
+            <div key={grp.id} className="space-y-0.5">
+              {!collapsed && (
+                <div
+                  className="px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider flex items-center justify-between"
+                  style={{ color: grp.accent }}
+                >
+                  <span>{grp.title}</span>
+                  <span className="text-[9.5px] opacity-65">{groupMenus.length}</span>
+                </div>
+              )}
+              {groupMenus.map((m) => (
+                <NavItem
+                  key={m.href}
+                  menu={m}
+                  active={pathname === m.href}
+                  collapsed={collapsed}
+                  primaryColor={primaryColor}
+                  badgeCount={notificationCounts?.[m.href] || 0}
+                />
+              ))}
+            </div>
+          );
+        })}
       </nav>
 
       <BranchSelector
@@ -571,17 +767,17 @@ function SidebarContent({ collapsed, noLogo, pathname, user, settings, visible,
 
 // ── Main Sidebar Component ────────────────────────────────────
 export default function Sidebar() {
-  const pathname            = usePathname();
+  const pathname = usePathname();
   const { user, logout, selectedBranchId, setBranch } = useAuthStore();
-  const router              = useRouter();
+  const router = useRouter();
   const { settings, loadSettings } = useWebsiteSettings();
 
-  const [mobileOpen,    setMobileOpen]    = useState(false);
-  const [collapsed,     setCollapsed]     = useState(false); // desktop
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [tabletCollapsed, setTabletCollapsed] = useState(true);
-  const [isMobile,      setIsMobile]      = useState(false);
-  const [isTablet,      setIsTablet]      = useState(false);
-  const [hydrated,      setHydrated]      = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const [branches, setBranches] = useState([]);
   const [notificationCounts, setNotificationCounts] = useState({
     '/admin/customer-orders': 0,
@@ -589,7 +785,6 @@ export default function Sidebar() {
     '/stock': 0,
   });
 
-  // Inject keyframes once
   useEffect(() => {
     if (document.getElementById('sb-keyframes')) return;
     const style = document.createElement('style');
@@ -598,7 +793,9 @@ export default function Sidebar() {
     document.head.appendChild(style);
   }, []);
 
-  useEffect(() => { loadSettings(); }, [loadSettings]);
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
 
   useEffect(() => {
     if (!user) return;
@@ -619,7 +816,10 @@ export default function Sidebar() {
 
     const loadNotificationCounts = async () => {
       try {
-        const stockRequestFn = user.role === 'admin' ? getAllStockRequests : getMyStockRequests;
+        const stockRequestFn =
+          user.role === 'admin' || user.role === 'superadmin'
+            ? getAllStockRequests
+            : getMyStockRequests;
         const [ordersRes, stockRes] = await Promise.all([
           getCustomerOrders({}),
           stockRequestFn({ status: 'pending' }),
@@ -630,8 +830,12 @@ export default function Sidebar() {
         const orders = Array.isArray(ordersRes.data) ? ordersRes.data : [];
         const pendingStockRequests = Array.isArray(stockRes.data) ? stockRes.data : [];
         setNotificationCounts({
-          '/admin/customer-orders': orders.filter((order) => activeOrderStatuses.includes(order.status)).length,
-          '/kitchen': orders.filter((order) => ['accepted', 'preparing'].includes(order.status)).length,
+          '/admin/customer-orders': orders.filter((order) =>
+            activeOrderStatuses.includes(order.status)
+          ).length,
+          '/kitchen': orders.filter((order) =>
+            ['accepted', 'preparing'].includes(order.status)
+          ).length,
           '/stock': pendingStockRequests.length,
         });
       } catch (_) {
@@ -659,14 +863,21 @@ export default function Sidebar() {
     check();
     const t = setTimeout(() => setHydrated(true), 0);
     window.addEventListener('resize', check);
-    return () => { clearTimeout(t); window.removeEventListener('resize', check); };
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('resize', check);
+    };
   }, []);
 
   useEffect(() => {
     setTimeout(() => setMobileOpen(false), 0);
   }, [pathname]);
 
-  const handleLogout = () => { logout(); router.replace('/login'); };
+  const handleLogout = () => {
+    logout();
+    router.replace('/login');
+  };
+
   const handleBranchChange = async (branchId) => {
     const branch = branches.find((item) => Number(item.id) === Number(branchId));
     setBranch(branchId, branch);
@@ -675,70 +886,127 @@ export default function Sidebar() {
     } catch (_) {}
     router.refresh?.();
   };
-  const visible      = menus.filter(m => user?.role === 'superadmin' || m.roles.includes(user?.role));
-  const logoSrc      = resolveAssetUrl(settings?.logo_url, '/images/assets/logo.png');
+
+  const visible = menus.filter(
+    (m) => user?.role === 'superadmin' || m.roles.includes(user?.role)
+  );
+  const logoSrc = resolveAssetUrl(settings?.logo_url, '/images/assets/logo.png');
   const primaryColor = settings?.gold || DEFAULT_SETTINGS.gold;
-  const initials     = user?.name
-    ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+  const initials = user?.name
+    ? user.name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
     : 'U';
   const { show: showInstall } = usePWAInstall();
-  const [isInstalled] = useState(() =>
-    typeof window !== 'undefined' &&
-    (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true)
+  const [isInstalled] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      (window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true)
   );
 
-  const sharedProps = { pathname, user, settings, visible, logoSrc, initials,
-    primaryColor, onLogout: handleLogout, showInstall, isInstalled,
-    branches, selectedBranchId, onBranchChange: handleBranchChange, notificationCounts };
+  const sharedProps = {
+    pathname,
+    user,
+    settings,
+    visible,
+    logoSrc,
+    initials,
+    primaryColor,
+    onLogout: handleLogout,
+    showInstall,
+    isInstalled,
+    branches,
+    selectedBranchId,
+    onBranchChange: handleBranchChange,
+    notificationCounts,
+  };
 
   // ── MOBILE ──────────────────────────────────────────────────
   if (hydrated && isMobile) {
     return (
       <>
-        <div className="fixed top-0 left-0 right-0 z-40 h-14 flex items-center justify-between px-4"
-          style={{ backgroundColor: '#13100A', borderBottom: '0.5px solid rgba(255,255,255,0.07)' }}>
-          <button onClick={() => setMobileOpen(true)}
-            className="p-2 text-white/60 hover:text-white rounded-xl hover:bg-white/10 transition-colors">
+        <div
+          className="fixed top-0 left-0 right-0 z-40 h-14 flex items-center justify-between px-4"
+          style={{
+            backgroundColor: '#13100A',
+            borderBottom: '0.5px solid rgba(255,255,255,0.07)',
+          }}
+        >
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="p-2 text-white/60 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
+          >
             <MenuIcon />
           </button>
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg overflow-hidden bg-white/10">
-              <img src={logoSrc} alt="Logo" className="w-full h-full object-contain p-0.5"
-                onError={e => { e.currentTarget.src = '/images/assets/logo.png'; }} />
+              <img
+                src={logoSrc}
+                alt="Logo"
+                className="w-full h-full object-contain p-0.5"
+                onError={(e) => {
+                  e.currentTarget.src = '/images/assets/logo.png';
+                }}
+              />
             </div>
-            <span className="text-white font-bold text-sm">{settings?.store_name || 'Kebab POS'}</span>
+            <span className="text-white font-bold text-sm">
+              {settings?.store_name || 'Santapos POS'}
+            </span>
           </div>
-          <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold"
-            style={{ backgroundColor: primaryColor }}>
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold"
+            style={{ backgroundColor: primaryColor }}
+          >
             {initials}
           </div>
         </div>
         <div className="h-14 shrink-0" />
 
         {mobileOpen && (
-          <div className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
-            onClick={() => setMobileOpen(false)} />
+          <div
+            className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
+            onClick={() => setMobileOpen(false)}
+          />
         )}
 
-        <div className={`
-          fixed top-0 left-0 bottom-0 z-50 w-64 flex flex-col
-          transition-transform duration-300 ease-out
-          ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
-        `} style={{ backgroundColor: '#13100A' }}>
-          <div className="flex items-center justify-between px-4 py-4"
-            style={{ borderBottom: '0.5px solid rgba(255,255,255,0.07)' }}>
+        <div
+          className={`
+            fixed top-0 left-0 bottom-0 z-50 w-64 flex flex-col
+            transition-transform duration-300 ease-out
+            ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
+          `}
+          style={{ backgroundColor: '#13100A' }}
+        >
+          <div
+            className="flex items-center justify-between px-4 py-4"
+            style={{ borderBottom: '0.5px solid rgba(255,255,255,0.07)' }}
+          >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl overflow-hidden bg-white/10">
-                <img src={logoSrc} alt="Logo" className="w-full h-full object-contain p-1"
-                  onError={e => { e.currentTarget.src = '/images/assets/logo.png'; }} />
+                <img
+                  src={logoSrc}
+                  alt="Logo"
+                  className="w-full h-full object-contain p-1"
+                  onError={(e) => {
+                    e.currentTarget.src = '/images/assets/logo.png';
+                  }}
+                />
               </div>
               <div>
-                <p className="text-white font-bold text-sm">{settings?.store_name || 'Kebab POS'}</p>
-                <p className="text-white/40 text-xs">Admin Dashboard</p>
+                <p className="text-white font-bold text-sm">
+                  {settings?.store_name || 'Santapos POS'}
+                </p>
+                <p className="text-white/40 text-xs">3-Role Operational Hub</p>
               </div>
             </div>
-            <button onClick={() => setMobileOpen(false)}
-              className="p-2 text-white/40 hover:text-white rounded-xl hover:bg-white/10 transition-colors">
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="p-2 text-white/40 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
+            >
               <CloseIcon />
             </button>
           </div>
@@ -753,20 +1021,21 @@ export default function Sidebar() {
     return (
       <>
         {!tabletCollapsed && (
-          <div className="fixed inset-0 bg-black/40 z-30"
-            onClick={() => setTabletCollapsed(true)} />
+          <div
+            className="fixed inset-0 bg-black/40 z-30"
+            onClick={() => setTabletCollapsed(true)}
+          />
         )}
         <aside
           className="relative z-40 flex flex-col shrink-0 transition-all duration-300 ease-out"
           style={{
             backgroundColor: '#13100A',
             borderRight: '0.5px solid rgba(255,255,255,0.07)',
-            width: tabletCollapsed ? 64 : 220,
+            width: tabletCollapsed ? 64 : 236,
           }}
         >
-          {/* Toggle button */}
           <button
-            onClick={() => setTabletCollapsed(v => !v)}
+            onClick={() => setTabletCollapsed((v) => !v)}
             className="absolute -right-3 top-6 z-10 w-6 h-6 rounded-full
               flex items-center justify-center text-white/60 hover:text-white
               transition-all"
@@ -775,7 +1044,10 @@ export default function Sidebar() {
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
               <path
                 d={tabletCollapsed ? 'M3 2L7 5L3 8' : 'M7 2L3 5L7 8'}
-                stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
             </svg>
           </button>
@@ -792,23 +1064,33 @@ export default function Sidebar() {
       style={{
         backgroundColor: '#13100A',
         borderRight: '0.5px solid rgba(255,255,255,0.07)',
-        width: collapsed ? 64 : 220,
+        width: collapsed ? 64 : 236,
         position: 'relative',
       }}
     >
-      {/* Toggle button */}
       <button
-        onClick={() => setCollapsed(v => !v)}
+        onClick={() => setCollapsed((v) => !v)}
         className="absolute -right-3 top-6 z-10 w-6 h-6 rounded-full
           flex items-center justify-center text-white/60 hover:text-white transition-all"
         style={{ background: '#1E1A14', border: '0.5px solid rgba(255,255,255,0.12)' }}
       >
         <svg
-          width="10" height="10" viewBox="0 0 10 10" fill="none"
-          style={{ transform: collapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }}
+          width="10"
+          height="10"
+          viewBox="0 0 10 10"
+          fill="none"
+          style={{
+            transform: collapsed ? 'rotate(180deg)' : 'none',
+            transition: 'transform 0.3s ease',
+          }}
         >
-          <path d="M7 2L3 5L7 8" stroke="currentColor" strokeWidth="1.5"
-            strokeLinecap="round" strokeLinejoin="round"/>
+          <path
+            d="M7 2L3 5L7 8"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       </button>
       <SidebarContent collapsed={collapsed} noLogo={false} {...sharedProps} />

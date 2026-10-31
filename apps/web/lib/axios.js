@@ -19,6 +19,8 @@ const emitFeedback = (payload) => {
 
 const isFeedbackDisabled = (config = {}) => {
   const headerValue = config.headers?.['X-Silent-Feedback'] || config.headers?.['x-silent-feedback'];
+  const url = String(config.url || '');
+  if (url.includes('/superadmin')) return true;
   return config.feedback === false || headerValue === 'true';
 };
 
