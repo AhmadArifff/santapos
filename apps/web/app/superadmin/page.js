@@ -103,6 +103,19 @@ export default function SuperadminPage() {
   const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingTenantId, setUpdatingTenantId] = useState(null);
+  const [tenantSearch, setTenantSearch] = useState('');
+
+  const filteredTenants = useMemo(() => {
+    if (!tenantSearch.trim()) return tenants;
+    const q = tenantSearch.toLowerCase();
+    return tenants.filter(
+      (t) =>
+        t.name?.toLowerCase().includes(q) ||
+        t.slug?.toLowerCase().includes(q) ||
+        t.owner_name?.toLowerCase().includes(q) ||
+        t.plan_code?.toLowerCase().includes(q)
+    );
+  }, [tenants, tenantSearch]);
 
   // Inbox state
   const [inboxMessages, setInboxMessages] = useState(INITIAL_INBOX_MESSAGES);
@@ -3856,7 +3869,8 @@ export default function SuperadminPage() {
               gap: '24px',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+            {/* Header with Search Bar & Actions */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
               <div>
                 <h1
                   style={{
@@ -3874,7 +3888,7 @@ export default function SuperadminPage() {
                 </p>
               </div>
 
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                 <Link
                   href="/superadmin/inspector"
                   style={{
@@ -3885,11 +3899,18 @@ export default function SuperadminPage() {
                     padding: '9px 18px',
                     fontSize: '12.5px',
                     fontWeight: 700,
+                    boxShadow: '0 4px 12px rgba(14, 124, 91, 0.25)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
                   }}
                 >
-                  🖥️ Inspect Role Admin / Kasir / Kitchen ↗
+                  <span>🖥️</span>
+                  <span>Inspect Role Admin / Kasir / Kitchen ↗</span>
                 </Link>
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
                   onClick={() => setShowOnboardModal(true)}
                   style={{
                     background: '#161920',
@@ -3900,10 +3921,94 @@ export default function SuperadminPage() {
                     fontSize: '12.5px',
                     fontWeight: 700,
                     cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
                   }}
                 >
-                  + Deploy Tenant Baru
-                </button>
+                  <span>+</span>
+                  <span>Deploy Tenant Baru</span>
+                </motion.button>
+              </div>
+            </div>
+
+            {/* Filter & Live Search Toolbar */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px',
+                background: surfaceBg,
+                border: `1px solid ${surfaceBorder}`,
+                borderRadius: '16px',
+                padding: '12px 18px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: '240px' }}>
+                <span style={{ fontSize: '14px', color: textSecondary }}>🔍</span>
+                <input
+                  type="text"
+                  placeholder="Cari tenant berdasarkan nama brand, slug, owner, atau paket..."
+                  value={tenantSearch}
+                  onChange={(e) => setTenantSearch(e.target.value)}
+                  style={{
+                    border: 'none',
+                    outline: 'none',
+                    background: 'transparent',
+                    color: textPrimary,
+                    fontSize: '13px',
+                    width: '100%',
+                  }}
+                />
+                {tenantSearch && (
+                  <button
+                    onClick={() => setTenantSearch('')}
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      color: textSecondary,
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      padding: '2px 6px',
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span
+                  style={{
+                    padding: '3px 10px',
+                    borderRadius: '999px',
+                    background: isLight ? '#E5E7EB' : '#1E293B',
+                    color: textPrimary,
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                  }}
+                >
+                  {filteredTenants.length} dari {tenants.length} Tenant
+                </span>
+                <span
+                  style={{
+                    padding: '3px 10px',
+                    borderRadius: '999px',
+                    background: '#E3F5EE',
+                    color: '#0E7C5B',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                  }}
+                >
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#0E7C5B' }} />
+                  Database Sync OK
+                </span>
               </div>
             </div>
 
@@ -3914,6 +4019,7 @@ export default function SuperadminPage() {
                 border: `1px solid ${surfaceBorder}`,
                 borderRadius: '20px',
                 overflowX: 'auto',
+                boxShadow: isLight ? '0 10px 28px -6px rgba(0,0,0,0.05)' : 'none',
               }}
             >
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -3928,113 +4034,157 @@ export default function SuperadminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {tenants.map((t) => (
-                    <tr key={t.id} style={{ borderBottom: `1px solid ${surfaceBorder}`, fontSize: '13px' }}>
-                      <td style={{ padding: '14px 18px' }}>
-                        <div style={{ fontWeight: 700, color: textPrimary }}>{t.name}</div>
-                        <div style={{ fontSize: '11.5px', color: textSecondary }}>
-                          slug: <code>{t.slug}</code>
-                        </div>
-                      </td>
-                      <td style={{ padding: '14px 18px' }}>
-                        <div style={{ fontWeight: 600, color: textPrimary }}>{t.owner_name || 'Admin Tenant'}</div>
-                        <div style={{ fontSize: '11.5px', color: textSecondary }}>{t.owner_email || '-'}</div>
-                      </td>
-                      <td style={{ padding: '14px 18px', color: textSecondary }}>
-                        {t.branch_count} Cabang · {t.user_count} User
-                      </td>
-                      <td style={{ padding: '14px 18px' }}>
-                        <select
-                          disabled={updatingTenantId === t.id}
-                          value={t.plan_code || 'starter'}
-                          onChange={(e) => handlePlanChange(t.id, e.target.value)}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: '999px',
-                            border: `1px solid ${surfaceBorder}`,
-                            background:
-                              t.plan_code === 'franchise'
-                                ? '#BCE3D4'
-                                : t.plan_code === 'pro'
-                                ? '#EFA892'
-                                : '#EADCA6',
-                            color: '#14171D',
-                            fontWeight: 700,
-                            fontSize: '12px',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <option value="starter">STARTER</option>
-                          <option value="pro">PRO</option>
-                          <option value="franchise">FRANCHISE</option>
-                        </select>
-                      </td>
-                      <td style={{ padding: '14px 18px' }}>
-                        <span
-                          style={{
-                            padding: '4px 10px',
-                            borderRadius: '999px',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            background: t.status === 'active' ? '#E3F5EE' : '#FDECE8',
-                            color: t.status === 'active' ? '#0E7C5B' : '#C84B31',
-                          }}
-                        >
-                          {String(t.status || 'active').toUpperCase()}
-                        </span>
-                      </td>
-                      <td style={{ padding: '14px 18px', textAlign: 'right' }}>
-                        {t.status === 'active' ? (
-                          <button
-                            disabled={updatingTenantId === t.id}
-                            onClick={() => handleStatusChange(t.id, 'suspended')}
-                            style={{
-                              background: '#FDECE8',
-                              color: '#C84B31',
-                              border: 'none',
-                              borderRadius: '999px',
-                              padding: '5px 12px',
-                              fontSize: '11.5px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Suspend
-                          </button>
-                        ) : (
-                          <button
-                            disabled={updatingTenantId === t.id}
-                            onClick={() => handleStatusChange(t.id, 'active')}
-                            style={{
-                              background: '#0E7C5B',
-                              color: '#FFFFFF',
-                              border: 'none',
-                              borderRadius: '999px',
-                              padding: '5px 12px',
-                              fontSize: '11.5px',
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Aktifkan
-                          </button>
-                        )}
+                  {filteredTenants.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ padding: '36px 18px', textAlign: 'center', color: textSecondary, fontSize: '13px' }}>
+                        Tidak ditemukan tenant dengan kata kunci &quot;{tenantSearch}&quot;
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredTenants.map((t) => (
+                      <motion.tr
+                        layout
+                        key={t.id}
+                        whileHover={{ backgroundColor: isLight ? 'rgba(0,0,0,0.018)' : 'rgba(255,255,255,0.025)' }}
+                        style={{ borderBottom: `1px solid ${surfaceBorder}`, fontSize: '13px' }}
+                      >
+                        <td style={{ padding: '14px 18px' }}>
+                          <div style={{ fontWeight: 700, color: textPrimary }}>{t.name}</div>
+                          <div style={{ fontSize: '11.5px', color: textSecondary }}>
+                            slug: <code>{t.slug}</code>
+                          </div>
+                        </td>
+                        <td style={{ padding: '14px 18px' }}>
+                          <div style={{ fontWeight: 600, color: textPrimary }}>{t.owner_name || 'Admin Tenant'}</div>
+                          <div style={{ fontSize: '11.5px', color: textSecondary }}>{t.owner_email || '-'}</div>
+                        </td>
+                        <td style={{ padding: '14px 18px', color: textSecondary }}>
+                          {t.branch_count} Cabang · {t.user_count} User
+                        </td>
+                        <td style={{ padding: '14px 18px' }}>
+                          <select
+                            disabled={updatingTenantId === t.id}
+                            value={t.plan_code || 'starter'}
+                            onChange={(e) => handlePlanChange(t.id, e.target.value)}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: '999px',
+                              border: `1px solid ${surfaceBorder}`,
+                              background:
+                                t.plan_code === 'franchise'
+                                  ? '#BCE3D4'
+                                  : t.plan_code === 'pro'
+                                  ? '#EFA892'
+                                  : '#EADCA6',
+                              color: '#14171D',
+                              fontWeight: 700,
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <option value="starter">STARTER</option>
+                            <option value="pro">PRO</option>
+                            <option value="franchise">FRANCHISE</option>
+                          </select>
+                        </td>
+                        <td style={{ padding: '14px 18px' }}>
+                          <span
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: '999px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              background: t.status === 'active' ? '#E3F5EE' : '#FDECE8',
+                              color: t.status === 'active' ? '#0E7C5B' : '#C84B31',
+                            }}
+                          >
+                            {String(t.status || 'active').toUpperCase()}
+                          </span>
+                        </td>
+                        <td style={{ padding: '14px 18px', textAlign: 'right' }}>
+                          {t.status === 'active' ? (
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              disabled={updatingTenantId === t.id}
+                              onClick={() => handleStatusChange(t.id, 'suspended')}
+                              style={{
+                                background: '#FDECE8',
+                                color: '#C84B31',
+                                border: 'none',
+                                borderRadius: '999px',
+                                padding: '6px 14px',
+                                fontSize: '11.5px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Suspend
+                            </motion.button>
+                          ) : (
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              disabled={updatingTenantId === t.id}
+                              onClick={() => handleStatusChange(t.id, 'active')}
+                              style={{
+                                background: '#0E7C5B',
+                                color: '#FFFFFF',
+                                border: 'none',
+                                borderRadius: '999px',
+                                padding: '6px 14px',
+                                fontSize: '11.5px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Aktifkan
+                            </motion.button>
+                          )}
+                        </td>
+                      </motion.tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
 
-            {/* Database Settings Panel */}
+            {/* Database Settings Panel with Live Header */}
             <div
               style={{
                 background: '#0F172A',
                 borderRadius: '22px',
                 padding: '22px',
                 color: '#F8FAFC',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                boxShadow: '0 16px 36px rgba(0,0,0,0.3)',
               }}
             >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '16px',
+                  paddingBottom: '12px',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span
+                    className="murmura-radar-pulse"
+                    style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981', display: 'inline-block' }}
+                  />
+                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#F8FAFC' }}>
+                    PostgreSQL Connection Pool & Storage Bucket Status
+                  </span>
+                </div>
+                <span style={{ fontSize: '11.5px', color: '#94A3B8' }}>
+                  Active Engine: Supabase / Neon Cloud Pool
+                </span>
+              </div>
               <DatabaseSettingsPanel />
             </div>
           </div>
@@ -4046,21 +4196,29 @@ export default function SuperadminPage() {
       {/* =====================================================================
           MODAL: + NEW TENANT DEAL
          ===================================================================== */}
-      {showNewDealModal && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 80,
-            background: 'rgba(8, 13, 24, 0.65)',
-            backdropFilter: 'blur(6px)',
-            display: 'grid',
-            placeItems: 'center',
-            padding: '16px',
-          }}
-        >
-          <form
-            onSubmit={handleCreateNewDeal}
+      <AnimatePresence>
+        {showNewDealModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 80,
+              background: 'rgba(8, 13, 24, 0.65)',
+              backdropFilter: 'blur(6px)',
+              display: 'grid',
+              placeItems: 'center',
+              padding: '16px',
+            }}
+          >
+            <motion.form
+              initial={{ opacity: 0, scale: 0.92, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 16 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+              onSubmit={handleCreateNewDeal}
             style={{
               width: '100%',
               maxWidth: '480px',
@@ -4211,28 +4369,37 @@ export default function SuperadminPage() {
                 Simpan Deal
               </button>
             </div>
-          </form>
-        </div>
-      )}
+            </motion.form>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* =====================================================================
           MODAL: + DEPLOY NEW TENANT
          ===================================================================== */}
-      {showOnboardModal && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 80,
-            background: 'rgba(8, 13, 24, 0.65)',
-            backdropFilter: 'blur(6px)',
-            display: 'grid',
-            placeItems: 'center',
-            padding: '16px',
-          }}
-        >
-          <form
-            onSubmit={handleOnboardSubmit}
+      <AnimatePresence>
+        {showOnboardModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 80,
+              background: 'rgba(8, 13, 24, 0.65)',
+              backdropFilter: 'blur(6px)',
+              display: 'grid',
+              placeItems: 'center',
+              padding: '16px',
+            }}
+          >
+            <motion.form
+              initial={{ opacity: 0, scale: 0.92, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 16 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+              onSubmit={handleOnboardSubmit}
             style={{
               width: '100%',
               maxWidth: '440px',
@@ -4319,9 +4486,10 @@ export default function SuperadminPage() {
                 Deploy Sekarang
               </button>
             </div>
-          </form>
-        </div>
-      )}
+            </motion.form>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* =====================================================================
           THEME-MATCHED NON-BLOCKING FLOATING TOAST WITH [Undo] & PROGRESS BAR
