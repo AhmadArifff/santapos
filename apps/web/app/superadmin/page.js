@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   getSuperadminStats,
   getSuperadminTenants,
@@ -115,6 +116,8 @@ export default function SuperadminPage() {
   const [elevatedTicket, setElevatedTicket] = useState('#1062');
   const [draggedDeal, setDraggedDeal] = useState(null);
   const [dragOverStage, setDragOverStage] = useState(null);
+  const [newlyInsertedDealId, setNewlyInsertedDealId] = useState(null);
+  const [recentlyUpdatedStage, setRecentlyUpdatedStage] = useState(null);
 
   // Modals
   const [showNewDealModal, setShowNewDealModal] = useState(false);
@@ -191,6 +194,26 @@ export default function SuperadminPage() {
       badgeColor: '#F59E0B',
     },
   ]);
+
+  const unreadNotifCount = notificationList.filter((n) => n.unread).length;
+
+  const handleToggleReadNotification = (id) => {
+    setNotificationList((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, unread: !n.unread } : n))
+    );
+  };
+
+  const handleBulkToggleAllNotifications = () => {
+    const hasUnread = notificationList.some((n) => n.unread);
+    setNotificationList((prev) => prev.map((n) => ({ ...n, unread: !hasUnread })));
+    triggerToast(
+      hasUnread
+        ? 'Seluruh notifikasi ditandai sudah dibaca'
+        : 'Seluruh notifikasi ditandai belum dibaca',
+      null,
+      'Pusat Notifikasi'
+    );
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -362,6 +385,24 @@ export default function SuperadminPage() {
       )
     );
 
+    // Bump destination counter and link activity notification with ringing bell!
+    setRecentlyUpdatedStage(targetStage);
+    setTimeout(() => setRecentlyUpdatedStage(null), 1200);
+
+    setNotificationList((prev) => [
+      {
+        id: `notif-move-${Date.now()}`,
+        brand: deal.table_label,
+        title: `Tahap Diperbarui (${deal.ticket_number})`,
+        message: `Deal dipindahkan dari ${previousStage.toUpperCase()} ke ${targetStage.toUpperCase()}.`,
+        time: 'Baru saja',
+        unread: true,
+        category: 'deals',
+        badgeColor: targetStage === 'served' ? '#0E7C5B' : targetStage === 'ready' ? '#10B981' : '#F59E0B',
+      },
+      ...prev,
+    ]);
+
     if (deal.ticket_number === elevatedTicket) {
       setElevatedTicket(null);
     }
@@ -447,9 +488,29 @@ export default function SuperadminPage() {
       });
 
       if (res?.data?.data) {
-        setDeals((prev) => [res.data.data, ...prev]);
+        const newDeal = res.data.data;
+        setDeals((prev) => [newDeal, ...prev]);
+        setNewlyInsertedDealId(newDeal.id);
+        setTimeout(() => setNewlyInsertedDealId(null), 3000);
+        setRecentlyUpdatedStage('new');
+        setTimeout(() => setRecentlyUpdatedStage(null), 1200);
+
+        setNotificationList((prev) => [
+          {
+            id: `notif-new-${Date.now()}`,
+            brand: newDeal.tenant_brand || newDeal.table_label,
+            title: `Deal Baru Ditambahkan (${newDeal.ticket_number})`,
+            message: `${newDeal.table_label} berhasil didaftarkan ke tahap NEW.`,
+            time: 'Baru saja',
+            unread: true,
+            category: 'deals',
+            badgeColor: '#0E7C5B',
+          },
+          ...prev,
+        ]);
+
         triggerToast(
-          `Created new tenant deal ${res.data.data.ticket_number} (${res.data.data.table_label})`
+          `Created new tenant deal ${newDeal.ticket_number} (${newDeal.table_label})`
         );
       }
       setShowNewDealModal(false);
@@ -1112,23 +1173,43 @@ export default function SuperadminPage() {
                 transition: 'all 0.18s ease',
               }}
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                className={unreadNotifCount > 0 ? 'bell-ring-active' : ''}
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.1"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
               </svg>
-              {notificationList.some((n) => n.unread) && (
+              {unreadNotifCount > 0 && (
                 <span
+                  className="notif-badge-pulse"
                   style={{
                     position: 'absolute',
-                    top: '5px',
-                    right: '6px',
-                    width: '7px',
-                    height: '7px',
-                    borderRadius: '50%',
+                    top: '-4px',
+                    right: '-4px',
+                    minWidth: '17px',
+                    height: '17px',
+                    padding: '0 4px',
+                    borderRadius: '999px',
                     background: '#C84B31',
-                    border: `1.5px solid ${surfaceBg}`,
+                    color: '#FFFFFF',
+                    fontSize: '9.5px',
+                    fontWeight: 800,
+                    display: 'grid',
+                    placeItems: 'center',
+                    lineHeight: 1,
+                    border: `2px solid ${surfaceBg}`,
                   }}
-                />
+                >
+                  {unreadNotifCount}
+                </span>
               )}
             </button>
 
@@ -1175,21 +1256,19 @@ export default function SuperadminPage() {
                       </span>
                       <span
                         style={{
-                          background: '#E7F7EF',
-                          color: '#0D7A57',
+                          background: unreadNotifCount > 0 ? '#E7F7EF' : '#F1F5F9',
+                          color: unreadNotifCount > 0 ? '#0D7A57' : textMuted,
                           padding: '1px 7px',
                           borderRadius: '999px',
                           fontSize: '10.5px',
                           fontWeight: 700,
                         }}
                       >
-                        {notificationList.filter((n) => n.unread).length} Baru
+                        {unreadNotifCount} Baru
                       </span>
                     </div>
                     <button
-                      onClick={() =>
-                        setNotificationList((prev) => prev.map((n) => ({ ...n, unread: false })))
-                      }
+                      onClick={handleBulkToggleAllNotifications}
                       style={{
                         background: 'none',
                         border: 'none',
@@ -1199,7 +1278,7 @@ export default function SuperadminPage() {
                         fontWeight: 600,
                       }}
                     >
-                      Tandai dibaca
+                      {unreadNotifCount > 0 ? 'Tandai semua dibaca' : 'Tandai semua belum dibaca'}
                     </button>
                   </div>
 
@@ -1257,6 +1336,7 @@ export default function SuperadminPage() {
                       .map((item) => (
                         <div
                           key={item.id}
+                          onClick={() => handleToggleReadNotification(item.id)}
                           className="murmura-card-vibrate"
                           style={{
                             padding: '10px 12px',
@@ -1264,14 +1344,25 @@ export default function SuperadminPage() {
                             background: item.unread
                               ? isLight
                                 ? '#FAF9F6'
-                                : 'rgba(255,255,255,0.05)'
-                              : 'transparent',
+                                : 'rgba(255,255,255,0.06)'
+                              : isLight
+                              ? '#FFFFFF'
+                              : 'rgba(255,255,255,0.02)',
                             border: `1px solid ${
-                              item.unread ? (isLight ? '#E5E7EB' : 'rgba(255,255,255,0.1)') : 'transparent'
+                              item.unread
+                                ? isLight
+                                  ? 'rgba(14, 124, 91, 0.35)'
+                                  : 'rgba(52, 211, 153, 0.35)'
+                                : isLight
+                                ? 'rgba(20, 23, 29, 0.06)'
+                                : 'rgba(255, 255, 255, 0.06)'
                             }`,
+                            opacity: item.unread ? 1 : 0.65,
+                            cursor: 'pointer',
                             display: 'flex',
                             gap: '10px',
                             alignItems: 'flex-start',
+                            transition: 'all 0.2s ease',
                           }}
                         >
                           <span
@@ -1282,6 +1373,7 @@ export default function SuperadminPage() {
                               background: item.badgeColor,
                               marginTop: '5px',
                               flexShrink: 0,
+                              boxShadow: item.unread ? `0 0 0 3px ${item.badgeColor}33` : 'none',
                             }}
                           />
                           <div style={{ flex: 1, minWidth: 0 }}>
@@ -1303,7 +1395,7 @@ export default function SuperadminPage() {
                             <div
                               style={{
                                 fontSize: '12px',
-                                fontWeight: 650,
+                                fontWeight: item.unread ? 700 : 500,
                                 color: textPrimary,
                                 lineHeight: 1.3,
                               }}
@@ -1321,6 +1413,30 @@ export default function SuperadminPage() {
                               {item.message}
                             </div>
                           </div>
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleReadNotification(item.id);
+                            }}
+                            title={item.unread ? 'Tandai sudah dibaca' : 'Tandai belum dibaca'}
+                            style={{
+                              border: 'none',
+                              background: item.unread ? 'rgba(14, 124, 91, 0.12)' : 'rgba(0,0,0,0.04)',
+                              color: item.unread ? '#0E7C5B' : textMuted,
+                              width: '22px',
+                              height: '22px',
+                              borderRadius: '50%',
+                              display: 'grid',
+                              placeItems: 'center',
+                              fontSize: '11px',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {item.unread ? '✓' : '•'}
+                          </button>
                         </div>
                       ))}
                   </div>
@@ -2396,7 +2512,15 @@ export default function SuperadminPage() {
                           <span style={{ fontSize: '13.5px', fontWeight: 700, color: textPrimary }}>
                             {col.title}
                           </span>
-                          <span style={{ fontSize: '12px', color: textSecondary, fontWeight: 600 }}>
+                          <span
+                            className={recentlyUpdatedStage === col.stage ? 'counter-bump' : ''}
+                            style={{
+                              fontSize: '12px',
+                              color: textSecondary,
+                              fontWeight: 700,
+                              display: 'inline-block',
+                            }}
+                          >
                             {col.items.length}
                           </span>
                         </div>
@@ -2428,179 +2552,195 @@ export default function SuperadminPage() {
                         </div>
                       )}
 
-                      {col.items.map((deal) => (
-                        <div
-                          key={deal.id}
-                          draggable
-                          onDragStart={() => setDraggedDeal(deal)}
-                          onDragEnd={() => {
-                            setDraggedDeal(null);
-                            setDragOverStage(null);
-                          }}
-                          className={`murmura-card-vibrate ${draggedDeal?.id === deal.id ? 'kanban-card-dragging' : ''}`}
-                          style={{
-                            background: col.cardBg,
-                            color: col.cardText,
-                            borderRadius: '16px',
-                            padding: '14px',
-                            boxShadow: draggedDeal?.id === deal.id
-                              ? '0 24px 48px rgba(0,0,0,0.3)'
-                              : '0 8px 20px rgba(0,0,0,0.12)',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '10px',
-                            cursor: draggedDeal?.id === deal.id ? 'grabbing' : 'grab',
-                            transition: 'transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1), box-shadow 0.2s ease, opacity 0.2s ease',
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span
-                                style={{
-                                  fontSize: '11.5px',
-                                  fontWeight: 700,
-                                  opacity: 0.85,
-                                  fontFamily: activeFontFamily.mono,
-                                }}
-                              >
-                                {deal.ticket_number}
-                              </span>
-                              <span
-                                style={{
-                                  background: 'rgba(255,255,255,0.65)',
-                                  color: '#18181B',
-                                  borderRadius: '999px',
-                                  padding: '2px 8px',
-                                  fontSize: '10.5px',
-                                  fontWeight: 700,
-                                }}
-                              >
-                                🕒 {deal.elapsed_minutes} min
-                              </span>
-                            </div>
-                            <button
-                              onClick={() => deleteSuperadminCrmDeal(deal.id).then(fetchAllData)}
-                              title="Delete deal"
+                      <AnimatePresence mode="popLayout">
+                        {col.items.map((deal) => {
+                          const isNewlyInserted = newlyInsertedDealId === deal.id;
+                          return (
+                            <motion.div
+                              key={deal.id}
+                              layout
+                              layoutId={String(deal.id)}
+                              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.16 } }}
+                              transition={{
+                                layout: { type: 'spring', stiffness: 360, damping: 28 },
+                                opacity: { duration: 0.18 },
+                              }}
+                              draggable
+                              onDragStart={() => setDraggedDeal(deal)}
+                              onDragEnd={() => {
+                                setDraggedDeal(null);
+                                setDragOverStage(null);
+                              }}
+                              className={`murmura-card-vibrate ${
+                                draggedDeal?.id === deal.id ? 'kanban-card-dragging' : ''
+                              } ${isNewlyInserted ? 'newly-inserted-deal' : ''}`}
                               style={{
-                                background: 'rgba(0,0,0,0.08)',
-                                border: 'none',
-                                borderRadius: '50%',
-                                width: '24px',
-                                height: '24px',
-                                cursor: 'pointer',
+                                background: col.cardBg,
                                 color: col.cardText,
-                                fontSize: '11px',
+                                borderRadius: '16px',
+                                padding: '14px',
+                                boxShadow: draggedDeal?.id === deal.id
+                                  ? '0 24px 48px rgba(0,0,0,0.3)'
+                                  : '0 8px 20px rgba(0,0,0,0.12)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '10px',
+                                cursor: draggedDeal?.id === deal.id ? 'grabbing' : 'grab',
+                                userSelect: 'none',
                               }}
                             >
-                              •••
-                            </button>
-                          </div>
-
-                          <div
-                            style={{
-                              fontSize: '15px',
-                              fontWeight: 700,
-                              fontFamily: activeFontFamily.display,
-                            }}
-                          >
-                            🏪 {deal.table_label}
-                          </div>
-
-                          <div
-                            style={{
-                              borderTop: '1px solid rgba(0,0,0,0.1)',
-                              borderBottom: '1px solid rgba(0,0,0,0.1)',
-                              padding: '8px 0',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '4px',
-                            }}
-                          >
-                            {deal.alert_badge && (
-                              <div style={{ marginBottom: '3px' }}>
-                                <span
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span
+                                    style={{
+                                      fontSize: '11.5px',
+                                      fontWeight: 700,
+                                      opacity: 0.85,
+                                      fontFamily: activeFontFamily.mono,
+                                    }}
+                                  >
+                                    {deal.ticket_number}
+                                  </span>
+                                  <span
+                                    style={{
+                                      background: 'rgba(255,255,255,0.65)',
+                                      color: '#18181B',
+                                      borderRadius: '999px',
+                                      padding: '2px 8px',
+                                      fontSize: '10.5px',
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    🕒 {deal.elapsed_minutes} min
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={() => deleteSuperadminCrmDeal(deal.id).then(fetchAllData)}
+                                  title="Delete deal"
                                   style={{
-                                    display: 'inline-block',
-                                    background: '#18181B',
-                                    color: '#F8FAFC',
-                                    borderRadius: '6px',
-                                    padding: '2px 8px',
-                                    fontSize: '10.5px',
-                                    fontWeight: 700,
+                                    background: 'rgba(0,0,0,0.08)',
+                                    border: 'none',
+                                    borderRadius: '50%',
+                                    width: '24px',
+                                    height: '24px',
+                                    cursor: 'pointer',
+                                    color: col.cardText,
+                                    fontSize: '11px',
                                   }}
                                 >
-                                  ▲ {deal.alert_badge}
-                                </span>
+                                  •••
+                                </button>
                               </div>
-                            )}
-                            {(deal.items || []).map((line, i) => (
-                              <div key={i} style={{ fontSize: '12px', opacity: 0.9, fontWeight: 500 }}>
-                                {line}
-                              </div>
-                            ))}
-                          </div>
 
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <div
                                 style={{
-                                  width: '26px',
-                                  height: '26px',
-                                  borderRadius: '50%',
-                                  background: '#18181B',
-                                  color: '#EADCA6',
-                                  display: 'grid',
-                                  placeItems: 'center',
-                                  fontSize: '10px',
-                                  fontWeight: 800,
+                                  fontSize: '15px',
+                                  fontWeight: 700,
+                                  fontFamily: activeFontFamily.display,
                                 }}
                               >
-                                {deal.avatar_seed || 'TN'}
+                                🏪 {deal.table_label}
                               </div>
-                              <span style={{ fontSize: '16px', fontWeight: 800 }}>
-                                {formatDealPrice(deal)}
-                              </span>
-                            </div>
 
-                            {col.nextStage ? (
-                              <button
-                                onClick={() =>
-                                  handleAdvanceDeal(deal, col.nextStage, col.nextStage === 'served')
-                                }
+                              <div
                                 style={{
-                                  background: '#18181B',
-                                  color: '#FFFFFF',
-                                  border: 'none',
-                                  borderRadius: '999px',
-                                  padding: '6px 14px',
-                                  fontSize: '11.5px',
-                                  fontWeight: 700,
-                                  cursor: 'pointer',
+                                  borderTop: '1px solid rgba(0,0,0,0.1)',
+                                  borderBottom: '1px solid rgba(0,0,0,0.1)',
+                                  padding: '8px 0',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '4px',
                                 }}
                               >
-                                {col.btnLabel}
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleTogglePaymentStatus(deal)}
-                                style={{
-                                  background:
-                                    deal.payment_status === 'Paid' ? '#0E7C5B' : '#C84B31',
-                                  color: '#FFFFFF',
-                                  border: 'none',
-                                  borderRadius: '999px',
-                                  padding: '5px 12px',
-                                  fontSize: '11px',
-                                  fontWeight: 700,
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                {deal.payment_status === 'Paid' ? '✓ Paid' : 'Unpaid'}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                                {deal.alert_badge && (
+                                  <div style={{ marginBottom: '3px' }}>
+                                    <span
+                                      style={{
+                                        display: 'inline-block',
+                                        background: '#18181B',
+                                        color: '#F8FAFC',
+                                        borderRadius: '6px',
+                                        padding: '2px 8px',
+                                        fontSize: '10.5px',
+                                        fontWeight: 700,
+                                      }}
+                                    >
+                                      ▲ {deal.alert_badge}
+                                    </span>
+                                  </div>
+                                )}
+                                {(deal.items || []).map((line, i) => (
+                                  <div key={i} style={{ fontSize: '12px', opacity: 0.9, fontWeight: 500 }}>
+                                    {line}
+                                  </div>
+                                ))}
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <div
+                                    style={{
+                                      width: '26px',
+                                      height: '26px',
+                                      borderRadius: '50%',
+                                      background: '#18181B',
+                                      color: '#EADCA6',
+                                      display: 'grid',
+                                      placeItems: 'center',
+                                      fontSize: '10px',
+                                      fontWeight: 800,
+                                    }}
+                                  >
+                                    {deal.avatar_seed || 'TN'}
+                                  </div>
+                                  <span style={{ fontSize: '16px', fontWeight: 800 }}>
+                                    {formatDealPrice(deal)}
+                                  </span>
+                                </div>
+
+                                {col.nextStage ? (
+                                  <button
+                                    onClick={() =>
+                                      handleAdvanceDeal(deal, col.nextStage, col.nextStage === 'served')
+                                    }
+                                    style={{
+                                      background: '#18181B',
+                                      color: '#FFFFFF',
+                                      border: 'none',
+                                      borderRadius: '999px',
+                                      padding: '6px 14px',
+                                      fontSize: '11.5px',
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    {col.btnLabel}
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handleTogglePaymentStatus(deal)}
+                                    style={{
+                                      background:
+                                        deal.payment_status === 'Paid' ? '#0E7C5B' : '#C84B31',
+                                      color: '#FFFFFF',
+                                      border: 'none',
+                                      borderRadius: '999px',
+                                      padding: '5px 12px',
+                                      fontSize: '11px',
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    {deal.payment_status === 'Paid' ? '✓ Paid' : 'Unpaid'}
+                                  </button>
+                                )}
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </AnimatePresence>
                     </div>
                   );
                 })}

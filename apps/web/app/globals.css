@@ -2883,3 +2883,70 @@ body {
     background-color: rgba(14, 124, 91, 0.16);
   }
 }
+
+
+/* Ringing Bell Animation with Periodic Pause */
+@keyframes murmuraBellRing {
+  0% { transform: rotate(0deg); }
+  2% { transform: rotate(18deg); }
+  4% { transform: rotate(-16deg); }
+  6% { transform: rotate(14deg); }
+  8% { transform: rotate(-12deg); }
+  10% { transform: rotate(8deg); }
+  12% { transform: rotate(-6deg); }
+  14% { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.bell-ring-active {
+  animation: murmuraBellRing 3.5s ease-in-out infinite;
+  transform-origin: 50% 12%;
+  display: inline-block;
+}
+
+/* Badge Pulse Animation */
+@keyframes murmuraBadgePulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(200, 75, 49, 0.5);
+  }
+  50% {
+    transform: scale(1.12);
+    box-shadow: 0 0 0 6px rgba(200, 75, 49, 0);
+  }
+}
+
+.notif-badge-pulse {
+  animation: murmuraBadgePulse 2.2s infinite ease-in-out;
+}
+
+/* Newly Inserted Deal Flash Highlight */
+@keyframes murmuraInsertHighlightGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(14, 124, 91, 0.9), 0 0 28px rgba(14, 124, 91, 0.6);
+    transform: scale(1.035);
+  }
+  35% {
+    box-shadow: 0 0 0 8px rgba(14, 124, 91, 0.4), 0 0 32px rgba(14, 124, 91, 0.35);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    transform: scale(1);
+  }
+}
+
+.newly-inserted-deal {
+  animation: murmuraInsertHighlightGlow 2.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Column Counter Bounce */
+@keyframes murmuraCounterBounce {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.35); color: #0E7C5B; }
+  100% { transform: scale(1); }
+}
+
+.counter-bump {
+  animation: murmuraCounterBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
