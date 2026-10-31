@@ -185,16 +185,18 @@ export default function TavolaSalesReportsView({
   const multiplier = period === '7D' ? 0.12 : period === '30D' ? 0.38 : 1;
   const isIdr = currency === 'IDR';
 
-  // Dynamic Theme Palette
+  // Harmonious Editorial Palette & Balanced Contrast
+  const textPrimary = isLight ? '#1E232B' : '#F8FAFC';
+  const textSecondary = isLight ? '#4E5564' : '#94A3B8';
+  const textMuted = isLight ? '#6E7687' : '#64748B';
   const cardBg = isLight ? '#FFFFFF' : '#121B2D';
-  const cardBorder = isLight ? 'rgba(20, 23, 29, 0.08)' : 'rgba(255, 255, 255, 0.08)';
-  const textPrimary = isLight ? '#14171D' : '#F8FAFC';
-  const textSecondary = isLight ? '#5A6065' : '#94A3B8';
-  const textMuted = isLight ? '#8C9196' : '#64748B';
-  const subtleBoxBg = isLight ? '#FAF9F5' : '#172238';
-  const buttonPillBg = isLight ? 'rgba(20, 23, 29, 0.05)' : '#1B2840';
+  const cardBorder = isLight ? 'rgba(20, 23, 29, 0.07)' : 'rgba(255, 255, 255, 0.07)';
+  const subtleBoxBg = isLight ? '#FAF9F6' : '#172238';
+  const buttonPillBg = isLight ? 'rgba(20, 23, 29, 0.04)' : '#1B2840';
   const coralLineColor = isLight ? '#D94E34' : '#F3A68F';
   const coralAreaGrad = isLight ? '#D94E34' : '#F3A68F';
+  const fontSans = 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  const fontSerif = 'Georgia, "Times New Roman", serif';
 
   const formatMoney = (usdVal) => {
     const scaled = Math.round(usdVal * multiplier);
@@ -251,7 +253,6 @@ export default function TavolaSalesReportsView({
 
   const avgSpline = useMemo(() => {
     const avgPts = REVENUE_TIMELINE_90D.map((pt) => {
-      // Map average revenue into chart Y coordinates (185 = $0, 25 = $20K -> -8px per $1K)
       const avgY = 185 - (pt.avgRev / 1000) * 8;
       return { x: pt.x, y: avgY };
     });
@@ -281,6 +282,7 @@ export default function TavolaSalesReportsView({
         flexDirection: 'column',
         gap: '20px',
         animation: 'murmuraFadeSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+        fontFamily: fontSans,
       }}
     >
       {/* =====================================================================
@@ -296,13 +298,14 @@ export default function TavolaSalesReportsView({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '22px', flexWrap: 'wrap' }}>
+          {/* Editorial Serif Header Harmonized with Overview & Calendar */}
           <h1
             style={{
               margin: 0,
-              fontFamily: 'Georgia, "Times New Roman", serif',
-              fontSize: '34px',
+              fontFamily: fontSerif,
+              fontSize: 'clamp(28px, 2.4vw, 34px)',
               fontWeight: 400,
-              lineHeight: 1.02,
+              lineHeight: 1.05,
               letterSpacing: '-0.025em',
               color: textPrimary,
             }}
@@ -321,46 +324,55 @@ export default function TavolaSalesReportsView({
               background: cardBg,
               border: `1px solid ${cardBorder}`,
               borderRadius: '999px',
-              padding: '9px 18px 9px 12px',
-              boxShadow: isLight ? '0 2px 10px rgba(0,0,0,0.03)' : '0 4px 14px rgba(0,0,0,0.2)',
+              padding: '8px 18px 8px 12px',
+              boxShadow: isLight ? '0 2px 8px rgba(0,0,0,0.03)' : '0 4px 14px rgba(0,0,0,0.2)',
             }}
           >
             <div
               style={{
-                width: '36px',
-                height: '36px',
+                width: '34px',
+                height: '34px',
                 borderRadius: '50%',
-                background: isLight ? '#EAF6F0' : '#1B273D',
+                background: isLight ? '#EBF7F2' : '#1B273D',
                 display: 'grid',
                 placeItems: 'center',
-                color: isLight ? '#0E7C5B' : '#94A3B8',
+                color: isLight ? '#0D7A57' : '#94A3B8',
                 flexShrink: 0,
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="2" y="5" width="20" height="14" rx="2" />
                 <line x1="2" y1="10" x2="22" y2="10" />
               </svg>
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '19px', fontWeight: 800, color: textPrimary, letterSpacing: '-0.02em' }}>
+                <span
+                  style={{
+                    fontSize: '17px',
+                    fontWeight: 650,
+                    color: textPrimary,
+                    letterSpacing: '-0.02em',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
                   {formatMoney(590821)}
                 </span>
                 <span
                   style={{
-                    fontSize: '10.5px',
-                    fontWeight: 800,
-                    padding: '2px 8px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    padding: '2.5px 8.5px',
                     borderRadius: '999px',
-                    background: '#9CE2C6',
-                    color: '#0B291E',
+                    background: isLight ? '#E7F7EF' : 'rgba(16, 185, 129, 0.15)',
+                    color: isLight ? '#0D7A57' : '#34D399',
+                    lineHeight: 1.25,
                   }}
                 >
                   +14% first → last month
                 </span>
               </div>
-              <div style={{ fontSize: '11px', color: textMuted, marginTop: '1px' }}>
+              <div style={{ fontSize: '11px', color: textSecondary, fontWeight: 450, marginTop: '2px' }}>
                 Revenue · last {period === '7D' ? '7' : period === '30D' ? '30' : '90'} days
               </div>
             </div>
@@ -375,23 +387,23 @@ export default function TavolaSalesReportsView({
               background: cardBg,
               border: `1px solid ${cardBorder}`,
               borderRadius: '999px',
-              padding: '9px 18px 9px 12px',
-              boxShadow: isLight ? '0 2px 10px rgba(0,0,0,0.03)' : '0 4px 14px rgba(0,0,0,0.2)',
+              padding: '8px 18px 8px 12px',
+              boxShadow: isLight ? '0 2px 8px rgba(0,0,0,0.03)' : '0 4px 14px rgba(0,0,0,0.2)',
             }}
           >
             <div
               style={{
-                width: '36px',
-                height: '36px',
+                width: '34px',
+                height: '34px',
                 borderRadius: '50%',
-                background: isLight ? '#FAF9F5' : '#1B273D',
+                background: isLight ? '#FAF9F6' : '#1B273D',
                 display: 'grid',
                 placeItems: 'center',
                 color: textSecondary,
                 flexShrink: 0,
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -399,10 +411,18 @@ export default function TavolaSalesReportsView({
               </svg>
             </div>
             <div>
-              <div style={{ fontSize: '19px', fontWeight: 800, color: textPrimary, letterSpacing: '-0.02em' }}>
+              <div
+                style={{
+                  fontSize: '17px',
+                  fontWeight: 650,
+                  color: textPrimary,
+                  letterSpacing: '-0.02em',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
                 {Math.round(13360 * multiplier).toLocaleString('en-US')}
               </div>
-              <div style={{ fontSize: '11px', color: textMuted, marginTop: '1px' }}>
+              <div style={{ fontSize: '11px', color: textSecondary, fontWeight: 450, marginTop: '2px' }}>
                 Covers served · POS orders
               </div>
             </div>
@@ -417,23 +437,23 @@ export default function TavolaSalesReportsView({
               background: cardBg,
               border: `1px solid ${cardBorder}`,
               borderRadius: '999px',
-              padding: '9px 18px 9px 12px',
-              boxShadow: isLight ? '0 2px 10px rgba(0,0,0,0.03)' : '0 4px 14px rgba(0,0,0,0.2)',
+              padding: '8px 18px 8px 12px',
+              boxShadow: isLight ? '0 2px 8px rgba(0,0,0,0.03)' : '0 4px 14px rgba(0,0,0,0.2)',
             }}
           >
             <div
               style={{
-                width: '36px',
-                height: '36px',
+                width: '34px',
+                height: '34px',
                 borderRadius: '50%',
-                background: isLight ? '#FAF9F5' : '#1B273D',
+                background: isLight ? '#FAF9F6' : '#1B273D',
                 display: 'grid',
                 placeItems: 'center',
                 color: textSecondary,
                 flexShrink: 0,
               }}
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                 <polyline points="14 2 14 8 20 8" />
                 <line x1="16" y1="13" x2="8" y2="13" />
@@ -441,10 +461,18 @@ export default function TavolaSalesReportsView({
               </svg>
             </div>
             <div>
-              <div style={{ fontSize: '19px', fontWeight: 800, color: textPrimary, letterSpacing: '-0.02em' }}>
+              <div
+                style={{
+                  fontSize: '17px',
+                  fontWeight: 650,
+                  color: textPrimary,
+                  letterSpacing: '-0.02em',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
                 {isIdr ? 'Rp 705 Rb' : '$44.10'}
               </div>
-              <div style={{ fontSize: '11px', color: textMuted, marginTop: '1px' }}>
+              <div style={{ fontSize: '11px', color: textSecondary, fontWeight: 450, marginTop: '2px' }}>
                 Average check per guest
               </div>
             </div>
@@ -455,7 +483,7 @@ export default function TavolaSalesReportsView({
         <div
           style={{
             display: 'inline-flex',
-            background: isLight ? 'rgba(20, 23, 29, 0.05)' : '#121B2D',
+            background: isLight ? 'rgba(20, 23, 29, 0.04)' : '#121B2D',
             padding: '3px',
             borderRadius: '999px',
             border: `1px solid ${cardBorder}`,
@@ -472,11 +500,11 @@ export default function TavolaSalesReportsView({
                   borderRadius: '999px',
                   border: 'none',
                   fontSize: '12px',
-                  fontWeight: 700,
+                  fontWeight: active ? 650 : 500,
                   cursor: 'pointer',
                   background: active ? (isLight ? '#FFFFFF' : '#24324B') : 'transparent',
                   color: active ? textPrimary : textSecondary,
-                  boxShadow: active ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                  boxShadow: active ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
                   transition: 'all 0.16s ease',
                 }}
               >
@@ -507,7 +535,7 @@ export default function TavolaSalesReportsView({
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            boxShadow: isLight ? '0 4px 18px rgba(0,0,0,0.03)' : '0 8px 24px rgba(0,0,0,0.22)',
+            boxShadow: isLight ? '0 4px 18px rgba(0,0,0,0.02)' : '0 8px 24px rgba(0,0,0,0.22)',
             position: 'relative',
           }}
         >
@@ -521,9 +549,9 @@ export default function TavolaSalesReportsView({
                 marginBottom: '10px',
               }}
             >
-              <span style={{ fontSize: '15px', fontWeight: 700, color: textPrimary }}>Revenue</span>
+              <span style={{ fontSize: '14.5px', fontWeight: 650, color: textPrimary }}>Revenue</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '12px', color: textMuted }}>
+                <span style={{ fontSize: '11.5px', color: textSecondary, fontWeight: 450 }}>
                   {period === '7D'
                     ? '7 days · 612 orders'
                     : period === '30D'
@@ -534,11 +562,11 @@ export default function TavolaSalesReportsView({
                   onClick={handleExportCsv}
                   style={{
                     background: buttonPillBg,
-                    color: textPrimary,
+                    color: textSecondary,
                     border: `1px solid ${cardBorder}`,
                     borderRadius: '999px',
-                    padding: '5px 12px',
-                    fontSize: '11.5px',
+                    padding: '4px 12px',
+                    fontSize: '11px',
                     fontWeight: 600,
                     cursor: 'pointer',
                     display: 'inline-flex',
@@ -567,25 +595,35 @@ export default function TavolaSalesReportsView({
               </div>
             </div>
 
-            {/* Big Revenue Stat */}
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: '14px' }}>
+            {/* Harmonized Sans-Serif Big Revenue Metric */}
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '14px' }}>
               <span
                 style={{
-                  fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '36px',
-                  fontWeight: 400,
-                  letterSpacing: '-0.025em',
+                  fontFamily: fontSans,
+                  fontSize: '32px',
+                  fontWeight: 650,
+                  letterSpacing: '-0.03em',
                   color: textPrimary,
+                  fontVariantNumeric: 'tabular-nums',
                 }}
               >
                 {formatMoney(589822)}
               </span>
-              <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#10B981' }}>
+              <span
+                style={{
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                  color: isLight ? '#0D7A57' : '#34D399',
+                  background: isLight ? '#E7F7EF' : 'rgba(16, 185, 129, 0.15)',
+                  padding: '2px 8px',
+                  borderRadius: '999px',
+                }}
+              >
                 +14% first → last month
               </span>
             </div>
 
-            {/* 3 Metric Summary Boxes */}
+            {/* 3 Metric Summary Boxes with Balanced Weight & Contrast */}
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
               <div
                 style={{
@@ -596,11 +634,21 @@ export default function TavolaSalesReportsView({
                   minWidth: '125px',
                 }}
               >
-                <div style={{ fontSize: '10.5px', color: textMuted, fontWeight: 500 }}>Best day</div>
-                <div style={{ fontSize: '16px', fontWeight: 800, color: textPrimary, marginTop: '2px' }}>
+                <div style={{ fontSize: '11px', color: textSecondary, fontWeight: 500 }}>Best day</div>
+                <div
+                  style={{
+                    fontSize: '15.5px',
+                    fontWeight: 650,
+                    color: textPrimary,
+                    marginTop: '2px',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
                   {formatMoney(12766)}
                 </div>
-                <div style={{ fontSize: '10px', color: textMuted, marginTop: '1px' }}>Sat, Oct 17</div>
+                <div style={{ fontSize: '10.5px', color: textMuted, fontWeight: 450, marginTop: '1px' }}>
+                  Sat, Oct 17
+                </div>
               </div>
 
               <div
@@ -612,11 +660,21 @@ export default function TavolaSalesReportsView({
                   minWidth: '125px',
                 }}
               >
-                <div style={{ fontSize: '10.5px', color: textMuted, fontWeight: 500 }}>Daily average</div>
-                <div style={{ fontSize: '16px', fontWeight: 800, color: textPrimary, marginTop: '2px' }}>
+                <div style={{ fontSize: '11px', color: textSecondary, fontWeight: 500 }}>Daily average</div>
+                <div
+                  style={{
+                    fontSize: '15.5px',
+                    fontWeight: 650,
+                    color: textPrimary,
+                    marginTop: '2px',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
                   {formatMoney(8140)}
                 </div>
-                <div style={{ fontSize: '10px', color: textMuted, marginTop: '1px' }}>full days</div>
+                <div style={{ fontSize: '10.5px', color: textMuted, fontWeight: 450, marginTop: '1px' }}>
+                  full days
+                </div>
               </div>
 
               <div
@@ -628,11 +686,21 @@ export default function TavolaSalesReportsView({
                   minWidth: '125px',
                 }}
               >
-                <div style={{ fontSize: '10.5px', color: textMuted, fontWeight: 500 }}>Orders</div>
-                <div style={{ fontSize: '16px', fontWeight: 800, color: textPrimary, marginTop: '2px' }}>
+                <div style={{ fontSize: '11px', color: textSecondary, fontWeight: 500 }}>Orders</div>
+                <div
+                  style={{
+                    fontSize: '15.5px',
+                    fontWeight: 650,
+                    color: textPrimary,
+                    marginTop: '2px',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
                   {Math.round(5843 * multiplier).toLocaleString('en-US')}
                 </div>
-                <div style={{ fontSize: '10px', color: textMuted, marginTop: '1px' }}>75 a day</div>
+                <div style={{ fontSize: '10.5px', color: textMuted, fontWeight: 450, marginTop: '1px' }}>
+                  75 a day
+                </div>
               </div>
             </div>
 
@@ -643,7 +711,7 @@ export default function TavolaSalesReportsView({
                 This period
               </span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ color: textMuted, fontWeight: 700 }}>- -</span>
+                <span style={{ color: textMuted, fontWeight: 650 }}>- -</span>
                 7-day average
               </span>
             </div>
@@ -669,9 +737,9 @@ export default function TavolaSalesReportsView({
               <line x1="36" y1="185" x2="665" y2="185" stroke={isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'} />
 
               {/* Y-Axis Value Labels */}
-              <text x="2" y="29" fill={textMuted} fontSize="10">$20K</text>
-              <text x="2" y="109" fill={textMuted} fontSize="10">$10K</text>
-              <text x="12" y="189" fill={textMuted} fontSize="10">$0</text>
+              <text x="2" y="29" fill={textMuted} fontSize="10" fontFamily={fontSans}>$20K</text>
+              <text x="2" y="109" fill={textMuted} fontSize="10" fontFamily={fontSans}>$10K</text>
+              <text x="12" y="189" fill={textMuted} fontSize="10" fontFamily={fontSans}>$0</text>
 
               {/* Shaded Area under Curve */}
               <path d={revenueAreaPath} fill="url(#revenueSplineAreaGrad)" />
@@ -732,7 +800,7 @@ export default function TavolaSalesReportsView({
                 { x: 552, label: 'Oct 2' },
                 { x: 635, label: 'Today' },
               ].map((tick) => (
-                <text key={tick.label} x={tick.x} y="204" fill={textMuted} fontSize="9.5">
+                <text key={tick.label} x={tick.x} y="204" fill={textMuted} fontSize="9.5" fontFamily={fontSans}>
                   {tick.label}
                 </text>
               ))}
@@ -745,18 +813,19 @@ export default function TavolaSalesReportsView({
                   position: 'absolute',
                   top: `${Math.max(10, hoveredRevenuePoint.y - 70)}px`,
                   left: `${Math.min(520, Math.max(40, hoveredRevenuePoint.x - 65))}px`,
-                  background: isLight ? '#14171D' : '#0B111E',
+                  background: isLight ? '#1E232B' : '#0B111E',
                   color: '#FFFFFF',
                   borderRadius: '10px',
                   padding: '7px 11px',
                   fontSize: '11px',
-                  boxShadow: '0 8px 20px rgba(0,0,0,0.3)',
+                  boxShadow: '0 8px 20px rgba(0,0,0,0.25)',
                   pointerEvents: 'none',
                   zIndex: 20,
                   whiteSpace: 'nowrap',
+                  fontFamily: fontSans,
                 }}
               >
-                <div style={{ fontWeight: 800, color: '#F3A68F' }}>
+                <div style={{ fontWeight: 650, color: '#F3A68F' }}>
                   {formatMoney(hoveredRevenuePoint.rev)}
                 </div>
                 <div style={{ color: '#94A3B8', fontSize: '10px', marginTop: '1px' }}>
@@ -777,7 +846,7 @@ export default function TavolaSalesReportsView({
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            boxShadow: isLight ? '0 4px 18px rgba(0,0,0,0.03)' : '0 8px 24px rgba(0,0,0,0.22)',
+            boxShadow: isLight ? '0 4px 18px rgba(0,0,0,0.02)' : '0 8px 24px rgba(0,0,0,0.22)',
           }}
         >
           <div>
@@ -789,9 +858,9 @@ export default function TavolaSalesReportsView({
                 marginBottom: '6px',
               }}
             >
-              <span style={{ fontSize: '15px', fontWeight: 700, color: textPrimary }}>Channel mix</span>
+              <span style={{ fontSize: '14.5px', fontWeight: 650, color: textPrimary }}>Channel mix</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '12px', color: textMuted }}>
+                <span style={{ fontSize: '11.5px', color: textSecondary, fontWeight: 450 }}>
                   {isIdr ? 'Rp 11,4 M' : '$718.6K'} in {period}
                 </span>
                 <span
@@ -850,7 +919,7 @@ export default function TavolaSalesReportsView({
                   <circle cx="26" cy="96" r="8" fill="#EADCA6" />
                 </svg>
 
-                {/* Center Value */}
+                {/* Harmonized Center Value */}
                 <div
                   style={{
                     position: 'absolute',
@@ -861,10 +930,20 @@ export default function TavolaSalesReportsView({
                     justifyContent: 'center',
                   }}
                 >
-                  <span style={{ fontSize: '21px', fontWeight: 800, color: textPrimary, letterSpacing: '-0.02em' }}>
+                  <span
+                    style={{
+                      fontSize: '20px',
+                      fontWeight: 650,
+                      color: textPrimary,
+                      letterSpacing: '-0.025em',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                  >
                     {isIdr ? 'Rp 11,4M' : '$718.6K'}
                   </span>
-                  <span style={{ fontSize: '11px', color: textMuted, fontWeight: 500 }}>revenue</span>
+                  <span style={{ fontSize: '11px', color: textSecondary, fontWeight: 500, marginTop: '1px' }}>
+                    revenue
+                  </span>
                 </div>
               </div>
             </div>
@@ -914,8 +993,10 @@ export default function TavolaSalesReportsView({
 
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                    <span style={{ fontSize: '12.5px', fontWeight: 700, color: textPrimary }}>{ch.name}</span>
-                    <span style={{ fontSize: '12.5px', fontWeight: 700, color: textPrimary }}>{ch.amount}</span>
+                    <span style={{ fontSize: '12.5px', fontWeight: 600, color: textPrimary }}>{ch.name}</span>
+                    <span style={{ fontSize: '12.5px', fontWeight: 650, color: textPrimary, fontVariantNumeric: 'tabular-nums' }}>
+                      {ch.amount}
+                    </span>
                   </div>
                   <div
                     style={{
@@ -935,7 +1016,7 @@ export default function TavolaSalesReportsView({
                       }}
                     />
                   </div>
-                  <div style={{ fontSize: '10.5px', color: textMuted }}>{ch.pct}% of sales</div>
+                  <div style={{ fontSize: '10.5px', color: textSecondary, fontWeight: 450 }}>{ch.pct}% of sales</div>
                 </div>
               </div>
             ))}
@@ -960,7 +1041,7 @@ export default function TavolaSalesReportsView({
             border: `1px solid ${cardBorder}`,
             borderRadius: '22px',
             padding: '22px 24px',
-            boxShadow: isLight ? '0 4px 18px rgba(0,0,0,0.03)' : '0 8px 24px rgba(0,0,0,0.22)',
+            boxShadow: isLight ? '0 4px 18px rgba(0,0,0,0.02)' : '0 8px 24px rgba(0,0,0,0.22)',
             position: 'relative',
           }}
         >
@@ -972,9 +1053,11 @@ export default function TavolaSalesReportsView({
               marginBottom: '14px',
             }}
           >
-            <span style={{ fontSize: '15px', fontWeight: 700, color: textPrimary }}>Busiest hours</span>
+            <span style={{ fontSize: '14.5px', fontWeight: 650, color: textPrimary }}>Busiest hours</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '12px', color: textMuted }}>Avg covers per hour · last 90 full days</span>
+              <span style={{ fontSize: '11.5px', color: textSecondary, fontWeight: 450 }}>
+                Avg covers per hour · last 90 full days
+              </span>
               <span
                 style={{
                   width: '26px',
@@ -1014,6 +1097,7 @@ export default function TavolaSalesReportsView({
                     color: textMuted,
                     textAlign: 'center',
                     paddingBottom: '4px',
+                    fontWeight: 500,
                   }}
                 >
                   {h}
@@ -1025,6 +1109,7 @@ export default function TavolaSalesReportsView({
                   color: textMuted,
                   textAlign: 'right',
                   paddingBottom: '4px',
+                  fontWeight: 500,
                 }}
               >
                 Avg/day
@@ -1033,7 +1118,7 @@ export default function TavolaSalesReportsView({
               {/* 7 Day Rows */}
               {HEATMAP_ROWS.map((row) => (
                 <div key={row.day} style={{ display: 'contents' }}>
-                  <div style={{ fontSize: '11.5px', color: textSecondary, fontWeight: 600 }}>{row.day}</div>
+                  <div style={{ fontSize: '11.5px', color: textSecondary, fontWeight: 550 }}>{row.day}</div>
                   {row.cells.map((lvl, idx) => (
                     <div
                       key={idx}
@@ -1058,9 +1143,10 @@ export default function TavolaSalesReportsView({
                   <div
                     style={{
                       fontSize: '11.5px',
-                      fontWeight: 800,
+                      fontWeight: 650,
                       color: textPrimary,
                       textAlign: 'right',
+                      fontVariantNumeric: 'tabular-nums',
                     }}
                   >
                     {row.avg}
@@ -1075,7 +1161,7 @@ export default function TavolaSalesReportsView({
             {hoveredHeatmapCell ? (
               <span>
                 Selected:{' '}
-                <strong style={{ color: textPrimary }}>
+                <strong style={{ color: textPrimary, fontWeight: 650 }}>
                   {hoveredHeatmapCell.day} at {hoveredHeatmapCell.hour}
                 </strong>{' '}
                 — ~<strong>{hoveredHeatmapCell.covers} covers</strong> (
@@ -1090,15 +1176,15 @@ export default function TavolaSalesReportsView({
               </span>
             ) : (
               <span>
-                Peak: <strong style={{ color: textPrimary }}>Fri 8 PM–9 PM</strong>, about{' '}
-                <strong style={{ color: textPrimary }}>63 covers</strong> · Quietest day:{' '}
-                <strong style={{ color: textPrimary }}>Mon</strong>
+                Peak: <strong style={{ color: textPrimary, fontWeight: 650 }}>Fri 8 PM–9 PM</strong>, about{' '}
+                <strong style={{ color: textPrimary, fontWeight: 650 }}>63 covers</strong> · Quietest day:{' '}
+                <strong style={{ color: textPrimary, fontWeight: 650 }}>Mon</strong>
               </span>
             )}
           </div>
 
           {/* Heatmap Legend */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '8px', fontSize: '11px', color: textMuted }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '8px', fontSize: '11px', color: textSecondary }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
               <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: getHeatmapColor(0) }} />
               Quiet
@@ -1128,7 +1214,7 @@ export default function TavolaSalesReportsView({
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            boxShadow: isLight ? '0 4px 18px rgba(0,0,0,0.03)' : '0 8px 24px rgba(0,0,0,0.22)',
+            boxShadow: isLight ? '0 4px 18px rgba(0,0,0,0.02)' : '0 8px 24px rgba(0,0,0,0.22)',
           }}
         >
           <div>
@@ -1140,16 +1226,16 @@ export default function TavolaSalesReportsView({
                 marginBottom: '8px',
               }}
             >
-              <span style={{ fontSize: '15px', fontWeight: 700, color: textPrimary }}>Prime cost & cloud margin</span>
+              <span style={{ fontSize: '14.5px', fontWeight: 650, color: textPrimary }}>Prime cost & cloud margin</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span
                   style={{
                     fontSize: '11px',
-                    fontWeight: 700,
-                    padding: '3px 10px',
+                    fontWeight: 600,
+                    padding: '2.5px 8.5px',
                     borderRadius: '999px',
-                    background: '#9CE2C6',
-                    color: '#0B291E',
+                    background: isLight ? '#E7F7EF' : 'rgba(16, 185, 129, 0.15)',
+                    color: isLight ? '#0D7A57' : '#34D399',
                   }}
                 >
                   On target
@@ -1174,19 +1260,21 @@ export default function TavolaSalesReportsView({
 
             <div
               style={{
-                fontFamily: 'Georgia, "Times New Roman", serif',
-                fontSize: '34px',
-                fontWeight: 400,
+                fontFamily: fontSans,
+                fontSize: '30px',
+                fontWeight: 650,
+                letterSpacing: '-0.025em',
                 color: textPrimary,
                 marginBottom: '4px',
+                fontVariantNumeric: 'tabular-nums',
               }}
             >
               56.9%
             </div>
 
-            <div style={{ fontSize: '12px', color: textSecondary, lineHeight: 1.45 }}>
-              Food <strong style={{ color: textPrimary }}>28.9%</strong> + labour{' '}
-              <strong style={{ color: textPrimary }}>28.0%</strong> of revenue
+            <div style={{ fontSize: '12px', color: textSecondary, lineHeight: 1.5, fontWeight: 450 }}>
+              Food <strong style={{ color: textPrimary, fontWeight: 650 }}>28.9%</strong> + labour{' '}
+              <strong style={{ color: textPrimary, fontWeight: 650 }}>28.0%</strong> of revenue
               <br />8 of 89 full days over 60%
             </div>
 
@@ -1198,7 +1286,7 @@ export default function TavolaSalesReportsView({
                 gap: '14px',
                 flexWrap: 'wrap',
                 fontSize: '11px',
-                color: textMuted,
+                color: textSecondary,
                 marginTop: '10px',
               }}
             >
@@ -1225,18 +1313,18 @@ export default function TavolaSalesReportsView({
           <div style={{ marginTop: '12px' }}>
             <svg viewBox="0 0 520 185" style={{ width: '100%', height: '175px' }}>
               {/* Target 55-60% Shaded Band */}
-              <rect x="34" y="42" width="470" height="22" fill="rgba(156, 226, 198, 0.14)" />
-              <line x1="34" y1="42" x2="504" y2="42" stroke="rgba(156, 226, 198, 0.35)" strokeDasharray="3 3" />
-              <line x1="34" y1="64" x2="504" y2="64" stroke="rgba(156, 226, 198, 0.35)" strokeDasharray="3 3" />
-              <text x="468" y="38" fill="#10B981" fontSize="9.5" fontWeight="700">Target</text>
+              <rect x="34" y="42" width="470" height="22" fill={isLight ? 'rgba(16, 185, 129, 0.08)' : 'rgba(156, 226, 198, 0.14)'} />
+              <line x1="34" y1="42" x2="504" y2="42" stroke={isLight ? 'rgba(16, 185, 129, 0.25)' : 'rgba(156, 226, 198, 0.35)'} strokeDasharray="3 3" />
+              <line x1="34" y1="64" x2="504" y2="64" stroke={isLight ? 'rgba(16, 185, 129, 0.25)' : 'rgba(156, 226, 198, 0.35)'} strokeDasharray="3 3" />
+              <text x="468" y="38" fill={isLight ? '#0D7A57' : '#10B981'} fontSize="9.5" fontWeight="650" fontFamily={fontSans}>Target</text>
 
               {/* Y-Axis Value Labels */}
-              <text x="2" y="24" fill={textMuted} fontSize="9.5">70%</text>
-              <text x="2" y="54" fill={textMuted} fontSize="9.5">60%</text>
-              <text x="2" y="84" fill={textMuted} fontSize="9.5">50%</text>
-              <text x="2" y="114" fill={textMuted} fontSize="9.5">40%</text>
-              <text x="2" y="144" fill={textMuted} fontSize="9.5">30%</text>
-              <text x="2" y="168" fill={textMuted} fontSize="9.5">20%</text>
+              <text x="2" y="24" fill={textMuted} fontSize="9.5" fontFamily={fontSans}>70%</text>
+              <text x="2" y="54" fill={textMuted} fontSize="9.5" fontFamily={fontSans}>60%</text>
+              <text x="2" y="84" fill={textMuted} fontSize="9.5" fontFamily={fontSans}>50%</text>
+              <text x="2" y="114" fill={textMuted} fontSize="9.5" fontFamily={fontSans}>40%</text>
+              <text x="2" y="144" fill={textMuted} fontSize="9.5" fontFamily={fontSans}>30%</text>
+              <text x="2" y="168" fill={textMuted} fontSize="9.5" fontFamily={fontSans}>20%</text>
 
               {/* Prime Cost Spline (~57%) */}
               <path
@@ -1272,7 +1360,7 @@ export default function TavolaSalesReportsView({
                 { x: 404, label: 'Oct 5' },
                 { x: 472, label: 'Today' },
               ].map((t) => (
-                <text key={t.label} x={t.x} y="180" fill={textMuted} fontSize="9.5">
+                <text key={t.label} x={t.x} y="180" fill={textMuted} fontSize="9.5" fontFamily={fontSans}>
                   {t.label}
                 </text>
               ))}
@@ -1298,7 +1386,7 @@ export default function TavolaSalesReportsView({
             border: `1px solid ${cardBorder}`,
             borderRadius: '22px',
             padding: '22px 24px',
-            boxShadow: isLight ? '0 4px 18px rgba(0,0,0,0.03)' : '0 8px 24px rgba(0,0,0,0.22)',
+            boxShadow: isLight ? '0 4px 18px rgba(0,0,0,0.02)' : '0 8px 24px rgba(0,0,0,0.22)',
           }}
         >
           <div
@@ -1309,7 +1397,7 @@ export default function TavolaSalesReportsView({
               marginBottom: '14px',
             }}
           >
-            <span style={{ fontSize: '15px', fontWeight: 700, color: textPrimary }}>
+            <span style={{ fontSize: '14.5px', fontWeight: 650, color: textPrimary }}>
               Top dishes & tenants by revenue
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1317,7 +1405,7 @@ export default function TavolaSalesReportsView({
                 style={{
                   background: buttonPillBg,
                   color: textSecondary,
-                  fontSize: '11.5px',
+                  fontSize: '11px',
                   fontWeight: 600,
                   padding: '4px 12px',
                   borderRadius: '999px',
@@ -1359,7 +1447,7 @@ export default function TavolaSalesReportsView({
                   cursor: 'pointer',
                 }}
               >
-                <span style={{ width: '14px', fontSize: '12px', color: textMuted, fontWeight: 700 }}>
+                <span style={{ width: '14px', fontSize: '12px', color: textMuted, fontWeight: 600 }}>
                   {item.rank}
                 </span>
                 <div
@@ -1371,7 +1459,7 @@ export default function TavolaSalesReportsView({
                     border: `1px solid ${cardBorder}`,
                     display: 'grid',
                     placeItems: 'center',
-                    fontSize: '18px',
+                    fontSize: '17px',
                     flexShrink: 0,
                   }}
                 >
@@ -1381,8 +1469,8 @@ export default function TavolaSalesReportsView({
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
                     <span
                       style={{
-                        fontSize: '13px',
-                        fontWeight: 700,
+                        fontSize: '12.5px',
+                        fontWeight: 600,
                         color: textPrimary,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -1391,7 +1479,15 @@ export default function TavolaSalesReportsView({
                     >
                       {item.name}
                     </span>
-                    <span style={{ fontSize: '13px', fontWeight: 800, color: textPrimary, flexShrink: 0 }}>
+                    <span
+                      style={{
+                        fontSize: '12.5px',
+                        fontWeight: 650,
+                        color: textPrimary,
+                        flexShrink: 0,
+                        fontVariantNumeric: 'tabular-nums',
+                      }}
+                    >
                       {isIdr ? item.revenueIdr : item.revenueUsd}
                     </span>
                   </div>
@@ -1413,7 +1509,7 @@ export default function TavolaSalesReportsView({
                       }}
                     />
                   </div>
-                  <div style={{ fontSize: '11px', color: textMuted }}>{item.sub}</div>
+                  <div style={{ fontSize: '11px', color: textSecondary, fontWeight: 450 }}>{item.sub}</div>
                 </div>
               </div>
             ))}
@@ -1427,7 +1523,7 @@ export default function TavolaSalesReportsView({
             border: `1px solid ${cardBorder}`,
             borderRadius: '22px',
             padding: '22px 24px',
-            boxShadow: isLight ? '0 4px 18px rgba(0,0,0,0.03)' : '0 8px 24px rgba(0,0,0,0.22)',
+            boxShadow: isLight ? '0 4px 18px rgba(0,0,0,0.02)' : '0 8px 24px rgba(0,0,0,0.22)',
           }}
         >
           <div
@@ -1438,7 +1534,7 @@ export default function TavolaSalesReportsView({
               marginBottom: '14px',
             }}
           >
-            <span style={{ fontSize: '15px', fontWeight: 700, color: textPrimary }}>
+            <span style={{ fontSize: '14.5px', fontWeight: 650, color: textPrimary }}>
               Slowest dishes & onboarding watch
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1446,7 +1542,7 @@ export default function TavolaSalesReportsView({
                 style={{
                   background: buttonPillBg,
                   color: textSecondary,
-                  fontSize: '11.5px',
+                  fontSize: '11px',
                   fontWeight: 600,
                   padding: '4px 12px',
                   borderRadius: '999px',
@@ -1487,7 +1583,7 @@ export default function TavolaSalesReportsView({
                   cursor: 'pointer',
                 }}
               >
-                <span style={{ width: '14px', fontSize: '12px', color: textMuted, fontWeight: 700 }}>
+                <span style={{ width: '14px', fontSize: '12px', color: textMuted, fontWeight: 600 }}>
                   {item.rank}
                 </span>
                 <div
@@ -1499,7 +1595,7 @@ export default function TavolaSalesReportsView({
                     border: `1px solid ${cardBorder}`,
                     display: 'grid',
                     placeItems: 'center',
-                    fontSize: '18px',
+                    fontSize: '17px',
                     flexShrink: 0,
                   }}
                 >
@@ -1509,8 +1605,8 @@ export default function TavolaSalesReportsView({
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
                     <span
                       style={{
-                        fontSize: '13px',
-                        fontWeight: 700,
+                        fontSize: '12.5px',
+                        fontWeight: 600,
                         color: textPrimary,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -1519,7 +1615,15 @@ export default function TavolaSalesReportsView({
                     >
                       {item.name}
                     </span>
-                    <span style={{ fontSize: '13px', fontWeight: 800, color: textPrimary, flexShrink: 0 }}>
+                    <span
+                      style={{
+                        fontSize: '12.5px',
+                        fontWeight: 650,
+                        color: textPrimary,
+                        flexShrink: 0,
+                        fontVariantNumeric: 'tabular-nums',
+                      }}
+                    >
                       {isIdr ? item.revenueIdr : item.revenueUsd}
                     </span>
                   </div>
@@ -1541,7 +1645,7 @@ export default function TavolaSalesReportsView({
                       }}
                     />
                   </div>
-                  <div style={{ fontSize: '11px', color: textMuted }}>{item.sub}</div>
+                  <div style={{ fontSize: '11px', color: textSecondary, fontWeight: 450 }}>{item.sub}</div>
                 </div>
               </div>
             ))}
