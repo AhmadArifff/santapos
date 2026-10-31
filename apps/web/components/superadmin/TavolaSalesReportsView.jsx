@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
 
 const HEATMAP_HOURS = ['11a', '12p', '1p', '2p', '3p', '4p', '5p', '6p', '7p', '8p', '9p', '10p'];
 
@@ -497,19 +498,33 @@ export default function TavolaSalesReportsView({
                 key={p}
                 onClick={() => setPeriod(p)}
                 style={{
+                  position: 'relative',
                   padding: '5px 14px',
                   borderRadius: '999px',
                   border: 'none',
                   fontSize: '12px',
                   fontWeight: active ? 650 : 500,
                   cursor: 'pointer',
-                  background: active ? (isLight ? '#FFFFFF' : '#24324B') : 'transparent',
+                  background: 'transparent',
                   color: active ? textPrimary : textSecondary,
-                  boxShadow: active ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
-                  transition: 'all 0.16s ease',
+                  transition: 'color 0.16s ease',
                 }}
               >
-                {p}
+                {active && (
+                  <motion.div
+                    layoutId="tavolaSalesReportsPeriodPill"
+                    transition={{ type: 'spring', stiffness: 460, damping: 34 }}
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      borderRadius: '999px',
+                      background: isLight ? '#FFFFFF' : '#24324B',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+                      zIndex: 0,
+                    }}
+                  />
+                )}
+                <span style={{ position: 'relative', zIndex: 1 }}>{p}</span>
               </button>
             );
           })}

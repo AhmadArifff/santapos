@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 
 const WEEK_DAYS = [
   { key: 'mon-26', dow: 'MON', date: 26, postsLabel: '3 posts' },
@@ -582,18 +583,33 @@ export default function MurmuraCalendarView({
                 key={mode}
                 onClick={() => setCalendarMode(mode)}
                 style={{
+                  position: 'relative',
                   padding: '5px 14px',
                   borderRadius: '999px',
                   border: 'none',
-                  background: active ? surfaceBg : 'transparent',
+                  background: 'transparent',
                   color: active ? textPrimary : textSecondary,
                   fontSize: '12px',
                   fontWeight: active ? 700 : 500,
                   cursor: 'pointer',
-                  boxShadow: active ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                  transition: 'color 0.18s ease',
                 }}
               >
-                {mode}
+                {active && (
+                  <motion.div
+                    layoutId="calendarModePill"
+                    transition={{ type: 'spring', stiffness: 460, damping: 34 }}
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      borderRadius: '999px',
+                      background: surfaceBg,
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+                      zIndex: 0,
+                    }}
+                  />
+                )}
+                <span style={{ position: 'relative', zIndex: 1 }}>{mode}</span>
               </button>
             );
           })}

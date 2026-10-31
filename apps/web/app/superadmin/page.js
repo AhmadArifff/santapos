@@ -676,18 +676,15 @@ export default function SuperadminPage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 style={{
-                  padding: '7px 14px',
+                  position: 'relative',
+                  padding: '7px 15px',
                   borderRadius: '999px',
                   border: 'none',
                   fontSize: '13px',
                   fontWeight: active ? 600 : 500,
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
-                  background: active
-                    ? isLight
-                      ? '#161920'
-                      : '#F2B249'
-                    : 'transparent',
+                  background: 'transparent',
                   color: active
                     ? isLight
                       ? '#FFFFFF'
@@ -696,13 +693,37 @@ export default function SuperadminPage() {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
-                  transition: 'all 0.18s ease',
+                  transition: 'color 0.18s ease',
+                  outline: 'none',
+                  userSelect: 'none',
                 }}
               >
-                <span>{tab.label}</span>
+                {active && (
+                  <motion.div
+                    layoutId="murmuraActiveTabPill"
+                    transition={{
+                      type: 'spring',
+                      stiffness: 460,
+                      damping: 34,
+                    }}
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      borderRadius: '999px',
+                      background: isLight ? '#161920' : '#F2B249',
+                      boxShadow: isLight
+                        ? '0 2px 10px rgba(22, 25, 32, 0.22)'
+                        : '0 2px 12px rgba(242, 178, 73, 0.28)',
+                      zIndex: 0,
+                    }}
+                  />
+                )}
+                <span style={{ position: 'relative', zIndex: 1 }}>{tab.label}</span>
                 {tab.badge && (
                   <span
                     style={{
+                      position: 'relative',
+                      zIndex: 1,
                       padding: '1px 6.5px',
                       borderRadius: '999px',
                       background: tab.badgeBg || '#F2B249',
@@ -2092,48 +2113,55 @@ export default function SuperadminPage() {
           padding: '8px 28px 40px 76px',
         }}
       >
-        {/* ===================================================================
-            TAB 1: OVERVIEW (Exact REA of Gambar 1 — Murmura Executive CRM)
-           =================================================================== */}
-        {activeTab === 'overview' && (
-          <MurmuraOverviewView
-            theme={theme}
-            currency={currency}
-            selectedTenantFilter={selectedTenantFilter}
-            deals={deals}
-            tenants={tenants}
-            fontFamily={activeFontFamily}
-            onOpenNewDeal={() => setShowNewDealModal(true)}
-            onNavigateTab={(tabId) => setActiveTab(tabId)}
-            onTriggerToast={triggerToast}
-          />
-        )}
-
-        {/* ===================================================================
-            TAB 2: CALENDAR (Exact REA of Gambar 2, 3, 4 — Before/After Animation + Drag & Drop)
-           =================================================================== */}
-        {activeTab === 'calendar' && (
-          <MurmuraCalendarView
-            theme={theme}
-            selectedTenantFilter={selectedTenantFilter}
-            fontFamily={activeFontFamily}
-            onOpenNewDeal={() => setShowNewDealModal(true)}
-            onTriggerToast={triggerToast}
-          />
-        )}
-
-        {/* ===================================================================
-            TAB 3: COMPOSE · DEALS BOARD (Interactive CRM Deal Kanban with Drag & Drop)
-           =================================================================== */}
-        {activeTab === 'orders' && (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px',
-              animation: 'murmuraFadeSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
-            }}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 12, filter: 'blur(3px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: -8, filter: 'blur(3px)' }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           >
+            {/* ===================================================================
+                TAB 1: OVERVIEW (Exact REA of Gambar 1 — Murmura Executive CRM)
+               =================================================================== */}
+            {activeTab === 'overview' && (
+              <MurmuraOverviewView
+                theme={theme}
+                currency={currency}
+                selectedTenantFilter={selectedTenantFilter}
+                deals={deals}
+                tenants={tenants}
+                fontFamily={activeFontFamily}
+                onOpenNewDeal={() => setShowNewDealModal(true)}
+                onNavigateTab={(tabId) => setActiveTab(tabId)}
+                onTriggerToast={triggerToast}
+              />
+            )}
+
+            {/* ===================================================================
+                TAB 2: CALENDAR (Exact REA of Gambar 2, 3, 4 — Before/After Animation + Drag & Drop)
+               =================================================================== */}
+            {activeTab === 'calendar' && (
+              <MurmuraCalendarView
+                theme={theme}
+                selectedTenantFilter={selectedTenantFilter}
+                fontFamily={activeFontFamily}
+                onOpenNewDeal={() => setShowNewDealModal(true)}
+                onTriggerToast={triggerToast}
+              />
+            )}
+
+            {/* ===================================================================
+                TAB 3: COMPOSE · DEALS BOARD (Interactive CRM Deal Kanban with Drag & Drop)
+               =================================================================== */}
+            {activeTab === 'orders' && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px',
+                }}
+              >
             {/* Row 1: 2-Line Title + 3 Inline KPI Pills */}
             <div
               style={{
@@ -2385,24 +2413,46 @@ export default function SuperadminPage() {
                   border: `1px solid ${surfaceBorder}`,
                 }}
               >
-                {['Board', 'List'].map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => setViewMode(m)}
-                    style={{
-                      padding: '5px 14px',
-                      borderRadius: '999px',
-                      border: 'none',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      background: viewMode === m ? '#161920' : 'transparent',
-                      color: viewMode === m ? '#FFFFFF' : textSecondary,
-                    }}
-                  >
-                    {m}
-                  </button>
-                ))}
+                {['Board', 'List'].map((m) => {
+                  const active = viewMode === m;
+                  return (
+                    <button
+                      key={m}
+                      onClick={() => setViewMode(m)}
+                      style={{
+                        position: 'relative',
+                        padding: '5px 14px',
+                        borderRadius: '999px',
+                        border: 'none',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        background: 'transparent',
+                        color: active
+                          ? isLight
+                            ? '#FFFFFF'
+                            : '#14171D'
+                          : textSecondary,
+                        transition: 'color 0.18s ease',
+                      }}
+                    >
+                      {active && (
+                        <motion.div
+                          layoutId="dealsBoardListViewPill"
+                          transition={{ type: 'spring', stiffness: 460, damping: 34 }}
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            borderRadius: '999px',
+                            background: isLight ? '#161920' : '#F2B249',
+                            zIndex: 0,
+                          }}
+                        />
+                      )}
+                      <span style={{ position: 'relative', zIndex: 1 }}>{m}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -2819,7 +2869,6 @@ export default function SuperadminPage() {
               display: 'flex',
               flexDirection: 'column',
               gap: '18px',
-              animation: 'murmuraFadeSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
@@ -3078,7 +3127,6 @@ export default function SuperadminPage() {
               display: 'flex',
               flexDirection: 'column',
               gap: '20px',
-              animation: 'murmuraFadeSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
           >
             <div>
@@ -3224,7 +3272,6 @@ export default function SuperadminPage() {
               display: 'flex',
               flexDirection: 'column',
               gap: '24px',
-              animation: 'murmuraFadeSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
@@ -3410,6 +3457,8 @@ export default function SuperadminPage() {
             </div>
           </div>
         )}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* =====================================================================
