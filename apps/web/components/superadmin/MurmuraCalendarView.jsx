@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const WEEK_DAYS = [
   { key: 'mon-26', dow: 'MON', date: 26, postsLabel: '3 posts' },
@@ -281,6 +281,8 @@ export default function MurmuraCalendarView({
   // Drag-and-drop state
   const [dragPayload, setDragPayload] = useState(null); // { source: 'draft' | 'slot', item }
   const [dragOverTarget, setDragOverTarget] = useState(null);
+  const [activeMiniDate, setActiveMiniDate] = useState(30);
+  const [newlyAddedSlotId, setNewlyAddedSlotId] = useState(null);
 
   useEffect(() => {
     setAnimStage(0);
@@ -322,6 +324,8 @@ export default function MurmuraCalendarView({
         status: 'Scheduled',
         thumbEmoji: d.thumbEmoji || '✨',
       };
+      setNewlyAddedSlotId(newSlot.id);
+      setTimeout(() => setNewlyAddedSlotId(null), 2500);
       setWeekSlots((prev) => [...prev, newSlot]);
       setDrafts((prev) => prev.filter((x) => x.id !== d.id));
       if (onTriggerToast) {
@@ -977,10 +981,21 @@ export default function MurmuraCalendarView({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                   {CAMPAIGN_BARS.map((bar, idx) => {
                     const widthPct = Math.min(100, (bar.spanCols / 7) * 100);
-                    const isExpanded = animStage >= 1;
                     return (
-                      <div
-                        key={bar.id}
+                      <motion.div
+                        key={`${bar.id}-${replaySeed}`}
+                        initial={{ scaleX: 0.02, opacity: 0 }}
+                        animate={{ scaleX: 1, opacity: 1 }}
+                        transition={{
+                          delay: idx * 0.08,
+                          duration: 0.55,
+                          ease: [0.16, 1, 0.3, 1],
+                        }}
+                        whileHover={{
+                          y: -2,
+                          boxShadow: '0 6px 16px rgba(0,0,0,0.22)',
+                          transition: { duration: 0.15 },
+                        }}
                         style={{
                           width: `${widthPct}%`,
                           padding: '5px 12px',
@@ -993,11 +1008,9 @@ export default function MurmuraCalendarView({
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           transformOrigin: 'left center',
-                          transform: isExpanded ? 'scaleX(1)' : 'scaleX(0.02)',
-                          opacity: isExpanded ? 1 : 0,
-                          transition: `transform 0.48s cubic-bezier(0.22, 1, 0.36, 1) ${idx * 65}ms, opacity 0.25s ease ${idx * 65}ms`,
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
+                          cursor: 'pointer',
                         }}
                       >
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
@@ -1005,7 +1018,7 @@ export default function MurmuraCalendarView({
                           <span>{bar.title}</span>
                         </span>
                         <span style={{ fontSize: '10px', opacity: 0.85 }}>{bar.untilLabel}</span>
-                      </div>
+                      </motion.div>
                     );
                   })}
                 </div>
@@ -1061,7 +1074,7 @@ export default function MurmuraCalendarView({
                           borderRadius: '12px',
                           padding: '6px',
                           background: isDropTarget
-                            ? 'rgba(14, 124, 91, 0.16)'
+                            ? 'rgba(14, 124, 91, 0.18)'
                             : animStage === 0
                             ? skeletonColBg
                             : day.isToday
@@ -1072,86 +1085,117 @@ export default function MurmuraCalendarView({
                           border: isDropTarget
                             ? '1.5px dashed #0E7C5B'
                             : `1px solid ${surfaceBorder}`,
-                          transition: 'background 0.35s ease, border 0.2s ease',
+                          boxShadow: isDropTarget
+                            ? '0 0 0 3px rgba(14, 124, 91, 0.22), inset 0 0 14px rgba(14, 124, 91, 0.12)'
+                            : 'none',
+                          transition: 'background 0.25s ease, border 0.2s ease, box-shadow 0.2s ease',
                           display: 'flex',
                           flexDirection: 'column',
                           gap: '6px',
+                          minHeight: '80px',
                         }}
                       >
-                        {animStage >= 2 &&
-                          cellSlots.map((slot, sIdx) => (
-                            <div
-                              key={slot.id}
-                              draggable
-                              onDragStart={() =>
-                                setDragPayload({ source: 'slot', item: slot })
-                              }
-                              onDragEnd={() => {
-                                setDragPayload(null);
-                                setDragOverTarget(null);
-                              }}
-                              style={{
-                                padding: '8px',
-                                borderRadius: '10px',
-                                background: slot.bg,
-                                color: slot.textColor,
-                                cursor: 'grab',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-                                animation: `murmuraCardSpringPop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) ${
-                                  (dIdx + sIdx) * 40
-                                }ms both`,
-                              }}
-                            >
-                              <div
+                        {isDropTarget && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.92 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            style={{
+                              border: '1.5px dashed #0E7C5B',
+                              borderRadius: '8px',
+                              padding: '8px 4px',
+                              textAlign: 'center',
+                              fontSize: '10.5px',
+                              fontWeight: 700,
+                              color: '#0E7C5B',
+                              background: 'rgba(14, 124, 91, 0.08)',
+                            }}
+                          >
+                            + Drop schedule
+                          </motion.div>
+                        )}
+
+                        <AnimatePresence mode="popLayout">
+                          {animStage >= 2 &&
+                            cellSlots.map((slot) => (
+                              <motion.div
+                                key={slot.id}
+                                layout
+                                initial={{ scale: 0.82, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.75, opacity: 0 }}
+                                transition={{ type: 'spring', stiffness: 440, damping: 28 }}
+                                whileHover={{ scale: 1.03, y: -1 }}
+                                whileTap={{ scale: 0.97 }}
+                                draggable
+                                onDragStart={() =>
+                                  setDragPayload({ source: 'slot', item: slot })
+                                }
+                                onDragEnd={() => {
+                                  setDragPayload(null);
+                                  setDragOverTarget(null);
+                                }}
+                                className={`murmura-card-vibrate ${newlyAddedSlotId === slot.id ? 'newly-inserted-deal' : ''}`}
                                 style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  fontSize: '10px',
-                                  fontWeight: 700,
-                                  opacity: 0.9,
+                                  padding: '8px',
+                                  borderRadius: '10px',
+                                  background: slot.bg,
+                                  color: slot.textColor,
+                                  cursor: 'grab',
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                                  userSelect: 'none',
                                 }}
                               >
-                                <span>{slot.timeLabel}</span>
-                                <span>{slot.thumbEmoji}</span>
-                              </div>
-                              <div
-                                style={{
-                                  fontSize: '11px',
-                                  fontWeight: 700,
-                                  marginTop: '3px',
-                                  whiteSpace: 'nowrap',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                }}
-                              >
-                                {slot.title}
-                              </div>
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  gap: '4px',
-                                  marginTop: '6px',
-                                }}
-                              >
-                                {slot.channels.map((ch) => (
-                                  <span
-                                    key={ch}
-                                    style={{
-                                      fontSize: '8.5px',
-                                      fontWeight: 800,
-                                      padding: '1px 5px',
-                                      borderRadius: '999px',
-                                      background: 'rgba(255,255,255,0.88)',
-                                      color: '#14171D',
-                                    }}
-                                  >
-                                    {ch}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    fontSize: '10px',
+                                    fontWeight: 700,
+                                    opacity: 0.9,
+                                  }}
+                                >
+                                  <span>{slot.timeLabel}</span>
+                                  <span>{slot.thumbEmoji}</span>
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                    marginTop: '3px',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                  }}
+                                >
+                                  {slot.title}
+                                </div>
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    gap: '4px',
+                                    marginTop: '6px',
+                                  }}
+                                >
+                                  {slot.channels.map((ch) => (
+                                    <span
+                                      key={ch}
+                                      style={{
+                                        fontSize: '8.5px',
+                                        fontWeight: 800,
+                                        padding: '1px 5px',
+                                        borderRadius: '999px',
+                                        background: 'rgba(255,255,255,0.88)',
+                                        color: '#14171D',
+                                      }}
+                                    >
+                                      {ch}
+                                    </span>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            ))}
+                        </AnimatePresence>
                       </div>
                     );
                   })}
@@ -1480,25 +1524,49 @@ export default function MurmuraCalendarView({
                   }}
                 >
                   {weekRow.map((num, cIdx) => {
-                    const isSelectedDay = isActiveWeek && num === 30;
+                    const isSelectedDay = num === activeMiniDate;
                     return (
-                      <div
+                      <button
                         key={cIdx}
+                        onClick={() => {
+                          setActiveMiniDate(num);
+                          if (onTriggerToast) {
+                            onTriggerToast(`Selected Oct ${num}, 2026`);
+                          }
+                        }}
                         style={{
+                          position: 'relative',
                           width: '26px',
                           height: '26px',
                           margin: '0 auto',
                           borderRadius: '50%',
-                          background: isSelectedDay ? '#161920' : 'transparent',
-                          color: isSelectedDay ? '#FFFFFF' : textPrimary,
+                          border: 'none',
+                          background: 'transparent',
+                          color: isSelectedDay ? (isLight ? '#FFFFFF' : '#14171D') : textPrimary,
                           fontSize: '11px',
                           fontWeight: isSelectedDay ? 700 : 500,
                           display: 'grid',
                           placeItems: 'center',
+                          cursor: 'pointer',
+                          transition: 'color 0.16s ease',
+                          padding: 0,
                         }}
                       >
-                        {num}
-                      </div>
+                        {isSelectedDay && (
+                          <motion.div
+                            layoutId="miniCalendarActiveDay"
+                            transition={{ type: 'spring', stiffness: 460, damping: 32 }}
+                            style={{
+                              position: 'absolute',
+                              inset: 0,
+                              borderRadius: '50%',
+                              background: isLight ? '#161920' : '#F2B249',
+                              zIndex: 0,
+                            }}
+                          />
+                        )}
+                        <span style={{ position: 'relative', zIndex: 1 }}>{num}</span>
+                      </button>
                     );
                   })}
                 </div>
@@ -1552,74 +1620,84 @@ export default function MurmuraCalendarView({
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {drafts.map((draft) => (
-                <div
-                  key={draft.id}
-                  draggable
-                  onDragStart={() =>
-                    setDragPayload({ source: 'draft', item: draft })
-                  }
-                  onDragEnd={() => {
-                    setDragPayload(null);
-                    setDragOverTarget(null);
-                  }}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: '12px',
-                    background: isLight ? '#FAF9F5' : '#182338',
-                    border: `1px solid ${surfaceBorder}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    cursor: 'grab',
-                  }}
-                >
-                  <span
+              <AnimatePresence mode="popLayout">
+                {drafts.map((draft) => (
+                  <motion.div
+                    key={draft.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.92 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8, height: 0, marginBottom: 0 }}
+                    transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+                    whileHover={{ scale: 1.025, x: 2 }}
+                    className="murmura-card-vibrate"
+                    draggable
+                    onDragStart={() =>
+                      setDragPayload({ source: 'draft', item: draft })
+                    }
+                    onDragEnd={() => {
+                      setDragPayload(null);
+                      setDragOverTarget(null);
+                    }}
                     style={{
-                      width: '28px',
-                      height: '28px',
-                      borderRadius: '7px',
-                      background: draft.badgeColor,
-                      color: '#FFFFFF',
-                      fontSize: '10.5px',
-                      fontWeight: 800,
-                      display: 'grid',
-                      placeItems: 'center',
-                      flexShrink: 0,
+                      padding: '10px 12px',
+                      borderRadius: '12px',
+                      background: isLight ? '#FAF9F5' : '#182338',
+                      border: `1px solid ${surfaceBorder}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      cursor: 'grab',
+                      userSelect: 'none',
                     }}
                   >
-                    {draft.badgeCode}
-                  </span>
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
+                    <span
                       style={{
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        color: textPrimary,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {draft.title}
-                    </div>
-                    <div
-                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '7px',
+                        background: draft.badgeColor,
+                        color: '#FFFFFF',
                         fontSize: '10.5px',
-                        color: textMuted,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
+                        fontWeight: 800,
+                        display: 'grid',
+                        placeItems: 'center',
+                        flexShrink: 0,
                       }}
                     >
-                      {draft.meta}
-                    </div>
-                  </div>
+                      {draft.badgeCode}
+                    </span>
 
-                  <span style={{ color: textMuted, fontSize: '12px', cursor: 'grab' }}>⋮⋮</span>
-                </div>
-              ))}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: textPrimary,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {draft.title}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '10.5px',
+                          color: textMuted,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {draft.meta}
+                      </div>
+                    </div>
+
+                    <span style={{ color: textMuted, fontSize: '12px', cursor: 'grab' }}>⋮⋮</span>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
 
               {drafts.length === 0 && (
                 <div
