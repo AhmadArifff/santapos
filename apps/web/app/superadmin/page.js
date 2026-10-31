@@ -107,6 +107,93 @@ export default function SuperadminPage() {
   // Inbox state
   const [inboxMessages, setInboxMessages] = useState(INITIAL_INBOX_MESSAGES);
   const [selectedInboxId, setSelectedInboxId] = useState('inb-1');
+  const [inboxCategory, setInboxCategory] = useState('All'); // 'All' | 'Unread' | 'Enterprise' | 'Pro'
+
+  // Approvals Queue state (Initial 5 items matching badge '5')
+  const [approvalsQueue, setApprovalsQueue] = useState([
+    {
+      id: 'appr-1',
+      brand: 'Ember & Oak Flagship',
+      badgeColor: '#D94E34',
+      requestedBy: 'Rio Pratama (Owner)',
+      requestType: 'Upgrade to Franchise HQ Suite',
+      price: '$149 / mo (Rp 2.490.000)',
+      targetPlan: 'franchise',
+      reason: 'Ekspansi ke 3 cabang baru di Senopati dan BSD City.',
+      time: '12m ago',
+    },
+    {
+      id: 'appr-2',
+      brand: 'Wildroot Botanics',
+      badgeColor: '#0E7C5B',
+      requestedBy: 'Nia Kurnia',
+      requestType: 'Add 5 Kitchen Display KDS Terminals',
+      price: '+$50 / mo',
+      targetPlan: 'pro',
+      reason: 'Pembagian stasiun kitchen: Barista, Dessert, Hot Kitchen, Salad Bar.',
+      time: '45m ago',
+    },
+    {
+      id: 'appr-3',
+      brand: 'Ramen Ya! Grand Indonesia',
+      badgeColor: '#C84B31',
+      requestedBy: 'Bambang S.',
+      requestType: 'Midtrans Dynamic QRIS Multi-Cashier Sync',
+      price: 'Add-on Feature',
+      targetPlan: 'franchise',
+      reason: 'Aktivasi QRIS dinamis di 4 tablet kasir counter.',
+      time: '2h ago',
+    },
+    {
+      id: 'appr-4',
+      brand: 'Bebek Bengil HQ',
+      badgeColor: '#B45309',
+      requestedBy: 'Wayan Putra',
+      requestType: 'Consolidated Financial Ledger Activation',
+      price: 'Enterprise Tier',
+      targetPlan: 'franchise',
+      reason: 'Sinkronisasi pembukuan multi-tenant cabang Bali & Jakarta.',
+      time: '5h ago',
+    },
+    {
+      id: 'appr-5',
+      brand: 'Sushi Tei Plaza',
+      badgeColor: '#18181B',
+      requestedBy: 'Hendra T.',
+      requestType: 'Custom Receipt White-Label Domain',
+      price: 'Franchise Feature',
+      targetPlan: 'franchise',
+      reason: 'Setup domain cetak struk receipt.sushiteiplaza.com.',
+      time: '1d ago',
+    },
+  ]);
+
+  const unreadInboxCount = useMemo(() => {
+    return inboxMessages.filter((m) => m.unread).length || inboxMessages.length;
+  }, [inboxMessages]);
+
+  const filteredInboxMessages = useMemo(() => {
+    if (inboxCategory === 'Unread') {
+      return inboxMessages.filter((m) => m.unread);
+    }
+    if (inboxCategory === 'Enterprise') {
+      return inboxMessages.filter((m) => m.plan === 'franchise');
+    }
+    if (inboxCategory === 'Pro') {
+      return inboxMessages.filter((m) => m.plan === 'pro');
+    }
+    return inboxMessages;
+  }, [inboxMessages, inboxCategory]);
+
+  const navTabs = useMemo(() => [
+    { id: 'overview', label: 'Overview' },
+    { id: 'orders', label: 'Compose' },
+    { id: 'calendar', label: 'Calendar' },
+    { id: 'inbox', label: 'Inbox', badge: unreadInboxCount, badgeBg: '#F2B249' },
+    { id: 'approvals', label: 'Approvals', badge: approvalsQueue.length, badgeBg: '#F2B249' },
+    { id: 'reports', label: 'Analytics' },
+    { id: 'listening', label: 'Listening' },
+  ], [unreadInboxCount, approvalsQueue.length]);
 
   // Filters & Drag-and-Drop on Compose / CRM Deals Board
   const [searchQuery, setSearchQuery] = useState('');
@@ -366,6 +453,97 @@ export default function SuperadminPage() {
   const readyDeals = filteredDeals.filter((d) => d.stage === 'ready');
   const servedDeals = filteredDeals.filter((d) => d.stage === 'served');
   const openDealsCount = newDeals.length + cookingDeals.length + readyDeals.length;
+
+  // Handler: Convert Incoming CRM Message directly to a Live Deal
+  const handlePushInboxToDeal = (msg) => {
+    const newDealId = Date.now();
+    const newDeal = {
+      id: newDealId,
+      ticket_number: `#${Math.floor(1000 + Math.random() * 9000)}`,
+      table_label: `Table · ${msg.brand}`,
+      tenant_brand: msg.brand,
+      pic_name: msg.sender,
+      channel_type: 'Dine-in',
+      plan_code: msg.plan || 'pro',
+      station_region: 'Jabodetabek',
+      stage: 'new',
+      total_amount: msg.plan === 'franchise' ? 95 : msg.plan === 'pro' ? 59 : 29,
+      currency: 'USD',
+      payment_status: 'Unpaid',
+      alert_badge: 'Inbox Inbound · Demo Requested',
+      items: [
+        `1x Paket ${String(msg.plan || 'Pro').toUpperCase()}`,
+        `1x Request: ${msg.subject.slice(0, 32)}...`,
+        '1x POS Kasir + Kitchen KDS',
+      ],
+      avatar_seed: msg.badgeCode || 'TN',
+    };
+
+    setDeals((prev) => [newDeal, ...prev]);
+    setNewlyInsertedDealId(newDealId);
+    setRecentlyUpdatedStage('new');
+    setTimeout(() => setNewlyInsertedDealId(null), 3500);
+
+    // Mark message as read
+    setInboxMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, unread: false } : m)));
+
+    // Push real-time notification to Bell
+    setNotificationList((prev) => [
+      {
+        id: `notif-${Date.now()}`,
+        brand: msg.brand,
+        title: `Deal Baru dari Pesan Inbox: ${msg.brand}`,
+        message: `Pesan "${msg.subject}" berhasil dikonversi ke Deals Board tahap NEW LEAD.`,
+        time: 'Just now',
+        unread: true,
+        category: 'deals',
+      },
+      ...prev,
+    ]);
+
+    triggerToast(
+      `Pesan "${msg.brand}" berhasil dikonversi ke Deals Board!`,
+      () => {
+        setDeals((prev) => prev.filter((d) => d.id !== newDealId));
+      },
+      'Inbound Deal Berhasil'
+    );
+
+    setActiveTab('orders');
+  };
+
+  // Handler: Approve Tenant Upgrade Request
+  const handleApproveUpgrade = (item) => {
+    setApprovalsQueue((prev) => prev.filter((x) => x.id !== item.id));
+    const matchTenant = tenants.find((t) =>
+      t.name.toLowerCase().includes(item.brand.toLowerCase().split(' ')[0])
+    );
+    if (matchTenant) {
+      updateSuperadminTenantPlan(matchTenant.id, item.targetPlan);
+      setTenants((prev) =>
+        prev.map((t) => (t.id === matchTenant.id ? { ...t, plan: item.targetPlan } : t))
+      );
+    }
+    setNotificationList((prev) => [
+      {
+        id: `notif-${Date.now()}`,
+        brand: item.brand,
+        title: `Persetujuan Disetujui: ${item.requestType}`,
+        message: `Paket ${item.brand} berhasil ditingkatkan ke ${item.targetPlan.toUpperCase()}.`,
+        time: 'Just now',
+        unread: true,
+        category: 'finansial',
+      },
+      ...prev,
+    ]);
+    triggerToast(`Disetujui: ${item.requestType} untuk ${item.brand}`, null, 'Persetujuan SaaS Berhasil');
+  };
+
+  // Handler: Reject Tenant Upgrade Request
+  const handleRejectUpgrade = (item) => {
+    setApprovalsQueue((prev) => prev.filter((x) => x.id !== item.id));
+    triggerToast(`Ditolak: Permintaan upgrade ${item.brand}`, null, 'Persetujuan SaaS Ditolak');
+  };
 
   // Advance or Drag-and-Drop Deal Stage on Kanban Card
   const handleAdvanceDeal = async (deal, targetStage, provisionTenant = false) => {
@@ -669,7 +847,7 @@ export default function SuperadminPage() {
             flexWrap: 'nowrap',
           }}
         >
-          {MURMURA_NAV_TABS.map((tab) => {
+          {navTabs.map((tab) => {
             const active = activeTab === tab.id;
             return (
               <button
@@ -2861,7 +3039,7 @@ export default function SuperadminPage() {
         )}
 
         {/* ===================================================================
-            TAB 4: INBOX [14] (Tenant Onboarding & Support CRM Inbox)
+            TAB 4: INBOX (Tenant Onboarding & Support CRM Inbox)
            =================================================================== */}
         {activeTab === 'inbox' && (
           <div
@@ -2888,7 +3066,9 @@ export default function SuperadminPage() {
                   Pesan langsung dari pemilik restoran, permintaan kustomisasi modul POS, dan tiket onboarding
                 </p>
               </div>
-              <button
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => setShowNewDealModal(true)}
                 style={{
                   padding: '9px 18px',
@@ -2899,16 +3079,92 @@ export default function SuperadminPage() {
                   fontSize: '12.5px',
                   fontWeight: 600,
                   cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
                 }}
               >
-                + Convert Message to Deal
-              </button>
+                <span>+</span> Convert Message to Deal
+              </motion.button>
+            </div>
+
+            {/* Filter Pills with Sliding Motion Capsule */}
+            <div
+              style={{
+                display: 'flex',
+                gap: '8px',
+                padding: '6px',
+                borderRadius: '999px',
+                background: surfaceBg,
+                border: `1px solid ${surfaceBorder}`,
+                width: 'fit-content',
+                flexWrap: 'wrap',
+              }}
+            >
+              {[
+                { id: 'All', label: 'All Messages', count: inboxMessages.length },
+                { id: 'Unread', label: 'Unread', count: unreadInboxCount },
+                { id: 'Enterprise', label: 'Enterprise HQ', count: inboxMessages.filter((m) => m.plan === 'franchise').length },
+                { id: 'Pro', label: 'Pro Suite', count: inboxMessages.filter((m) => m.plan === 'pro').length },
+              ].map((cat) => {
+                const active = inboxCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setInboxCategory(cat.id)}
+                    style={{
+                      position: 'relative',
+                      border: 'none',
+                      background: 'transparent',
+                      color: active ? '#FFFFFF' : textSecondary,
+                      padding: '7px 16px',
+                      borderRadius: '999px',
+                      fontSize: '12px',
+                      fontWeight: active ? 700 : 500,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '7px',
+                      transition: 'color 0.18s ease',
+                      zIndex: 1,
+                    }}
+                  >
+                    {active && (
+                      <motion.div
+                        layoutId="inboxCategoryPill"
+                        transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          borderRadius: '999px',
+                          background: '#161920',
+                          zIndex: -1,
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.18)',
+                        }}
+                      />
+                    )}
+                    <span>{cat.label}</span>
+                    <span
+                      style={{
+                        padding: '1px 7px',
+                        borderRadius: '999px',
+                        fontSize: '10.5px',
+                        fontWeight: 700,
+                        background: active ? 'rgba(255,255,255,0.22)' : isLight ? '#E5E7EB' : '#334155',
+                        color: active ? '#FFFFFF' : textPrimary,
+                      }}
+                    >
+                      {cat.count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'minmax(300px, 380px) 1fr',
+                gridTemplateColumns: 'minmax(320px, 400px) 1fr',
                 gap: '18px',
                 alignItems: 'start',
               }}
@@ -2923,195 +3179,314 @@ export default function SuperadminPage() {
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '8px',
+                  minHeight: '360px',
                 }}
               >
-                {inboxMessages.map((msg) => {
-                  const active = selectedInboxId === msg.id;
-                  return (
-                    <div
-                      key={msg.id}
-                      onClick={() => setSelectedInboxId(msg.id)}
+                <div
+                  style={{
+                    padding: '8px 12px 6px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    color: textSecondary,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <span>Inbound Queue ({filteredInboxMessages.length})</span>
+                  <span style={{ fontSize: '10.5px', color: '#0E7C5B', fontWeight: 600 }}>● Live Feed</span>
+                </div>
+
+                <AnimatePresence mode="popLayout">
+                  {filteredInboxMessages.length === 0 ? (
+                    <motion.div
+                      key="empty-inbox"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
                       style={{
-                        padding: '12px',
-                        borderRadius: '14px',
-                        background: active
-                          ? isLight
-                            ? '#EBEAE2'
-                            : '#1E293B'
-                          : 'transparent',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        gap: '10px',
-                        alignItems: 'flex-start',
+                        padding: '36px 16px',
+                        textAlign: 'center',
+                        color: textSecondary,
+                        fontSize: '12.5px',
                       }}
                     >
-                      <span
-                        style={{
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '8px',
-                          background: msg.badgeColor,
-                          color: '#FFFFFF',
-                          fontSize: '11px',
-                          fontWeight: 800,
-                          display: 'grid',
-                          placeItems: 'center',
-                          flexShrink: 0,
-                        }}
-                      >
-                        {msg.badgeCode}
-                      </span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px' }}>
-                          <strong style={{ fontSize: '12.5px', color: textPrimary }}>{msg.brand}</strong>
-                          <span style={{ fontSize: '10.5px', color: textSecondary }}>{msg.time}</span>
-                        </div>
-                        <div
+                      Tidak ada pesan pada filter ini
+                    </motion.div>
+                  ) : (
+                    filteredInboxMessages.map((msg) => {
+                      const active = selectedInboxId === msg.id;
+                      return (
+                        <motion.div
+                          layout
+                          key={msg.id}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.94 }}
+                          transition={{ duration: 0.2 }}
+                          whileHover={{ x: 3 }}
+                          onClick={() => setSelectedInboxId(msg.id)}
+                          className="murmura-card-vibrate"
                           style={{
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            color: textPrimary,
-                            marginTop: '2px',
-                            whiteSpace: 'nowrap',
+                            position: 'relative',
+                            padding: '12px 14px',
+                            borderRadius: '14px',
+                            background: active
+                              ? isLight
+                                ? '#EBEAE2'
+                                : '#1E293B'
+                              : 'transparent',
+                            border: active ? `1px solid ${surfaceBorder}` : '1px solid transparent',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            gap: '12px',
+                            alignItems: 'flex-start',
                             overflow: 'hidden',
-                            textOverflow: 'ellipsis',
                           }}
                         >
-                          {msg.subject}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: '11px',
-                            color: textSecondary,
-                            marginTop: '2px',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {msg.snippet}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                          {/* Active Vertical Accent Bar */}
+                          {active && (
+                            <motion.span
+                              layoutId="activeInboxLine"
+                              transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                              style={{
+                                position: 'absolute',
+                                left: 0,
+                                top: '8px',
+                                bottom: '8px',
+                                width: '4px',
+                                borderRadius: '0 4px 4px 0',
+                                background: '#0E7C5B',
+                              }}
+                            />
+                          )}
+
+                          <span
+                            style={{
+                              width: '34px',
+                              height: '34px',
+                              borderRadius: '9px',
+                              background: msg.badgeColor,
+                              color: '#FFFFFF',
+                              fontSize: '11px',
+                              fontWeight: 800,
+                              display: 'grid',
+                              placeItems: 'center',
+                              flexShrink: 0,
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+                            }}
+                          >
+                            {msg.badgeCode}
+                          </span>
+
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <strong style={{ fontSize: '13px', color: textPrimary }}>{msg.brand}</strong>
+                                {msg.unread && (
+                                  <span
+                                    style={{
+                                      width: '7px',
+                                      height: '7px',
+                                      borderRadius: '999px',
+                                      background: '#0E7C5B',
+                                      display: 'inline-block',
+                                    }}
+                                  />
+                                )}
+                              </div>
+                              <span style={{ fontSize: '10.5px', color: textSecondary }}>{msg.time}</span>
+                            </div>
+                            <div
+                              style={{
+                                fontSize: '12px',
+                                fontWeight: msg.unread ? 700 : 600,
+                                color: textPrimary,
+                                marginTop: '2px',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                              }}
+                            >
+                              {msg.subject}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: '11px',
+                                color: textSecondary,
+                                marginTop: '2px',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                              }}
+                            >
+                              {msg.snippet}
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Right Selected Message Detail */}
               {(() => {
                 const msg = inboxMessages.find((m) => m.id === selectedInboxId) || inboxMessages[0];
+                if (!msg) return null;
                 return (
-                  <div
-                    style={{
-                      background: surfaceBg,
-                      border: `1px solid ${surfaceBorder}`,
-                      borderRadius: '20px',
-                      padding: '24px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '16px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <span
-                          style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '10px',
-                            background: msg.badgeColor,
-                            color: '#FFFFFF',
-                            fontSize: '14px',
-                            fontWeight: 800,
-                            display: 'grid',
-                            placeItems: 'center',
-                          }}
-                        >
-                          {msg.badgeCode}
-                        </span>
-                        <div>
-                          <div style={{ fontSize: '16px', fontWeight: 700, color: textPrimary }}>
-                            {msg.brand} · {msg.sender}
-                          </div>
-                          <div style={{ fontSize: '12px', color: textSecondary }}>
-                            Channel: {msg.channel} · Plan: {msg.plan.toUpperCase()}
-                          </div>
-                        </div>
-                      </div>
-                      <span
-                        style={{
-                          padding: '4px 12px',
-                          borderRadius: '999px',
-                          background: '#E3F5EE',
-                          color: '#0E7C5B',
-                          fontSize: '11.5px',
-                          fontWeight: 700,
-                        }}
-                      >
-                        ● Active SLA
-                      </span>
-                    </div>
-
-                    <div
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={msg.id}
+                      initial={{ opacity: 0, x: 16 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -16 }}
+                      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                       style={{
-                        padding: '18px',
-                        borderRadius: '14px',
-                        background: isLight ? '#FAF9F5' : '#182338',
+                        background: surfaceBg,
                         border: `1px solid ${surfaceBorder}`,
-                        fontSize: '13.5px',
-                        lineHeight: 1.6,
-                        color: textPrimary,
+                        borderRadius: '20px',
+                        padding: '24px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '18px',
+                        boxShadow: isLight ? '0 8px 24px -12px rgba(0,0,0,0.06)' : 'none',
                       }}
                     >
-                      <div style={{ fontWeight: 700, marginBottom: '8px' }}>{msg.subject}</div>
-                      <div>{msg.snippet}</div>
-                    </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span
+                            style={{
+                              width: '42px',
+                              height: '42px',
+                              borderRadius: '12px',
+                              background: msg.badgeColor,
+                              color: '#FFFFFF',
+                              fontSize: '14px',
+                              fontWeight: 800,
+                              display: 'grid',
+                              placeItems: 'center',
+                              boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+                            }}
+                          >
+                            {msg.badgeCode}
+                          </span>
+                          <div>
+                            <div style={{ fontSize: '16px', fontWeight: 700, color: textPrimary }}>
+                              {msg.brand} · {msg.sender}
+                            </div>
+                            <div style={{ fontSize: '12px', color: textSecondary }}>
+                              Channel: {msg.channel} · Plan: <strong style={{ color: textPrimary }}>{String(msg.plan).toUpperCase()}</strong>
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span
+                            style={{
+                              padding: '4px 12px',
+                              borderRadius: '999px',
+                              background: '#E3F5EE',
+                              color: '#0E7C5B',
+                              fontSize: '11.5px',
+                              fontWeight: 700,
+                            }}
+                          >
+                            ● Active SLA (&lt;15m)
+                          </span>
+                          <button
+                            onClick={() => {
+                              setInboxMessages((prev) =>
+                                prev.map((m) => (m.id === msg.id ? { ...m, unread: !m.unread } : m))
+                              );
+                              triggerToast(
+                                msg.unread
+                                  ? `Pesan "${msg.brand}" ditandai sudah dibaca.`
+                                  : `Pesan "${msg.brand}" ditandai belum dibaca.`
+                              );
+                            }}
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: '999px',
+                              border: `1px solid ${surfaceBorder}`,
+                              background: 'transparent',
+                              color: textSecondary,
+                              fontSize: '11px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {msg.unread ? 'Mark as Read' : 'Mark as Unread'}
+                          </button>
+                        </div>
+                      </div>
 
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                      <button
-                        onClick={() => {
-                          triggerToast(`Approved & scheduled ${msg.brand} request onto Calendar!`);
-                          setActiveTab('calendar');
-                        }}
+                      <div
                         style={{
-                          padding: '9px 18px',
-                          borderRadius: '999px',
-                          border: 'none',
-                          background: '#0E7C5B',
-                          color: '#FFFFFF',
-                          fontSize: '12.5px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        ✓ Approve & Schedule on Calendar
-                      </button>
-                      <button
-                        onClick={() => {
-                          setNewDealForm((p) => ({
-                            ...p,
-                            table_label: `Table · ${msg.brand}`,
-                            tenant_brand: msg.brand,
-                            pic_name: msg.sender,
-                            plan_code: msg.plan,
-                          }));
-                          setShowNewDealModal(true);
-                        }}
-                        style={{
-                          padding: '9px 18px',
-                          borderRadius: '999px',
+                          padding: '18px',
+                          borderRadius: '14px',
+                          background: isLight ? '#FAF9F5' : '#182338',
                           border: `1px solid ${surfaceBorder}`,
-                          background: surfaceBg,
+                          fontSize: '13.5px',
+                          lineHeight: 1.6,
                           color: textPrimary,
-                          fontSize: '12.5px',
-                          fontWeight: 600,
-                          cursor: 'pointer',
                         }}
                       >
-                        + Push to Deals Board
-                      </button>
-                    </div>
-                  </div>
+                        <div style={{ fontWeight: 700, fontSize: '15px', marginBottom: '8px', color: textPrimary }}>
+                          {msg.subject}
+                        </div>
+                        <div style={{ color: textSecondary, fontSize: '13px' }}>{msg.snippet}</div>
+                      </div>
+
+                      {/* Fast Action Buttons */}
+                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <motion.button
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => handlePushInboxToDeal(msg)}
+                          style={{
+                            padding: '10px 20px',
+                            borderRadius: '999px',
+                            border: 'none',
+                            background: '#0E7C5B',
+                            color: '#FFFFFF',
+                            fontSize: '12.5px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '7px',
+                            boxShadow: '0 4px 14px rgba(14, 124, 91, 0.28)',
+                          }}
+                        >
+                          <span>+</span> Push to Deals Board (Kanban)
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => {
+                            setInboxMessages((prev) =>
+                              prev.map((m) => (m.id === msg.id ? { ...m, unread: false } : m))
+                            );
+                            triggerToast(`Approved & scheduled ${msg.brand} request onto Calendar!`);
+                            setActiveTab('calendar');
+                          }}
+                          style={{
+                            padding: '10px 18px',
+                            borderRadius: '999px',
+                            border: `1px solid ${surfaceBorder}`,
+                            background: surfaceBg,
+                            color: textPrimary,
+                            fontSize: '12.5px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          ✓ Schedule on Calendar
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  </AnimatePresence>
                 );
               })()}
             </div>
@@ -3119,133 +3494,340 @@ export default function SuperadminPage() {
         )}
 
         {/* ===================================================================
-            TAB 5: APPROVALS [5] (Tenant Plan Upgrades & Pricing Menu)
+            TAB 5: APPROVALS (Tenant Plan Upgrades & Pricing Menu)
            =================================================================== */}
         {activeTab === 'approvals' && (
           <div
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: '20px',
+              gap: '24px',
             }}
           >
-            <div>
-              <h1
-                style={{
-                  margin: 0,
-                  fontFamily: activeFontFamily.display,
-                  fontSize: '34px',
-                  fontWeight: 400,
-                  color: textPrimary,
-                }}
-              >
-                Approvals & SaaS Packages
-              </h1>
-              <p style={{ margin: '4px 0 0', fontSize: '13px', color: textSecondary }}>
-                Persetujuan upgrade paket tenant (Starter, Pro, Franchise) dan katalog harga langganan
-              </p>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
-              {[
-                {
-                  code: 'starter',
-                  name: 'Starter Cloud POS',
-                  price: 'Rp 299.000 / bln',
-                  usd: '$19 / mo',
-                  bg: '#EADCA6',
-                  features: [
-                    '1 Cabang & 3 Akun Staff Kasir',
-                    'POS Kasir Realtime & Cetak Struk Bluetooth',
-                    'QR Table Self-Order Dasar',
-                    'Laporan Penjualan Harian',
-                  ],
-                },
-                {
-                  code: 'pro',
-                  name: 'Pro Multi-Outlet Suite',
-                  price: 'Rp 799.000 / bln',
-                  usd: '$49 / mo',
-                  bg: '#EFA892',
-                  features: [
-                    'Hingga 5 Cabang & 25 Akun Staff',
-                    'Manajemen Stok Bahan Baku & HPP Resep',
-                    'Integrasi Midtrans QRIS & Webhook Otomatis',
-                    'Interactive Floor Plan & Kitchen Display System',
-                  ],
-                },
-                {
-                  code: 'franchise',
-                  name: 'Franchise Enterprise HQ',
-                  price: 'Rp 2.490.000 / bln',
-                  usd: '$149 / mo',
-                  bg: '#BCE3D4',
-                  features: [
-                    'Unlimited Cabang & Unlimited Staff',
-                    'Franchise HQ Consolidated Financial Ledger',
-                    'Dedicated Supabase / Neon Database Pool',
-                    'Custom Domain & White-Label Receipt Branding',
-                  ],
-                },
-              ].map((pkg) => (
-                <div
-                  key={pkg.code}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h1
                   style={{
-                    background: pkg.bg,
-                    color: '#18181B',
-                    borderRadius: '20px',
-                    padding: '22px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    gap: '14px',
+                    margin: 0,
+                    fontFamily: activeFontFamily.display,
+                    fontSize: '34px',
+                    fontWeight: 400,
+                    color: textPrimary,
                   }}
                 >
-                  <div>
-                    <span
+                  Approvals & SaaS Packages
+                </h1>
+                <p style={{ margin: '4px 0 0', fontSize: '13px', color: textSecondary }}>
+                  Persetujuan upgrade paket tenant (Starter, Pro, Franchise) dan katalog harga langganan
+                </p>
+              </div>
+              <span
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '999px',
+                  background: approvalsQueue.length > 0 ? '#FEF3C7' : '#E3F5EE',
+                  color: approvalsQueue.length > 0 ? '#92400E' : '#0E7C5B',
+                  fontSize: '12.5px',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <span>●</span> {approvalsQueue.length} Pending Approvals
+              </span>
+            </div>
+
+            {/* Section 1: Interactive Approvals Queue */}
+            <div
+              style={{
+                background: surfaceBg,
+                border: `1px solid ${surfaceBorder}`,
+                borderRadius: '20px',
+                padding: '22px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '14px',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: textPrimary }}>
+                    Antrean Otorisasi Lisensi & Fitur Tenant
+                  </h3>
+                  <p style={{ margin: '2px 0 0', fontSize: '12px', color: textSecondary }}>
+                    Setujui atau tolak permintaan upgrade paket dan add-on operasional restoran
+                  </p>
+                </div>
+                <span style={{ fontSize: '11.5px', color: textSecondary }}>
+                  Otorisasi langsung mengubah plan tenant di database
+                </span>
+              </div>
+
+              <AnimatePresence mode="popLayout">
+                {approvalsQueue.length === 0 ? (
+                  <motion.div
+                    key="empty-approvals"
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.96 }}
+                    style={{
+                      padding: '36px 20px',
+                      borderRadius: '14px',
+                      background: isLight ? '#F0FDF4' : '#052E16',
+                      border: '1px dashed #86EFAC',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: '24px', marginBottom: '8px' }}>✓</div>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#166534' }}>
+                      Semua Permintaan Upgrade Selesai Diproses!
+                    </div>
+                    <div style={{ fontSize: '12.5px', color: '#15803D', marginTop: '4px' }}>
+                      Tidak ada antrean persetujuan tenant yang tertunda saat ini.
+                    </div>
+                  </motion.div>
+                ) : (
+                  approvalsQueue.map((item) => (
+                    <motion.div
+                      layout
+                      key={item.id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.92, y: -10 }}
+                      transition={{ duration: 0.22 }}
+                      className="murmura-card-vibrate"
+                      style={{
+                        padding: '16px 18px',
+                        borderRadius: '16px',
+                        background: isLight ? '#FAF9F5' : '#182338',
+                        border: `1px solid ${surfaceBorder}`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span
+                            style={{
+                              width: '36px',
+                              height: '36px',
+                              borderRadius: '10px',
+                              background: item.badgeColor,
+                              color: '#FFFFFF',
+                              fontSize: '12.5px',
+                              fontWeight: 800,
+                              display: 'grid',
+                              placeItems: 'center',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {item.brand.slice(0, 2).toUpperCase()}
+                          </span>
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <strong style={{ fontSize: '14px', color: textPrimary }}>{item.brand}</strong>
+                              <span style={{ fontSize: '11px', color: textSecondary }}>• {item.requestedBy}</span>
+                            </div>
+                            <div style={{ fontSize: '12px', fontWeight: 600, color: '#D94E34', marginTop: '2px' }}>
+                              {item.requestType}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span
+                            style={{
+                              padding: '3px 10px',
+                              borderRadius: '999px',
+                              background: '#E5E7EB',
+                              color: '#1F2937',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                            }}
+                          >
+                            {item.price}
+                          </span>
+                          <span style={{ fontSize: '11px', color: textSecondary }}>{item.time}</span>
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          fontSize: '12px',
+                          color: textSecondary,
+                          background: isLight ? '#FFFFFF' : '#0F172A',
+                          padding: '10px 14px',
+                          borderRadius: '10px',
+                          border: `1px solid ${surfaceBorder}`,
+                        }}
+                      >
+                        <strong style={{ color: textPrimary }}>Justifikasi:</strong> {item.reason}
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                        <motion.button
+                          whileHover={{ scale: 1.04 }}
+                          whileTap={{ scale: 0.96 }}
+                          onClick={() => handleRejectUpgrade(item)}
+                          style={{
+                            padding: '7px 16px',
+                            borderRadius: '999px',
+                            border: `1px solid ${surfaceBorder}`,
+                            background: 'transparent',
+                            color: textSecondary,
+                            fontSize: '11.5px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          ✕ Tolak
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.04 }}
+                          whileTap={{ scale: 0.96 }}
+                          onClick={() => handleApproveUpgrade(item)}
+                          style={{
+                            padding: '7px 18px',
+                            borderRadius: '999px',
+                            border: 'none',
+                            background: '#0E7C5B',
+                            color: '#FFFFFF',
+                            fontSize: '11.5px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            boxShadow: '0 2px 8px rgba(14, 124, 91, 0.25)',
+                          }}
+                        >
+                          ✓ Setujui Upgrade
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Section 2: SaaS Packages Catalog */}
+            <div>
+              <h3 style={{ margin: '0 0 12px', fontSize: '18px', fontWeight: 700, color: textPrimary }}>
+                Katalog Lisensi & Paket Berlangganan
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+                {[
+                  {
+                    code: 'starter',
+                    name: 'Starter Cloud POS',
+                    price: 'Rp 299.000 / bln',
+                    usd: '$19 / mo',
+                    bg: '#EADCA6',
+                    features: [
+                      '1 Cabang & 3 Akun Staff Kasir',
+                      'POS Kasir Realtime & Cetak Struk Bluetooth',
+                      'QR Table Self-Order Dasar',
+                      'Laporan Penjualan Harian',
+                    ],
+                  },
+                  {
+                    code: 'pro',
+                    name: 'Pro Multi-Outlet Suite',
+                    price: 'Rp 799.000 / bln',
+                    usd: '$49 / mo',
+                    bg: '#EFA892',
+                    features: [
+                      'Hingga 5 Cabang & 25 Akun Staff',
+                      'Manajemen Stok Bahan Baku & HPP Resep',
+                      'Integrasi Midtrans QRIS & Webhook Otomatis',
+                      'Interactive Floor Plan & Kitchen Display System',
+                    ],
+                  },
+                  {
+                    code: 'franchise',
+                    name: 'Franchise Enterprise HQ',
+                    price: 'Rp 2.490.000 / bln',
+                    usd: '$149 / mo',
+                    bg: '#BCE3D4',
+                    features: [
+                      'Unlimited Cabang & Unlimited Staff',
+                      'Franchise HQ Consolidated Financial Ledger',
+                      'Dedicated Supabase / Neon Database Pool',
+                      'Custom Domain & White-Label Receipt Branding',
+                    ],
+                  },
+                ].map((pkg) => (
+                  <motion.div
+                    key={pkg.code}
+                    whileHover={{ y: -6, scale: 1.018 }}
+                    transition={{ type: 'spring', stiffness: 360, damping: 24 }}
+                    className="murmura-card-vibrate"
+                    style={{
+                      background: pkg.bg,
+                      color: '#18181B',
+                      borderRadius: '20px',
+                      padding: '22px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: '14px',
+                      boxShadow: isLight
+                        ? '0 14px 28px -12px rgba(0,0,0,0.12)'
+                        : '0 14px 28px -12px rgba(0,0,0,0.5)',
+                      cursor: 'default',
+                    }}
+                  >
+                    <div>
+                      <span
+                        style={{
+                          background: '#18181B',
+                          color: '#F8FAFC',
+                          padding: '3px 10px',
+                          borderRadius: '999px',
+                          fontSize: '10.5px',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {pkg.code}
+                      </span>
+                      <h3 style={{ margin: '10px 0 4px', fontSize: '22px', fontWeight: 800 }}>{pkg.name}</h3>
+                      <div style={{ fontSize: '18px', fontWeight: 800 }}>
+                        {currency === 'IDR' ? pkg.price : pkg.usd}
+                      </div>
+                      <ul style={{ margin: '14px 0 0', paddingLeft: '18px', fontSize: '12.5px', lineHeight: 1.7 }}>
+                        {pkg.features.map((f) => (
+                          <li key={f}>{f}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => {
+                        setNewDealForm((p) => ({ ...p, plan_code: pkg.code }));
+                        setShowNewDealModal(true);
+                      }}
                       style={{
                         background: '#18181B',
                         color: '#F8FAFC',
-                        padding: '3px 10px',
+                        border: 'none',
                         borderRadius: '999px',
-                        fontSize: '10.5px',
+                        padding: '10px 16px',
+                        fontSize: '12px',
                         fontWeight: 700,
-                        textTransform: 'uppercase',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
                       }}
                     >
-                      {pkg.code}
-                    </span>
-                    <h3 style={{ margin: '10px 0 4px', fontSize: '22px', fontWeight: 800 }}>{pkg.name}</h3>
-                    <div style={{ fontSize: '18px', fontWeight: 800 }}>
-                      {currency === 'IDR' ? pkg.price : pkg.usd}
-                    </div>
-                    <ul style={{ margin: '14px 0 0', paddingLeft: '18px', fontSize: '12.5px', lineHeight: 1.7 }}>
-                      {pkg.features.map((f) => (
-                        <li key={f}>{f}</li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setNewDealForm((p) => ({ ...p, plan_code: pkg.code }));
-                      setShowNewDealModal(true);
-                    }}
-                    style={{
-                      background: '#18181B',
-                      color: '#F8FAFC',
-                      border: 'none',
-                      borderRadius: '999px',
-                      padding: '10px 16px',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    + Buat Deal Paket {pkg.code.toUpperCase()}
-                  </button>
-                </div>
-              ))}
+                      + Buat Deal Paket {pkg.code.toUpperCase()}
+                    </motion.button>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           </div>
         )}
