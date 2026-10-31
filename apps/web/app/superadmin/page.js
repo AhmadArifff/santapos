@@ -293,6 +293,7 @@ export default function SuperadminPage() {
   const isLight = theme === 'murmura';
   const textPrimary = isLight ? '#14171D' : '#F8FAFC';
   const textSecondary = isLight ? '#5A6065' : '#94A3B8';
+  const textMuted = isLight ? '#8C9196' : '#64748B';
   const surfaceBg = isLight ? '#FFFFFF' : '#131C2E';
   const surfaceBorder = isLight ? 'rgba(20, 23, 29, 0.08)' : 'rgba(255, 255, 255, 0.08)';
 
