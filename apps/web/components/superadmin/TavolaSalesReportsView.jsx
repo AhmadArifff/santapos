@@ -183,6 +183,7 @@ export default function TavolaSalesReportsView({
   const [period, setPeriod] = useState('90D');
   const [hoveredRevenuePoint, setHoveredRevenuePoint] = useState(null);
   const [hoveredHeatmapCell, setHoveredHeatmapCell] = useState(null);
+  const [hoveredChannel, setHoveredChannel] = useState(null);
 
   const multiplier = period === '7D' ? 0.12 : period === '30D' ? 0.38 : 1;
   const isIdr = currency === 'IDR';
@@ -242,32 +243,64 @@ export default function TavolaSalesReportsView({
     return '#172236'; // Quiet
   };
 
+  // Dynamic Timeline Filtering for 7D / 30D / 90D
+  const filteredTimeline = useMemo(() => {
+    if (period === '7D') {
+      const lastPts = REVENUE_TIMELINE_90D.slice(-7);
+      const minX = 38;
+      const maxX = 635;
+      const step = (maxX - minX) / (lastPts.length - 1);
+      return lastPts.map((pt, i) => ({
+        ...pt,
+        x: Math.round(minX + i * step),
+      }));
+    }
+    if (period === '30D') {
+      const lastPts = REVENUE_TIMELINE_90D.slice(-14);
+      const minX = 38;
+      const maxX = 635;
+      const step = (maxX - minX) / (lastPts.length - 1);
+      return lastPts.map((pt, i) => ({
+        ...pt,
+        x: Math.round(minX + i * step),
+      }));
+    }
+    return REVENUE_TIMELINE_90D;
+  }, [period]);
+
+  // Dynamically Located Peak Performance Point
+  const peakPoint = useMemo(() => {
+    if (!filteredTimeline || filteredTimeline.length === 0) return null;
+    return filteredTimeline.reduce((max, pt) => (pt.rev > max.rev ? pt : max), filteredTimeline[0]);
+  }, [filteredTimeline]);
+
   // Spline Path Generation
   const revenueSpline = useMemo(() => {
-    return buildSmoothSpline(REVENUE_TIMELINE_90D, 0.26);
-  }, []);
+    return buildSmoothSpline(filteredTimeline, 0.26);
+  }, [filteredTimeline]);
 
   const revenueAreaPath = useMemo(() => {
-    const first = REVENUE_TIMELINE_90D[0];
-    const last = REVENUE_TIMELINE_90D[REVENUE_TIMELINE_90D.length - 1];
+    if (!filteredTimeline.length) return '';
+    const first = filteredTimeline[0];
+    const last = filteredTimeline[filteredTimeline.length - 1];
     return `${revenueSpline} L ${last.x} 185 L ${first.x} 185 Z`;
-  }, [revenueSpline]);
+  }, [filteredTimeline, revenueSpline]);
 
   const avgSpline = useMemo(() => {
-    const avgPts = REVENUE_TIMELINE_90D.map((pt) => {
+    const avgPts = filteredTimeline.map((pt) => {
       const avgY = 185 - (pt.avgRev / 1000) * 8;
       return { x: pt.x, y: avgY };
     });
     return buildSmoothSpline(avgPts, 0.28);
-  }, []);
+  }, [filteredTimeline]);
 
   // Handle Mouse Hover along Revenue SVG Chart
   const handleRevenueMouseMove = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const mouseX = ((e.clientX - rect.left) / rect.width) * 680;
-    let closest = REVENUE_TIMELINE_90D[0];
+    let closest = filteredTimeline[0];
     let minDist = 9999;
-    for (const pt of REVENUE_TIMELINE_90D) {
+    for (const pt of filteredTimeline) {
       const dist = Math.abs(pt.x - mouseX);
       if (dist < minDist) {
         minDist = dist;
@@ -759,26 +792,92 @@ export default function TavolaSalesReportsView({
               <text x="12" y="189" fill={textMuted} fontSize="10" fontFamily={fontSans}>$0</text>
 
               {/* Shaded Area under Curve */}
-              <path d={revenueAreaPath} fill="url(#revenueSplineAreaGrad)" />
+              <motion.path
+                key={`area-${period}`}
+                d={revenueAreaPath}
+                fill="url(#revenueSplineAreaGrad)"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.65, ease: 'easeOut' }}
+              />
 
               {/* 7-Day Average Dashed Line */}
-              <path
+              <motion.path
+                key={`avg-${period}`}
                 d={avgSpline}
                 fill="none"
                 stroke={isLight ? '#94A3B8' : '#64748B'}
                 strokeWidth="1.6"
                 strokeDasharray="4 4"
+                initial={{ pathLength: 0, opacity: 0 }}
+                animate={{ pathLength: 1, opacity: 1 }}
+                transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
               />
 
               {/* Primary Coral/Terracotta Smooth Spline Wave */}
-              <path
+              <motion.path
+                key={`primary-${period}`}
                 d={revenueSpline}
                 fill="none"
                 stroke={coralLineColor}
                 strokeWidth="2.4"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                initial={{ pathLength: 0, opacity: 0.2 }}
+                animate={{ pathLength: 1, opacity: 1 }}
+                transition={{ duration: 1.05, ease: [0.16, 1, 0.3, 1] }}
               />
+
+              {/* Peak Day Floating Radar Pulse Ring with Micro Badge */}
+              {peakPoint && (
+                <g transform={`translate(${peakPoint.x}, ${peakPoint.y})`}>
+                  <circle
+                    r="4"
+                    className="murmura-radar-pulse"
+                    fill="none"
+                    stroke={coralLineColor}
+                    style={{ strokeDasharray: 'none' }}
+                  />
+                  <circle
+                    r="4"
+                    className="murmura-radar-pulse-delayed"
+                    fill="none"
+                    stroke={coralLineColor}
+                    style={{ strokeDasharray: 'none' }}
+                  />
+                  <circle
+                    r="5"
+                    fill={coralLineColor}
+                    stroke={cardBg}
+                    strokeWidth="2"
+                    style={{ filter: `drop-shadow(0 0 6px ${coralLineColor})` }}
+                  />
+                  {/* Micro Badge above Peak Point */}
+                  <g transform="translate(0, -18)">
+                    <rect
+                      x="-31"
+                      y="-11"
+                      width="62"
+                      height="16"
+                      rx="8"
+                      fill={isLight ? '#161920' : '#14171D'}
+                      stroke={coralLineColor}
+                      strokeWidth="1"
+                    />
+                    <text
+                      x="0"
+                      y="1"
+                      textAnchor="middle"
+                      fill="#FFFFFF"
+                      fontSize="8"
+                      fontWeight="700"
+                      fontFamily={fontSans}
+                    >
+                      ★ PEAK DAY
+                    </text>
+                  </g>
+                </g>
+              )}
 
               {/* Hover Cursor Vertical Guide & Glow Dot */}
               {hoveredRevenuePoint && (
@@ -796,7 +895,7 @@ export default function TavolaSalesReportsView({
                   <circle
                     cx={hoveredRevenuePoint.x}
                     cy={hoveredRevenuePoint.y}
-                    r="5"
+                    r="5.5"
                     fill={coralLineColor}
                     stroke={cardBg}
                     strokeWidth="2"
@@ -804,19 +903,39 @@ export default function TavolaSalesReportsView({
                 </>
               )}
 
-              {/* X-Axis Date Labels */}
-              {[
-                { x: 38, label: 'Jul 22' },
-                { x: 105, label: 'Jul 31' },
-                { x: 168, label: 'Aug 9' },
-                { x: 232, label: 'Aug 18' },
-                { x: 296, label: 'Aug 27' },
-                { x: 360, label: 'Sep 5' },
-                { x: 424, label: 'Sep 14' },
-                { x: 488, label: 'Sep 23' },
-                { x: 552, label: 'Oct 2' },
-                { x: 635, label: 'Today' },
-              ].map((tick) => (
+              {/* X-Axis Dynamic Date Labels */}
+              {(period === '7D'
+                ? [
+                    { x: 38, label: 'Oct 25' },
+                    { x: 137, label: 'Oct 26' },
+                    { x: 237, label: 'Oct 27' },
+                    { x: 336, label: 'Oct 28' },
+                    { x: 436, label: 'Oct 29' },
+                    { x: 535, label: 'Oct 30' },
+                    { x: 635, label: 'Today' },
+                  ]
+                : period === '30D'
+                ? [
+                    { x: 38, label: 'Oct 1' },
+                    { x: 137, label: 'Oct 7' },
+                    { x: 237, label: 'Oct 14' },
+                    { x: 336, label: 'Oct 21' },
+                    { x: 436, label: 'Oct 28' },
+                    { x: 635, label: 'Today' },
+                  ]
+                : [
+                    { x: 38, label: 'Jul 22' },
+                    { x: 105, label: 'Jul 31' },
+                    { x: 168, label: 'Aug 9' },
+                    { x: 232, label: 'Aug 18' },
+                    { x: 296, label: 'Aug 27' },
+                    { x: 360, label: 'Sep 5' },
+                    { x: 424, label: 'Sep 14' },
+                    { x: 488, label: 'Sep 23' },
+                    { x: 552, label: 'Oct 2' },
+                    { x: 635, label: 'Today' },
+                  ]
+              ).map((tick) => (
                 <text key={tick.label} x={tick.x} y="204" fill={textMuted} fontSize="9.5" fontFamily={fontSans}>
                   {tick.label}
                 </text>
@@ -902,7 +1021,7 @@ export default function TavolaSalesReportsView({
             {/* Center Donut Chart with Orbital Satellite Indicators */}
             <div style={{ display: 'grid', placeItems: 'center', margin: '14px 0' }}>
               <div style={{ position: 'relative', width: '172px', height: '172px' }}>
-                <svg viewBox="0 0 180 180" style={{ width: '100%', height: '100%' }}>
+                <svg viewBox="0 0 180 180" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
                   {/* Background Track Ring */}
                   <circle
                     cx="90"
@@ -913,28 +1032,69 @@ export default function TavolaSalesReportsView({
                     strokeWidth="18"
                   />
                   {/* Dine-in / Franchise Arc (72.4%) */}
-                  <circle
+                  <motion.circle
+                    key={`arc-${period}`}
                     cx="90"
                     cy="90"
                     r="64"
                     fill="none"
                     stroke={isLight ? '#0E7C5B' : '#263757'}
-                    strokeWidth="18"
+                    strokeWidth={hoveredChannel === 'dine-in' ? 22 : 18}
                     strokeDasharray="290 402"
                     transform="rotate(-90 90 90)"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
+                    style={{
+                      transition: 'stroke-width 0.25s ease, filter 0.25s ease',
+                      filter: hoveredChannel === 'dine-in' ? 'drop-shadow(0 0 8px rgba(14, 124, 91, 0.55))' : 'none',
+                    }}
                   />
                   {/* Orbital Satellite Indicators from Screenshot */}
-                  <rect
-                    x="96"
-                    y="14"
-                    width="24"
-                    height="14"
-                    rx="7"
-                    fill="#F3A68F"
-                    transform="rotate(14 108 21)"
-                  />
-                  <circle cx="44" cy="40" r="8" fill="#BCE3D4" />
-                  <circle cx="26" cy="96" r="8" fill="#EADCA6" />
+                  {/* Dine-in Terracotta Capsule */}
+                  <g
+                    className="donut-satellite-hover"
+                    onMouseEnter={() => setHoveredChannel('dine-in')}
+                    onMouseLeave={() => setHoveredChannel(null)}
+                    style={{
+                      transformOrigin: '108px 21px',
+                      transform: hoveredChannel === 'dine-in' ? 'scale(1.35)' : 'scale(1)',
+                    }}
+                  >
+                    <rect
+                      x="96"
+                      y="14"
+                      width="24"
+                      height="14"
+                      rx="7"
+                      fill="#F3A68F"
+                      transform="rotate(14 108 21)"
+                    />
+                  </g>
+                  {/* Delivery Sage Dot */}
+                  <g
+                    className="donut-satellite-hover"
+                    onMouseEnter={() => setHoveredChannel('delivery')}
+                    onMouseLeave={() => setHoveredChannel(null)}
+                    style={{
+                      transformOrigin: '44px 40px',
+                      transform: hoveredChannel === 'delivery' ? 'scale(1.45)' : 'scale(1)',
+                    }}
+                  >
+                    <circle cx="44" cy="40" r="8" fill="#BCE3D4" />
+                  </g>
+                  {/* Takeaway Butter Dot */}
+                  <g
+                    className="donut-satellite-hover"
+                    onMouseEnter={() => setHoveredChannel('takeaway')}
+                    onMouseLeave={() => setHoveredChannel(null)}
+                    style={{
+                      transformOrigin: '26px 96px',
+                      transform: hoveredChannel === 'takeaway' ? 'scale(1.45)' : 'scale(1)',
+                    }}
+                  >
+                    <circle cx="26" cy="96" r="8" fill="#EADCA6" />
+                  </g>
                 </svg>
 
                 {/* Harmonized Center Value */}
@@ -959,18 +1119,29 @@ export default function TavolaSalesReportsView({
                   >
                     {isIdr ? 'Rp 11,4M' : '$718.6K'}
                   </span>
-                  <span style={{ fontSize: '11px', color: textSecondary, fontWeight: 500, marginTop: '1px' }}>
-                    revenue
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      color: hoveredChannel ? (isLight ? '#0E7C5B' : '#F2B249') : textSecondary,
+                      fontWeight: 600,
+                      marginTop: '1px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                      transition: 'color 0.2s ease',
+                    }}
+                  >
+                    {hoveredChannel ? hoveredChannel.replace('-', ' ') : 'revenue'}
                   </span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 3 Channel Progress Rows */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {/* 3 Channel Progress Rows with Interactive Hover Linkage */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {[
               {
+                id: 'dine-in',
                 icon: '🍴',
                 bg: '#F3A68F',
                 name: 'Dine-in · Franchise Plan',
@@ -978,6 +1149,7 @@ export default function TavolaSalesReportsView({
                 pct: 72.4,
               },
               {
+                id: 'takeaway',
                 icon: '🛍️',
                 bg: '#EADCA6',
                 name: 'Takeaway · Pro Plan',
@@ -985,59 +1157,87 @@ export default function TavolaSalesReportsView({
                 pct: 15.0,
               },
               {
+                id: 'delivery',
                 icon: '🛵',
                 bg: '#BCE3D4',
                 name: 'Delivery · Starter Plan',
                 amount: formatMoney(74539),
                 pct: 12.6,
               },
-            ].map((ch) => (
-              <div key={ch.name} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            ].map((ch) => {
+              const isHovered = hoveredChannel === ch.id;
+              return (
                 <div
+                  key={ch.name}
+                  onMouseEnter={() => setHoveredChannel(ch.id)}
+                  onMouseLeave={() => setHoveredChannel(null)}
                   style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '10px',
-                    background: ch.bg,
-                    color: '#18181B',
-                    display: 'grid',
-                    placeItems: 'center',
-                    fontSize: '15px',
-                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '8px 10px',
+                    borderRadius: '12px',
+                    background: isHovered
+                      ? isLight
+                        ? 'rgba(20, 23, 29, 0.05)'
+                        : 'rgba(255, 255, 255, 0.06)'
+                      : 'transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    transform: isHovered ? 'translateX(4px)' : 'none',
                   }}
                 >
-                  {ch.icon}
-                </div>
-
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                    <span style={{ fontSize: '12.5px', fontWeight: 600, color: textPrimary }}>{ch.name}</span>
-                    <span style={{ fontSize: '12.5px', fontWeight: 650, color: textPrimary, fontVariantNumeric: 'tabular-nums' }}>
-                      {ch.amount}
-                    </span>
-                  </div>
                   <div
                     style={{
-                      height: '4px',
-                      borderRadius: '999px',
-                      background: isLight ? '#F1F5F9' : '#1E2C46',
-                      overflow: 'hidden',
-                      marginBottom: '4px',
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '10px',
+                      background: ch.bg,
+                      color: '#18181B',
+                      display: 'grid',
+                      placeItems: 'center',
+                      fontSize: '15px',
+                      flexShrink: 0,
+                      transform: isHovered ? 'scale(1.12)' : 'scale(1)',
+                      transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
                     }}
                   >
+                    {ch.icon}
+                  </div>
+
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                      <span style={{ fontSize: '12.5px', fontWeight: 600, color: textPrimary }}>{ch.name}</span>
+                      <span style={{ fontSize: '12.5px', fontWeight: 650, color: textPrimary, fontVariantNumeric: 'tabular-nums' }}>
+                        {ch.amount}
+                      </span>
+                    </div>
                     <div
                       style={{
-                        width: `${ch.pct}%`,
-                        height: '100%',
-                        background: ch.bg,
+                        height: '4px',
                         borderRadius: '999px',
+                        background: isLight ? '#F1F5F9' : '#1E2C46',
+                        overflow: 'hidden',
+                        marginBottom: '4px',
                       }}
-                    />
+                    >
+                      <motion.div
+                        key={`prog-${ch.id}-${period}`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${ch.pct}%` }}
+                        transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+                        style={{
+                          height: '100%',
+                          background: ch.bg,
+                          borderRadius: '999px',
+                        }}
+                      />
+                    </div>
+                    <div style={{ fontSize: '10.5px', color: textSecondary, fontWeight: 450 }}>{ch.pct}% of sales</div>
                   </div>
-                  <div style={{ fontSize: '10.5px', color: textSecondary, fontWeight: 450 }}>{ch.pct}% of sales</div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -1154,7 +1354,23 @@ export default function TavolaSalesReportsView({
                         borderRadius: '6px',
                         background: getHeatmapColor(lvl),
                         cursor: 'pointer',
-                        transition: 'transform 0.12s ease',
+                        transition: 'transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.16s ease',
+                        position: 'relative',
+                        zIndex:
+                          hoveredHeatmapCell?.day === row.day &&
+                          hoveredHeatmapCell?.hour === HEATMAP_HOURS[idx]
+                            ? 5
+                            : 1,
+                        transform:
+                          hoveredHeatmapCell?.day === row.day &&
+                          hoveredHeatmapCell?.hour === HEATMAP_HOURS[idx]
+                            ? 'scale(1.28)'
+                            : 'scale(1)',
+                        boxShadow:
+                          hoveredHeatmapCell?.day === row.day &&
+                          hoveredHeatmapCell?.hour === HEATMAP_HOURS[idx]
+                            ? '0 4px 12px rgba(0,0,0,0.22)'
+                            : 'none',
                       }}
                     />
                   ))}
@@ -1345,27 +1561,39 @@ export default function TavolaSalesReportsView({
               <text x="2" y="168" fill={textMuted} fontSize="9.5" fontFamily={fontSans}>20%</text>
 
               {/* Prime Cost Spline (~57%) */}
-              <path
+              <motion.path
+                key={`prime-cost-${period}`}
                 d="M 38 56 Q 75 49, 110 58 T 185 52 T 260 56 T 335 48 T 410 57 T 498 53"
                 fill="none"
                 stroke="#F3A68F"
                 strokeWidth="2.2"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 0.95, ease: [0.16, 1, 0.3, 1] }}
               />
 
               {/* Food Cost Spline (~29%) */}
-              <path
+              <motion.path
+                key={`food-cost-${period}`}
                 d="M 38 134 Q 75 128, 110 136 T 185 130 T 260 135 T 335 129 T 410 136 T 498 132"
                 fill="none"
                 stroke="#EADCA6"
                 strokeWidth="1.6"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 1.05, ease: [0.16, 1, 0.3, 1] }}
               />
 
               {/* Labour Spline (~28%) */}
-              <path
+              <motion.path
+                key={`labour-cost-${period}`}
                 d="M 38 140 Q 75 144, 110 138 T 185 142 T 260 139 T 335 143 T 410 138 T 498 141"
                 fill="none"
                 stroke="#BCE3D4"
                 strokeWidth="1.5"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 1.15, ease: [0.16, 1, 0.3, 1] }}
               />
 
               {/* X-Axis Dates */}

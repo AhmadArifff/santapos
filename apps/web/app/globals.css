@@ -2950,3 +2950,41 @@ body {
 .counter-bump {
   animation: murmuraCounterBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+/* Radar Pulse for Peak Sales Days */
+@keyframes murmuraRadarPulse {
+  0% {
+    r: 4;
+    opacity: 0.95;
+    stroke-width: 2.2;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    r: 20;
+    opacity: 0;
+    stroke-width: 0.6;
+  }
+}
+
+.murmura-radar-pulse {
+  animation: murmuraRadarPulse 2.4s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+  transform-origin: center;
+}
+
+.murmura-radar-pulse-delayed {
+  animation: murmuraRadarPulse 2.4s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+  animation-delay: 1.2s;
+  transform-origin: center;
+}
+
+/* Donut Interactive Hover Glow */
+.donut-satellite-hover {
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.28s ease;
+  cursor: pointer;
+}
+.donut-satellite-hover:hover {
+  transform: scale(1.32);
+  filter: drop-shadow(0 0 6px currentColor);
+}
