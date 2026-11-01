@@ -286,21 +286,23 @@ export default function SelectDiningTablePage() {
                       type="button"
                       initial={{ opacity: 0, y: 16 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.035 }}
+                      whileHover={!locked ? { y: -4, scale: 1.02 } : {}}
+                      whileTap={!locked ? { scale: 0.98 } : {}}
+                      transition={{ type: 'spring', stiffness: 350, damping: 25 }}
                       onClick={() => !locked && setSelected(table)}
                       disabled={locked}
-                      className={`group rounded-3xl border p-5 text-left transition ${
+                      className={`group murmura-card-vibrate rounded-3xl border p-5 text-left transition-all duration-300 ${
                         locked
                           ? 'cursor-not-allowed border-red-400/20 bg-red-500/10 text-red-100/70 opacity-70'
                           : hasSavedOrder && busy
-                            ? 'border-emerald-300/30 bg-emerald-500/12 text-emerald-50 hover:-translate-y-1 hover:border-emerald-200/60'
+                            ? 'border-emerald-300/30 bg-emerald-500/12 text-emerald-50 hover:border-emerald-200/60'
                             : hasSavedDraft
-                              ? 'border-sky-300/30 bg-sky-500/12 text-sky-50 hover:-translate-y-1 hover:border-sky-200/60'
+                              ? 'border-sky-300/30 bg-sky-500/12 text-sky-50 hover:border-sky-200/60'
                               :
                         active
-                          ? 'border-[#C9A84C] bg-[#C9A84C] text-[#0D0A06] shadow-xl shadow-[#C9A84C]/20'
+                          ? 'border-[#C9A84C] bg-[#C9A84C] text-[#0D0A06] shadow-xl shadow-[#C9A84C]/25'
                           :
-                            'border-[#C9A84C]/18 bg-[#1A1409]/88 text-[#F5EDD8] hover:-translate-y-1 hover:border-[#C9A84C]/60'
+                            'border-[#C9A84C]/18 bg-[#1A1409]/88 text-[#F5EDD8] hover:border-[#C9A84C]/60'
                       }`}
                     >
                       <span className="text-xs font-bold uppercase tracking-[0.24em] opacity-70">Meja</span>

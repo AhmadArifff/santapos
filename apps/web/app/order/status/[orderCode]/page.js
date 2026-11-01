@@ -146,7 +146,11 @@ export default function OrderStatusPage() {
                     active ? 'border-[#C9A84C]/55 bg-[#C9A84C]/12' : 'border-[#C9A84C]/12 bg-[#0D0A06]/45'
                   }`}>
                     <div className="flex gap-3">
-                      <span className={`mt-1 h-5 w-5 rounded-full border ${active ? 'border-[#C9A84C] bg-[#C9A84C]' : 'border-[#C9A84C]/30'}`} />
+                      <span className={`relative mt-1 flex h-5 w-5 items-center justify-center rounded-full border ${active ? 'border-[#C9A84C] bg-[#C9A84C]' : 'border-[#C9A84C]/30'}`}>
+                        {step.key === order.status && (
+                          <span className="murmura-radar-pulse absolute -inset-1 rounded-full bg-[#C9A84C]/40" />
+                        )}
+                      </span>
                       <div>
                         <p className="font-black">{step.label}</p>
                         <p className="mt-1 text-sm text-[#EDE0C4]/62">{step.desc}</p>
@@ -173,13 +177,15 @@ export default function OrderStatusPage() {
 
           <CustomerPaymentPanel order={order} onOrderUpdate={setOrder} />
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="button"
             onClick={printReceipt}
-            className="mt-6 w-full rounded-2xl bg-[#C9A84C] px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-[#0D0A06] transition hover:bg-[#E8C96A]"
+            className="mt-6 w-full rounded-2xl bg-[#C9A84C] px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-[#0D0A06] shadow-lg shadow-[#C9A84C]/20 transition hover:bg-[#E8C96A]"
           >
             Download / Cetak Struk Digital
-          </button>
+          </motion.button>
         </motion.div>
 
         <div className="hidden">

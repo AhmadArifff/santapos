@@ -1468,20 +1468,43 @@ export default function CustomerOrderPage() {
 
           <div className="sticky top-[73px] z-30 -mx-3 mb-4 flex gap-2 overflow-x-auto border-y border-[#C9A84C]/10 bg-[#0D0A06]/95 px-3 py-2 backdrop-blur sm:static sm:mx-0 sm:mb-5 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
             <button
+              type="button"
               onClick={() => setActiveCategory('all')}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold ${activeCategory === 'all' ? 'bg-[#C9A84C] text-[#0D0A06]' : 'bg-[#1A1409] text-[#EDE0C4]'}`}
+              className={`relative shrink-0 rounded-full px-4 py-2 text-sm font-bold transition-colors ${
+                activeCategory === 'all' ? 'text-[#0D0A06]' : 'bg-[#1A1409] text-[#EDE0C4] hover:text-white'
+              }`}
             >
-              Semua
+              {activeCategory === 'all' && (
+                <motion.div
+                  layoutId="customerMenuCategoryPill"
+                  className="absolute inset-0 rounded-full bg-[#C9A84C] shadow-md shadow-[#C9A84C]/25"
+                  transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
+                />
+              )}
+              <span className="relative z-10">Semua</span>
             </button>
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setActiveCategory(category.id)}
-                className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold ${activeCategory === category.id ? 'bg-[#C9A84C] text-[#0D0A06]' : 'bg-[#1A1409] text-[#EDE0C4]'}`}
-              >
-                {category.name}
-              </button>
-            ))}
+            {categories.map((category) => {
+              const isActive = activeCategory === category.id;
+              return (
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() => setActiveCategory(category.id)}
+                  className={`relative shrink-0 rounded-full px-4 py-2 text-sm font-bold transition-colors ${
+                    isActive ? 'text-[#0D0A06]' : 'bg-[#1A1409] text-[#EDE0C4] hover:text-white'
+                  }`}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="customerMenuCategoryPill"
+                      className="absolute inset-0 rounded-full bg-[#C9A84C] shadow-md shadow-[#C9A84C]/25"
+                      transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
+                    />
+                  )}
+                  <span className="relative z-10">{category.name}</span>
+                </button>
+              );
+            })}
           </div>
 
           {!tableBusy && bundleHints.length > 0 && (
@@ -1535,12 +1558,13 @@ export default function CustomerOrderPage() {
                   key={product.id}
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.025 }}
+                  whileHover={{ y: -4, scale: 1.012 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 25 }}
                   onClick={() => {
                     setSelectedProduct(product);
                     setProductDetailFlipped(false);
                   }}
-                  className="flex min-h-[150px] cursor-pointer overflow-hidden rounded-3xl border border-[#C9A84C]/16 bg-[#1A1409] transition hover:border-[#C9A84C]/35 sm:block sm:min-h-0 sm:rounded-[1.6rem]"
+                  className="murmura-card-vibrate flex min-h-[150px] cursor-pointer overflow-hidden rounded-3xl border border-[#C9A84C]/16 bg-[#1A1409] transition-all duration-300 hover:border-[#C9A84C]/50 hover:shadow-xl hover:shadow-[#C9A84C]/10 sm:block sm:min-h-0 sm:rounded-[1.6rem]"
                 >
                   <div className="h-[150px] w-20 shrink-0 overflow-hidden bg-[#241C0E] min-[380px]:w-24 sm:h-44 sm:w-full">
                     {product.image_url ? (
@@ -1561,16 +1585,18 @@ export default function CustomerOrderPage() {
                       <span className={`max-w-full rounded-full px-2.5 py-1 text-xs font-bold ${soldOut ? 'bg-red-500/15 text-red-200' : 'bg-emerald-500/15 text-emerald-200'}`}>
                         {tableBusy ? 'Meja sedang aktif' : soldOut ? 'Stok habis' : `${product.stock} porsi siap`}
                       </span>
-                      <button
+                      <motion.button
+                        whileHover={!soldOut ? { scale: 1.05 } : {}}
+                        whileTap={!soldOut ? { scale: 0.95 } : {}}
                         onClick={(event) => {
                           event.stopPropagation();
                           addToCart(product);
                         }}
                         disabled={soldOut}
-                        className="min-h-9 min-w-[86px] max-w-full shrink-0 rounded-xl bg-[#C9A84C] px-3 py-2 text-sm font-black text-[#0D0A06] disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-10 sm:px-4"
+                        className="min-h-9 min-w-[86px] max-w-full shrink-0 rounded-xl bg-[#C9A84C] px-3 py-2 text-sm font-black text-[#0D0A06] shadow-md shadow-[#C9A84C]/20 transition disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-10 sm:px-4"
                       >
                         Tambah
-                      </button>
+                      </motion.button>
                     </div>
                     {!tableBusy && !soldOut && (
                       <p className="mt-2 text-xs font-semibold text-[#EDE0C4]/55">{stockSource}</p>
