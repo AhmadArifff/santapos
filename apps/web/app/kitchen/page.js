@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import AuthGuard from '@/components/ui/AuthGuard';
 import { getCustomerOrders, updateCustomerOrderStatus, getPublicDiningTables } from '@/lib/api';
@@ -652,24 +653,40 @@ export default function KitchenDisplayPage() {
                   type="button"
                   onClick={() => setActiveNavTab(tab.id)}
                   style={{
+                    position: 'relative',
                     padding: '7px 18px',
                     borderRadius: '999px',
                     border: 'none',
                     fontSize: '12.5px',
                     fontWeight: active ? 800 : 600,
                     cursor: 'pointer',
-                    background: active ? '#F3A68F' : 'transparent',
+                    background: 'transparent',
                     color: active ? '#0F172A' : '#94A3B8',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '7px',
-                    transition: 'all 0.18s ease',
+                    transition: 'color 0.18s ease',
                   }}
                 >
-                  <span>{tab.label}</span>
+                  {active && (
+                    <motion.div
+                      layoutId="kitchenNavPill"
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        borderRadius: '999px',
+                        background: '#F3A68F',
+                        zIndex: 0,
+                      }}
+                      transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                    />
+                  )}
+                  <span style={{ position: 'relative', zIndex: 1 }}>{tab.label}</span>
                   {tab.badge !== undefined && (
                     <span
                       style={{
+                        position: 'relative',
+                        zIndex: 1,
                         padding: '1px 7px',
                         borderRadius: '999px',
                         fontSize: '10.5px',
@@ -712,7 +729,9 @@ export default function KitchenDisplayPage() {
               {currentTime.toLocaleTimeString('id-ID', { hour12: false })}
             </div>
 
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.94 }}
               type="button"
               onClick={() => setCurrencyMode((c) => (c === 'IDR' ? 'USD' : 'IDR'))}
               style={{
@@ -727,9 +746,11 @@ export default function KitchenDisplayPage() {
               }}
             >
               {currencyMode === 'IDR' ? 'Rp IDR' : '$ USD'}
-            </button>
+            </motion.button>
 
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.94 }}
               type="button"
               onClick={() => {
                 setSoundEnabled((v) => !v);
@@ -747,9 +768,11 @@ export default function KitchenDisplayPage() {
               }}
             >
               {soundEnabled ? '🔔 Bel ON' : '🔕 Bel OFF'}
-            </button>
+            </motion.button>
 
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.94 }}
               type="button"
               onClick={toggleFullscreen}
               style={{
@@ -764,7 +787,7 @@ export default function KitchenDisplayPage() {
               }}
             >
               {isFullscreen ? '⤢ Exit' : '⤢ Fullscreen'}
-            </button>
+            </motion.button>
           </div>
         </header>
 
@@ -818,8 +841,10 @@ export default function KitchenDisplayPage() {
               action: () => fetchKitchenData(),
             },
           ].map((btn, idx) => (
-            <button
+            <motion.button
               key={idx}
+              whileHover={{ scale: 1.15, color: '#F3A68F' }}
+              whileTap={{ scale: 0.9 }}
               type="button"
               onClick={btn.action}
               title={btn.title}
@@ -858,7 +883,7 @@ export default function KitchenDisplayPage() {
                   {btn.badge}
                 </span>
               )}
-            </button>
+            </motion.button>
           ))}
         </aside>
 
@@ -894,7 +919,10 @@ export default function KitchenDisplayPage() {
                   </h1>
 
                   {/* KPI Pill 1: Open tickets */}
-                  <div
+                  <motion.div
+                    whileHover={{ y: -3, scale: 1.02 }}
+                    transition={{ duration: 0.18 }}
+                    className="murmura-card-vibrate"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -940,10 +968,13 @@ export default function KitchenDisplayPage() {
                         Open tickets
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
 
                   {/* KPI Pill 2: Average ticket time */}
-                  <div
+                  <motion.div
+                    whileHover={{ y: -3, scale: 1.02 }}
+                    transition={{ duration: 0.18 }}
+                    className="murmura-card-vibrate"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -987,16 +1018,19 @@ export default function KitchenDisplayPage() {
                         Average ticket time today
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
 
                   {/* KPI Pill 3: Late over 15 min */}
-                  <div
+                  <motion.div
+                    whileHover={{ y: -3, scale: 1.02 }}
+                    transition={{ duration: 0.18 }}
+                    className="murmura-card-vibrate"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: '12px',
                       background: '#131C2E',
-                      border: '1px solid rgba(255,255,255,0.07)',
+                      border: lateTicketsCount > 0 ? '1px solid rgba(243, 166, 143, 0.4)' : '1px solid rgba(255,255,255,0.07)',
                       borderRadius: '999px',
                       padding: '10px 18px 10px 12px',
                     }}
@@ -1010,9 +1044,25 @@ export default function KitchenDisplayPage() {
                         display: 'grid',
                         placeItems: 'center',
                         fontSize: '14px',
+                        position: 'relative',
                       }}
                     >
                       ⚠️
+                      {lateTicketsCount > 0 && (
+                        <span
+                          className="murmura-radar-pulse"
+                          style={{
+                            position: 'absolute',
+                            top: '2px',
+                            right: '2px',
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            background: '#EF4444',
+                            display: 'inline-block',
+                          }}
+                        />
+                      )}
                     </div>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1036,7 +1086,7 @@ export default function KitchenDisplayPage() {
                         Late · over 15 min
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 </div>
               </div>
 
@@ -1109,6 +1159,7 @@ export default function KitchenDisplayPage() {
                         type="button"
                         onClick={() => setChannelFilter(chip.id)}
                         style={{
+                          position: 'relative',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '7px',
@@ -1120,12 +1171,28 @@ export default function KitchenDisplayPage() {
                           fontSize: '12px',
                           fontWeight: 700,
                           cursor: 'pointer',
+                          transition: 'color 0.18s ease',
                         }}
                       >
-                        <span>{chip.icon}</span>
-                        <span>{chip.label}</span>
+                        {active && (
+                          <motion.div
+                            layoutId="kitchenChannelPill"
+                            style={{
+                              position: 'absolute',
+                              inset: 0,
+                              borderRadius: '999px',
+                              background: '#F3A68F',
+                              zIndex: 0,
+                            }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                          />
+                        )}
+                        <span style={{ position: 'relative', zIndex: 1 }}>{chip.icon}</span>
+                        <span style={{ position: 'relative', zIndex: 1 }}>{chip.label}</span>
                         <span
                           style={{
+                            position: 'relative',
+                            zIndex: 1,
                             padding: '1px 6px',
                             borderRadius: '999px',
                             fontSize: '10.5px',
@@ -1177,17 +1244,32 @@ export default function KitchenDisplayPage() {
                       type="button"
                       onClick={() => setViewMode(m)}
                       style={{
+                        position: 'relative',
                         padding: '5px 14px',
                         borderRadius: '999px',
                         border: 'none',
                         fontSize: '12px',
                         fontWeight: 600,
                         cursor: 'pointer',
-                        background: viewMode === m ? '#24324B' : 'transparent',
+                        background: 'transparent',
                         color: viewMode === m ? '#F8FAFC' : '#64748B',
+                        transition: 'color 0.18s ease',
                       }}
                     >
-                      {m}
+                      {viewMode === m && (
+                        <motion.div
+                          layoutId="kitchenViewModePill"
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            borderRadius: '999px',
+                            background: '#24324B',
+                            zIndex: 0,
+                          }}
+                          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                        />
+                      )}
+                      <span style={{ position: 'relative', zIndex: 1 }}>{m}</span>
                     </button>
                   ))}
                 </div>
@@ -1195,7 +1277,9 @@ export default function KitchenDisplayPage() {
 
               {/* + New order Button + Drag Instruction Hint */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.04, y: -2 }}
+                  whileTap={{ scale: 0.96 }}
                   type="button"
                   onClick={() => setShowNewTicketModal(true)}
                   style={{
@@ -1211,7 +1295,7 @@ export default function KitchenDisplayPage() {
                   }}
                 >
                   + New order
-                </button>
+                </motion.button>
 
                 <span style={{ fontSize: '12px', color: '#94A3B8' }}>
                   ✋ <strong>Drag & Drop Aktif:</strong> Tarik kartu pesanan antar kolom (<em>New → Cooking → Ready → Served</em>) atau klik item makanan untuk mencoret yang sudah matang
@@ -1351,84 +1435,107 @@ export default function KitchenDisplayPage() {
                         )}
 
                         {/* Ticket Cards */}
-                        {col.tickets.map((ticket) => {
-                          const isBeingDragged = draggedTicket?.id === ticket.id;
-                          const isElevated = elevatedTicketId === ticket.id && col.stageKey === 'ready';
+                        <AnimatePresence mode="popLayout">
+                          {col.tickets.map((ticket) => {
+                            const isBeingDragged = draggedTicket?.id === ticket.id;
+                            const isElevated = elevatedTicketId === ticket.id && col.stageKey === 'ready';
 
-                          return (
-                            <div
-                              key={ticket.id}
-                              draggable
-                              onDragStart={(e) => handleDragStartTicket(e, ticket)}
-                              onDragEnd={() => {
-                                setDraggedTicket(null);
-                                setDragOverStage(null);
-                              }}
-                              onClick={() =>
-                                setElevatedTicketId((prev) => (prev === ticket.id ? null : ticket.id))
-                              }
-                              style={{
-                                background: col.cardBg,
-                                color: col.cardText,
-                                border: isDarkCol ? '1px solid rgba(255,255,255,0.08)' : 'none',
-                                borderRadius: '16px',
-                                padding: '14px',
-                                boxShadow:
-                                  isBeingDragged || isElevated
-                                    ? '0 26px 55px rgba(0,0,0,0.65), 0 0 0 2px #FFF'
-                                    : '0 10px 24px rgba(0,0,0,0.22)',
-                                transform: isBeingDragged
-                                  ? 'rotate(-2deg) scale(1.03)'
-                                  : isElevated
-                                  ? 'translate(-18px, -4px) rotate(-1.2deg) scale(1.02)'
-                                  : 'none',
-                                opacity: isBeingDragged ? 0.88 : 1,
-                                cursor: 'grab',
-                                transition: 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease',
-                                zIndex: isBeingDragged || isElevated ? 30 : 2,
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '10px',
-                              }}
-                            >
-                              {/* Top Row: Ticket # + Timer + Drag Handle */}
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            return (
+                              <motion.div
+                                layout
+                                initial={{ opacity: 0, scale: 0.94, y: 12 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: -10 }}
+                                transition={{ duration: 0.22 }}
+                                className="murmura-card-vibrate"
+                                key={ticket.id}
+                                draggable
+                                onDragStart={(e) => handleDragStartTicket(e, ticket)}
+                                onDragEnd={() => {
+                                  setDraggedTicket(null);
+                                  setDragOverStage(null);
+                                }}
+                                onClick={() =>
+                                  setElevatedTicketId((prev) => (prev === ticket.id ? null : ticket.id))
+                                }
+                                style={{
+                                  background: col.cardBg,
+                                  color: col.cardText,
+                                  border: isDarkCol ? '1px solid rgba(255,255,255,0.08)' : 'none',
+                                  borderRadius: '16px',
+                                  padding: '14px',
+                                  boxShadow:
+                                    isBeingDragged || isElevated
+                                      ? '0 26px 55px rgba(0,0,0,0.65), 0 0 0 2px #FFF'
+                                      : '0 10px 24px rgba(0,0,0,0.22)',
+                                  transform: isBeingDragged
+                                    ? 'rotate(-2deg) scale(1.03)'
+                                    : isElevated
+                                    ? 'translate(-18px, -4px) rotate(-1.2deg) scale(1.02)'
+                                    : 'none',
+                                  opacity: isBeingDragged ? 0.88 : 1,
+                                  cursor: 'grab',
+                                  transition: 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease',
+                                  zIndex: isBeingDragged || isElevated ? 30 : 2,
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '10px',
+                                }}
+                              >
+                                {/* Top Row: Ticket # + Timer + Drag Handle */}
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span
+                                      style={{
+                                        fontSize: '11.5px',
+                                        fontWeight: 700,
+                                        color: isDarkCol ? '#94A3B8' : '#3F3F46',
+                                      }}
+                                    >
+                                      {ticket.ticket_number}
+                                    </span>
+                                    <span
+                                      style={{
+                                        background: isDarkCol
+                                          ? 'rgba(255,255,255,0.08)'
+                                          : 'rgba(255,255,255,0.72)',
+                                        color: isDarkCol ? '#94A3B8' : '#18181B',
+                                        borderRadius: '999px',
+                                        padding: '2px 8px',
+                                        fontSize: '10.5px',
+                                        fontWeight: 700,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                      }}
+                                    >
+                                      {ticket.elapsed_mins >= 15 && col.stageKey !== 'completed' && (
+                                        <span
+                                          className="murmura-radar-pulse"
+                                          style={{
+                                            width: '6px',
+                                            height: '6px',
+                                            borderRadius: '50%',
+                                            background: '#EF4444',
+                                            display: 'inline-block',
+                                          }}
+                                          title="Pesanan terlambat (> 15m)!"
+                                        />
+                                      )}
+                                      {isDarkCol ? '✓' : '🕒'} {ticket.elapsed_mins} min
+                                    </span>
+                                  </div>
                                   <span
+                                    title="Tarik (Drag) kartu ini ke kolom lain"
                                     style={{
-                                      fontSize: '11.5px',
-                                      fontWeight: 700,
-                                      color: isDarkCol ? '#94A3B8' : '#3F3F46',
+                                      fontSize: '12px',
+                                      color: isDarkCol ? '#64748B' : '#3F3F46',
+                                      fontWeight: 800,
                                     }}
                                   >
-                                    {ticket.ticket_number}
-                                  </span>
-                                  <span
-                                    style={{
-                                      background: isDarkCol
-                                        ? 'rgba(255,255,255,0.08)'
-                                        : 'rgba(255,255,255,0.72)',
-                                      color: isDarkCol ? '#94A3B8' : '#18181B',
-                                      borderRadius: '999px',
-                                      padding: '2px 8px',
-                                      fontSize: '10.5px',
-                                      fontWeight: 700,
-                                    }}
-                                  >
-                                    {isDarkCol ? '✓' : '🕒'} {ticket.elapsed_mins} min
+                                    ⋮⋮
                                   </span>
                                 </div>
-                                <span
-                                  title="Tarik (Drag) kartu ini ke kolom lain"
-                                  style={{
-                                    fontSize: '12px',
-                                    color: isDarkCol ? '#64748B' : '#3F3F46',
-                                    fontWeight: 800,
-                                  }}
-                                >
-                                  ⋮⋮
-                                </span>
-                              </div>
 
                               {/* Table / Guest Title */}
                               <div
@@ -1528,7 +1635,9 @@ export default function KitchenDisplayPage() {
                                 </div>
 
                                 {col.nextStage ? (
-                                  <button
+                                  <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.92 }}
                                     type="button"
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -1547,7 +1656,7 @@ export default function KitchenDisplayPage() {
                                     }}
                                   >
                                     {col.btnLabel}
-                                  </button>
+                                  </motion.button>
                                 ) : (
                                   <span
                                     style={{
@@ -1563,9 +1672,10 @@ export default function KitchenDisplayPage() {
                                   </span>
                                 )}
                               </div>
-                            </div>
+                            </motion.div>
                           );
                         })}
+                        </AnimatePresence>
                       </div>
                     );
                   })}
@@ -1603,7 +1713,9 @@ export default function KitchenDisplayPage() {
                           <td style={{ padding: '12px 18px' }}>{t.stage.toUpperCase()}</td>
                           <td style={{ padding: '12px 18px', textAlign: 'right' }}>
                             {t.stage !== 'completed' && (
-                              <button
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.92 }}
                                 type="button"
                                 onClick={() =>
                                   moveTicketToStage(
@@ -1627,7 +1739,7 @@ export default function KitchenDisplayPage() {
                                 }}
                               >
                                 Advance →
-                              </button>
+                              </motion.button>
                             )}
                           </td>
                         </tr>
@@ -1669,69 +1781,49 @@ export default function KitchenDisplayPage() {
         </main>
 
         {/* MODAL: + NEW KITCHEN ORDER */}
-        {showNewTicketModal && (
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 80,
-              background: 'rgba(8, 13, 24, 0.78)',
-              backdropFilter: 'blur(6px)',
-              display: 'grid',
-              placeItems: 'center',
-              padding: '16px',
-            }}
-          >
-            <form
-              onSubmit={handleAddNewTicket}
+        <AnimatePresence>
+          {showNewTicketModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               style={{
-                width: '100%',
-                maxWidth: '460px',
-                background: '#131C2E',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: '22px',
-                padding: '24px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
+                position: 'fixed',
+                inset: 0,
+                zIndex: 80,
+                background: 'rgba(8, 13, 24, 0.78)',
+                backdropFilter: 'blur(6px)',
+                display: 'grid',
+                placeItems: 'center',
+                padding: '16px',
               }}
             >
-              <h3 style={{ margin: 0, fontSize: '18px', color: '#F8FAFC' }}>+ New Kitchen Order Ticket</h3>
-              <input
-                type="text"
-                required
-                placeholder="Nomor Meja / Nama Pemesan (contoh: Table 8)"
-                value={newTicketForm.table_label}
-                onChange={(e) => setNewTicketForm((p) => ({ ...p, table_label: e.target.value }))}
+              <motion.form
+                initial={{ scale: 0.92, opacity: 0, y: 16 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.92, opacity: 0, y: 16 }}
+                transition={{ type: 'spring', stiffness: 360, damping: 28 }}
+                onSubmit={handleAddNewTicket}
                 style={{
-                  padding: '9px 12px',
-                  borderRadius: '10px',
+                  width: '100%',
+                  maxWidth: '460px',
+                  background: '#131C2E',
                   border: '1px solid rgba(255,255,255,0.12)',
-                  background: '#0C1322',
-                  color: '#F8FAFC',
+                  borderRadius: '22px',
+                  padding: '24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
                 }}
-              />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <select
-                  value={newTicketForm.channel}
-                  onChange={(e) => setNewTicketForm((p) => ({ ...p, channel: e.target.value }))}
-                  style={{
-                    padding: '9px 12px',
-                    borderRadius: '10px',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    background: '#0C1322',
-                    color: '#F8FAFC',
-                  }}
-                >
-                  <option value="Dine-in">Dine-in</option>
-                  <option value="Takeaway">Takeaway</option>
-                  <option value="Delivery">Delivery</option>
-                </select>
+              >
+                <h3 style={{ margin: 0, fontSize: '18px', color: '#F8FAFC' }}>+ New Kitchen Order Ticket</h3>
                 <input
                   type="text"
-                  placeholder="Catatan Alergi / Level Pedas"
-                  value={newTicketForm.alert_badge}
-                  onChange={(e) => setNewTicketForm((p) => ({ ...p, alert_badge: e.target.value }))}
+                  required
+                  placeholder="Nomor Meja / Nama Pemesan (contoh: Table 8)"
+                  value={newTicketForm.table_label}
+                  onChange={(e) => setNewTicketForm((p) => ({ ...p, table_label: e.target.value }))}
                   style={{
                     padding: '9px 12px',
                     borderRadius: '10px',
@@ -1740,128 +1832,170 @@ export default function KitchenDisplayPage() {
                     color: '#F8FAFC',
                   }}
                 />
-              </div>
-              <textarea
-                rows={4}
-                value={newTicketForm.items_text}
-                onChange={(e) => setNewTicketForm((p) => ({ ...p, items_text: e.target.value }))}
-                placeholder="Daftar makanan (1 per baris)"
-                style={{
-                  padding: '9px 12px',
-                  borderRadius: '10px',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  background: '#0C1322',
-                  color: '#F8FAFC',
-                }}
-              />
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowNewTicketModal(false)}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <select
+                    value={newTicketForm.channel}
+                    onChange={(e) => setNewTicketForm((p) => ({ ...p, channel: e.target.value }))}
+                    style={{
+                      padding: '9px 12px',
+                      borderRadius: '10px',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      background: '#0C1322',
+                      color: '#F8FAFC',
+                    }}
+                  >
+                    <option value="Dine-in">Dine-in</option>
+                    <option value="Takeaway">Takeaway</option>
+                    <option value="Delivery">Delivery</option>
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Catatan Alergi / Level Pedas"
+                    value={newTicketForm.alert_badge}
+                    onChange={(e) => setNewTicketForm((p) => ({ ...p, alert_badge: e.target.value }))}
+                    style={{
+                      padding: '9px 12px',
+                      borderRadius: '10px',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      background: '#0C1322',
+                      color: '#F8FAFC',
+                    }}
+                  />
+                </div>
+                <textarea
+                  rows={4}
+                  value={newTicketForm.items_text}
+                  onChange={(e) => setNewTicketForm((p) => ({ ...p, items_text: e.target.value }))}
+                  placeholder="Daftar makanan (1 per baris)"
                   style={{
-                    background: '#1E2C46',
-                    color: '#CBD5E1',
-                    border: 'none',
-                    borderRadius: '999px',
-                    padding: '8px 16px',
-                    cursor: 'pointer',
+                    padding: '9px 12px',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    background: '#0C1322',
+                    color: '#F8FAFC',
                   }}
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
+                />
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    type="button"
+                    onClick={() => setShowNewTicketModal(false)}
+                    style={{
+                      background: '#1E2C46',
+                      color: '#CBD5E1',
+                      border: 'none',
+                      borderRadius: '999px',
+                      padding: '8px 16px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Batal
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.95 }}
+                    type="submit"
+                    style={{
+                      background: '#F3A68F',
+                      color: '#0F172A',
+                      border: 'none',
+                      borderRadius: '999px',
+                      padding: '8px 18px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Kirim ke Dapur
+                  </motion.button>
+                </div>
+              </motion.form>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* BOTTOM FLOATING TOAST WITH [Undo] BUTTON */}
+        <AnimatePresence>
+          {toastInfo.visible && (
+            <motion.div
+              initial={{ opacity: 0, y: 24, x: '-50%' }}
+              animate={{ opacity: 1, y: 0, x: '-50%' }}
+              exit={{ opacity: 0, y: 20, x: '-50%' }}
+              transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+              style={{
+                position: 'fixed',
+                bottom: '20px',
+                left: '50%',
+                zIndex: 60,
+                background: '#152036',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: '999px',
+                padding: '8px 10px 8px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                boxShadow: '0 16px 40px rgba(0,0,0,0.55)',
+              }}
+            >
+              <span
+                style={{
+                  width: '18px',
+                  height: '18px',
+                  borderRadius: '50%',
+                  background: 'rgba(156, 226, 198, 0.2)',
+                  color: '#9CE2C6',
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                }}
+              >
+                ✓
+              </span>
+              <span style={{ fontSize: '12.5px', color: '#E2E8F0', fontWeight: 500 }}>
+                {toastInfo.message}
+              </span>
+              {toastInfo.undoAction && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.94 }}
+                  type="button"
+                  onClick={() => {
+                    toastInfo.undoAction();
+                    setToastInfo((prev) => ({ ...prev, undoAction: null, message: 'Perubahan dibatalkan (Undo)' }));
+                  }}
                   style={{
-                    background: '#F3A68F',
-                    color: '#0F172A',
-                    border: 'none',
+                    background: 'rgba(234, 220, 166, 0.2)',
+                    color: '#EADCA6',
+                    border: '1px solid rgba(234, 220, 166, 0.35)',
                     borderRadius: '999px',
-                    padding: '8px 18px',
+                    padding: '4px 12px',
+                    fontSize: '11.5px',
                     fontWeight: 700,
                     cursor: 'pointer',
                   }}
                 >
-                  Kirim ke Dapur
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* BOTTOM FLOATING TOAST WITH [Undo] BUTTON */}
-        {toastInfo.visible && (
-          <div
-            style={{
-              position: 'fixed',
-              bottom: '20px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              zIndex: 60,
-              background: '#152036',
-              border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: '999px',
-              padding: '8px 10px 8px 16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              boxShadow: '0 16px 40px rgba(0,0,0,0.55)',
-            }}
-          >
-            <span
-              style={{
-                width: '18px',
-                height: '18px',
-                borderRadius: '50%',
-                background: 'rgba(156, 226, 198, 0.2)',
-                color: '#9CE2C6',
-                display: 'grid',
-                placeItems: 'center',
-                fontSize: '11px',
-                fontWeight: 800,
-              }}
-            >
-              ✓
-            </span>
-            <span style={{ fontSize: '12.5px', color: '#E2E8F0', fontWeight: 500 }}>
-              {toastInfo.message}
-            </span>
-            {toastInfo.undoAction && (
-              <button
+                  Undo
+                </motion.button>
+              )}
+              <motion.button
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.9 }}
                 type="button"
-                onClick={() => {
-                  toastInfo.undoAction();
-                  setToastInfo((prev) => ({ ...prev, undoAction: null, message: 'Perubahan dibatalkan (Undo)' }));
-                }}
+                onClick={() => setToastInfo((prev) => ({ ...prev, visible: false }))}
                 style={{
-                  background: 'rgba(234, 220, 166, 0.2)',
-                  color: '#EADCA6',
-                  border: '1px solid rgba(234, 220, 166, 0.35)',
-                  borderRadius: '999px',
-                  padding: '4px 12px',
-                  fontSize: '11.5px',
-                  fontWeight: 700,
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#64748B',
+                  fontSize: '12px',
                   cursor: 'pointer',
+                  padding: '0 4px',
                 }}
               >
-                Undo
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setToastInfo((prev) => ({ ...prev, visible: false }))}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#64748B',
-                fontSize: '12px',
-                cursor: 'pointer',
-                padding: '0 4px',
-              }}
-            >
-              ✕
-            </button>
-          </div>
-        )}
+                ✕
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </AuthGuard>
   );
