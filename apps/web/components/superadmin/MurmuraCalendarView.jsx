@@ -268,9 +268,9 @@ export default function MurmuraCalendarView({
   const [networkFilter, setNetworkFilter] = useState('All networks');
 
   // Choreographed Entrance State:
-  // stage 0 = 'before' (Gambar 2: "sebelum tampil" — skeleton columns, KPIs at 3 / 2 / 3 / 0)
+  // stage 0 = 'before' (Gambar 2: "sebelum tampil": skeleton columns, KPIs at 3 / 2 / 3 / 0)
   // stage 1 = 'bars'   (Multi-day campaign bars expand left-to-right)
-  // stage 2 = 'after'  (Gambar 3: "sesudah tampil" — time cards pop in, KPIs reach 5 / 5 / 9 / 3)
+  // stage 2 = 'after'  (Gambar 3: "sesudah tampil": time cards pop in, KPIs reach 5 / 5 / 9 / 3)
   const [animStage, setAnimStage] = useState(0);
   const [replaySeed, setReplaySeed] = useState(0);
 
@@ -1024,7 +1024,7 @@ export default function MurmuraCalendarView({
                 </div>
               </div>
 
-              {/* HOURLY COLUMNS MATRIX (8 AM, 12 PM, 1 PM) — Skeleton in Stage 0, Populated in Stage 2 */}
+              {/* HOURLY COLUMNS MATRIX (8 AM, 12 PM, 1 PM): Skeleton in Stage 0, Populated in Stage 2 */}
               {['8 AM', '12 PM', '1 PM'].map((hourLabel) => (
                 <div
                   key={hourLabel}

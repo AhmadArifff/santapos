@@ -807,10 +807,12 @@ export default function LoginPage() {
                 </motion.button>
 
                 {/* Role quick selector helper */}
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.2rem' }}>
+                <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.2rem' }}>
                   {[
-                    { label: 'Admin', email: 'admin@sultankebab.com', pass: 'admin123' },
-                    { label: 'Kasir', email: 'kasir@sultankebab.com', pass: 'kasir123' },
+                    { label: 'Admin', email: 'admin@santapos.id', pass: 'santapos123' },
+                    { label: 'Kasir', email: 'kasir@santapos.id', pass: 'santapos123' },
+                    { label: 'Kitchen', email: 'kitchen@santapos.id', pass: 'santapos123' },
+                    { label: 'Super', email: 'superadmin@santapos.id', pass: 'santapos123' },
                   ].map((preset) => (
                     <button
                       key={preset.label}
