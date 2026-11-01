@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import AuthGuard from '@/components/ui/AuthGuard';
@@ -659,7 +660,7 @@ export default function PosPage() {
                 <span className="text-slate-500 text-xs capitalize mt-0.5">{dateStr}</span>
               </div>
 
-              {/* Tavola Floating Pill Mode Switcher: Menu vs Floor Plan */}
+              {/* Tavola Floating Pill Mode Switcher: Menu vs Floor Plan with layoutId */}
               <div
                 style={{
                   display: 'inline-flex',
@@ -667,38 +668,71 @@ export default function PosPage() {
                   padding: '4px',
                   borderRadius: '999px',
                   border: '1px solid rgba(255,255,255,0.08)',
+                  position: 'relative',
                 }}
               >
                 <button
                   type="button"
                   onClick={() => setPosViewTab('menu')}
                   style={{
+                    position: 'relative',
                     padding: '6px 14px',
                     borderRadius: '999px',
                     border: 'none',
                     fontSize: '12px',
                     fontWeight: 700,
                     cursor: 'pointer',
-                    background: posViewTab === 'menu' ? '#F3A68F' : 'transparent',
+                    background: 'transparent',
                     color: posViewTab === 'menu' ? '#0F172A' : '#94A3B8',
+                    zIndex: 1,
+                    transition: 'color 0.15s ease',
                   }}
                 >
+                  {posViewTab === 'menu' && (
+                    <motion.div
+                      layoutId="posViewTabPill"
+                      transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        borderRadius: '999px',
+                        background: '#F3A68F',
+                        zIndex: -1,
+                      }}
+                    />
+                  )}
                   🍴 Menu Produk
                 </button>
                 <button
                   type="button"
                   onClick={() => setPosViewTab('floor')}
                   style={{
+                    position: 'relative',
                     padding: '6px 14px',
                     borderRadius: '999px',
                     border: 'none',
                     fontSize: '12px',
                     fontWeight: 700,
                     cursor: 'pointer',
-                    background: posViewTab === 'floor' ? '#F3A68F' : 'transparent',
+                    background: 'transparent',
                     color: posViewTab === 'floor' ? '#0F172A' : '#94A3B8',
+                    zIndex: 1,
+                    transition: 'color 0.15s ease',
                   }}
                 >
+                  {posViewTab === 'floor' && (
+                    <motion.div
+                      layoutId="posViewTabPill"
+                      transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        borderRadius: '999px',
+                        background: '#F3A68F',
+                        zIndex: -1,
+                      }}
+                    />
+                  )}
                   🗺️ Floor Plan & Meja ({selectedTableLabel || 'Takeaway'})
                 </button>
               </div>
@@ -875,32 +909,58 @@ export default function PosPage() {
               </div>
             )}
 
-            {/* ── CATEGORY FILTER ── */}
+            {/* ── CATEGORY FILTER with Sliding Capsule Pill ── */}
             <div
               className="flex gap-2 px-4 sm:px-5 py-3 overflow-x-auto scrollbar-hide
-              bg-slate-900/50 border-b border-slate-800/50 shrink-0"
+              bg-slate-900/50 border-b border-slate-800/50 shrink-0 items-center"
               data-tour="pos-category-filter"
             >
-              <button onClick={() => setActiveCategory('all')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap
-                  shrink-0 transition-all ${
+              <button
+                onClick={() => setActiveCategory('all')}
+                style={{ position: 'relative', zIndex: 1 }}
+                className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap
+                  shrink-0 transition-colors ${
                   activeCategory === 'all'
-                    ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
-                    : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white'
-                }`}>
+                    ? 'text-white'
+                    : 'bg-slate-800/70 text-slate-400 border border-slate-700/60 hover:text-white'
+                }`}
+              >
+                {activeCategory === 'all' && (
+                  <motion.div
+                    layoutId="posActiveCategoryPill"
+                    transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                    className="absolute inset-0 bg-orange-500 rounded-xl shadow-lg shadow-orange-500/30"
+                    style={{ zIndex: -1 }}
+                  />
+                )}
                 Semua
               </button>
-              {categories.map(cat => (
-                <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap
-                    shrink-0 transition-all ${
-                    activeCategory === cat.id
-                      ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
-                      : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white'
-                  }`}>
-                  {cat.name}
-                </button>
-              ))}
+              {categories.map(cat => {
+                const isActive = activeCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveCategory(cat.id)}
+                    style={{ position: 'relative', zIndex: 1 }}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap
+                      shrink-0 transition-colors ${
+                      isActive
+                        ? 'text-white'
+                        : 'bg-slate-800/70 text-slate-400 border border-slate-700/60 hover:text-white'
+                    }`}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="posActiveCategoryPill"
+                        transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                        className="absolute inset-0 bg-orange-500 rounded-xl shadow-lg shadow-orange-500/30"
+                        style={{ zIndex: -1 }}
+                      />
+                    )}
+                    {cat.name}
+                  </button>
+                );
+              })}
             </div>
 
 
@@ -1087,7 +1147,8 @@ export default function PosPage() {
             </>
           )}
 
-              {showPayment && (
+          <AnimatePresence>
+            {showPayment && (
               <PaymentModal
                 total={total}
                 itemCount={itemCount}
@@ -1100,7 +1161,8 @@ export default function PosPage() {
                 items={items}
                 bundleHints={bundleHints}
               />
-          )}
+            )}
+          </AnimatePresence>
 
           <SuccessModal
             isOpen={feedbackModal.isOpen}

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   calculateIngredientsForPortions,
   calculateMaxPortions,
@@ -54,14 +55,29 @@ export default function ProductCard({
     }`;
 
   return (
-    <button onClick={() => onAddItem(product)} className={buttonClasses}>
-      {/* In-cart badge */}
-      {inCart && (
-        <div className="absolute top-2 right-2 z-10 w-6 h-6 bg-orange-500
-          rounded-lg flex items-center justify-center text-white text-xs font-black shadow-lg">
-          {inCart.qty}
-        </div>
-      )}
+    <motion.button
+      whileHover={soldOut ? {} : { y: -4, scale: 1.015 }}
+      whileTap={soldOut ? {} : { scale: 0.96 }}
+      transition={{ type: 'spring', stiffness: 420, damping: 25 }}
+      onClick={() => onAddItem(product)}
+      className={`${buttonClasses} murmura-card-vibrate`}
+    >
+      {/* In-cart badge with spring pop */}
+      <AnimatePresence>
+        {inCart && (
+          <motion.div
+            key="cart-badge"
+            initial={{ scale: 0, rotate: -15 }}
+            animate={{ scale: 1, rotate: 0 }}
+            exit={{ scale: 0, rotate: 15 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 22 }}
+            className="absolute top-2 right-2 z-10 w-6 h-6 bg-orange-500
+              rounded-lg flex items-center justify-center text-white text-xs font-black shadow-lg shadow-orange-500/30"
+          >
+            {inCart.qty}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Sold out overlay */}
       {soldOut && (
@@ -310,6 +326,6 @@ export default function ProductCard({
           </div>
         )}
       </div>
-    </button>
+    </motion.button>
   );
 }

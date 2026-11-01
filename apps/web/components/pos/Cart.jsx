@@ -1,4 +1,5 @@
 'use client';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/store/cartStore';
 
 export default function Cart({ onCheckout, selectedTableLabel = '' }) {
@@ -34,7 +35,9 @@ export default function Cart({ onCheckout, selectedTableLabel = '' }) {
           </div>
 
           {items.length > 0 && (
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               type="button"
               onClick={clearCart}
               style={{
@@ -49,7 +52,7 @@ export default function Cart({ onCheckout, selectedTableLabel = '' }) {
               }}
             >
               Reset
-            </button>
+            </motion.button>
           )}
         </div>
 
@@ -104,88 +107,104 @@ export default function Cart({ onCheckout, selectedTableLabel = '' }) {
 
       {/* Cart Items List */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5" data-tour="pos-cart-items">
-        {items.length === 0 ? (
-          <div className="text-center text-slate-500 mt-16 px-4">
-            <div
-              className="mx-auto mb-3 grid place-items-center"
-              style={{
-                width: '54px',
-                height: '54px',
-                borderRadius: '18px',
-                background: '#162136',
-                border: '1px solid rgba(255,255,255,0.06)',
-                fontSize: '24px',
-              }}
+        <AnimatePresence mode="popLayout">
+          {items.length === 0 ? (
+            <motion.div
+              key="empty-cart"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center text-slate-500 mt-16 px-4"
             >
-              🍴
-            </div>
-            <p className="text-sm font-bold text-slate-300">Belum Ada Menu Dipilih</p>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              Klik menu makanan/minuman di sebelah kiri, lalu pilih meja sesuai kapasitas tamu dan bayar.
-            </p>
-          </div>
-        ) : (
-          items.map((item) => {
-            const maxQty = Number(item._availableStock || item.stock || 0);
-            const atMax = maxQty > 0 && Number(item.qty || 0) >= maxQty;
-            return (
               <div
-                key={item.id}
-                className="flex items-center gap-3 p-2.5 rounded-2xl"
+                className="mx-auto mb-3 grid place-items-center"
                 style={{
+                  width: '54px',
+                  height: '54px',
+                  borderRadius: '18px',
                   background: '#162136',
                   border: '1px solid rgba(255,255,255,0.06)',
+                  fontSize: '24px',
                 }}
               >
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-xs sm:text-sm font-bold truncate">{item.name}</p>
-                  <p className="text-xs font-extrabold mt-0.5" style={{ color: '#F3A68F' }}>
-                    Rp {(Number(item.price) * item.qty).toLocaleString('id-ID')}
-                  </p>
-                  {maxQty > 0 && (
-                    <p className="text-slate-500 text-[10px]">Stok maks {maxQty} porsi</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => updateQty(item.id, item.qty - 1)}
-                    style={{
-                      width: '28px',
-                      height: '28px',
-                      borderRadius: '8px',
-                      background: '#22314E',
-                      color: '#F8FAFC',
-                      border: 'none',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    −
-                  </button>
-                  <span className="text-white w-6 text-center text-xs font-extrabold">{item.qty}</span>
-                  <button
-                    type="button"
-                    onClick={() => !atMax && updateQty(item.id, item.qty + 1)}
-                    disabled={atMax}
-                    style={{
-                      width: '28px',
-                      height: '28px',
-                      borderRadius: '8px',
-                      background: atMax ? '#1A2438' : '#F3A68F',
-                      color: atMax ? '#475569' : '#0F172A',
-                      border: 'none',
-                      fontWeight: 900,
-                      cursor: atMax ? 'not-allowed' : 'pointer',
-                    }}
-                  >
-                    +
-                  </button>
-                </div>
+                🍴
               </div>
-            );
-          })
-        )}
+              <p className="text-sm font-bold text-slate-300">Belum Ada Menu Dipilih</p>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                Klik menu makanan/minuman di sebelah kiri, lalu pilih meja sesuai kapasitas tamu dan bayar.
+              </p>
+            </motion.div>
+          ) : (
+            items.map((item) => {
+              const maxQty = Number(item._availableStock || item.stock || 0);
+              const atMax = maxQty > 0 && Number(item.qty || 0) >= maxQty;
+              return (
+                <motion.div
+                  layout
+                  key={item.id}
+                  initial={{ opacity: 0, scale: 0.92, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.85, x: -20, transition: { duration: 0.18 } }}
+                  className="flex items-center gap-3 p-2.5 rounded-2xl murmura-card-vibrate"
+                  style={{
+                    background: '#162136',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                  }}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-xs sm:text-sm font-bold truncate">{item.name}</p>
+                    <p className="text-xs font-extrabold mt-0.5" style={{ color: '#F3A68F' }}>
+                      Rp {(Number(item.price) * item.qty).toLocaleString('id-ID')}
+                    </p>
+                    {maxQty > 0 && (
+                      <p className="text-slate-500 text-[10px]">Stok maks {maxQty} porsi</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.88 }}
+                      type="button"
+                      onClick={() => updateQty(item.id, item.qty - 1)}
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '8px',
+                        background: '#22314E',
+                        color: '#F8FAFC',
+                        border: 'none',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      −
+                    </motion.button>
+                    <span className="text-white w-6 text-center text-xs font-extrabold">{item.qty}</span>
+                    <motion.button
+                      whileHover={atMax ? {} : { scale: 1.1 }}
+                      whileTap={atMax ? {} : { scale: 0.88 }}
+                      type="button"
+                      onClick={() => !atMax && updateQty(item.id, item.qty + 1)}
+                      disabled={atMax}
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '8px',
+                        background: atMax ? '#1A2438' : '#F3A68F',
+                        color: atMax ? '#475569' : '#0F172A',
+                        border: 'none',
+                        fontWeight: 900,
+                        cursor: atMax ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      +
+                    </motion.button>
+                  </div>
+                </motion.div>
+              );
+            })
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Footer Checkout */}
@@ -204,7 +223,9 @@ export default function Cart({ onCheckout, selectedTableLabel = '' }) {
           </span>
         </div>
 
-        <button
+        <motion.button
+          whileHover={items.length === 0 ? {} : { scale: 1.02 }}
+          whileTap={items.length === 0 ? {} : { scale: 0.98 }}
           type="button"
           onClick={onCheckout}
           disabled={items.length === 0}
@@ -224,7 +245,7 @@ export default function Cart({ onCheckout, selectedTableLabel = '' }) {
           }}
         >
           🪑 Pilih Meja & Bayar →
-        </button>
+        </motion.button>
       </div>
     </div>
   );

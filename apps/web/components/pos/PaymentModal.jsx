@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import { previewDiscount } from '@/lib/api';
 import { formatIndonesianPhone, normalizeIndonesianPhoneForSubmit } from '@/lib/phoneFormat';
 import InteractiveFloorPlanSelector from '@/components/pos/InteractiveFloorPlanSelector';
@@ -190,7 +191,10 @@ export default function PaymentModal({
   ];
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-3 sm:p-4"
       style={{
         background: 'rgba(8, 13, 24, 0.84)',
@@ -198,7 +202,11 @@ export default function PaymentModal({
       }}
       data-tour="pos-payment-modal"
     >
-      <div
+      <motion.div
+        initial={{ opacity: 0, scale: 0.94, y: 18 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.94, y: 18 }}
+        transition={{ type: 'spring', stiffness: 420, damping: 28 }}
         className="flex max-h-[calc(100vh-1.5rem)] w-full max-w-6xl flex-col overflow-hidden shadow-2xl"
         style={{
           background: '#0F172A',
@@ -250,38 +258,71 @@ export default function PaymentModal({
               padding: '4px',
               borderRadius: '999px',
               border: '1px solid rgba(255,255,255,0.08)',
+              position: 'relative',
             }}
           >
             <button
               type="button"
               onClick={() => setCheckoutStep('floor')}
               style={{
+                position: 'relative',
                 padding: '6px 15px',
                 borderRadius: '999px',
                 border: 'none',
                 fontSize: '12px',
                 fontWeight: 700,
                 cursor: 'pointer',
-                background: checkoutStep === 'floor' ? '#F3A68F' : 'transparent',
+                background: 'transparent',
                 color: checkoutStep === 'floor' ? '#0F172A' : '#94A3B8',
+                zIndex: 1,
+                transition: 'color 0.15s ease',
               }}
             >
+              {checkoutStep === 'floor' && (
+                <motion.div
+                  layoutId="checkoutStepPill"
+                  transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: '999px',
+                    background: '#F3A68F',
+                    zIndex: -1,
+                  }}
+                />
+              )}
               1. 🗺️ Pilih Meja ({guestCount > 0 ? `${guestCount} Orang` : 'Takeaway'})
             </button>
             <button
               type="button"
               onClick={() => setCheckoutStep('payment')}
               style={{
+                position: 'relative',
                 padding: '6px 15px',
                 borderRadius: '999px',
                 border: 'none',
                 fontSize: '12px',
                 fontWeight: 700,
                 cursor: 'pointer',
-                background: checkoutStep === 'payment' ? '#BCE3D4' : 'transparent',
+                background: 'transparent',
                 color: checkoutStep === 'payment' ? '#0F172A' : '#94A3B8',
+                zIndex: 1,
+                transition: 'color 0.15s ease',
               }}
             >
+              {checkoutStep === 'payment' && (
+                <motion.div
+                  layoutId="checkoutStepPill"
+                  transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: '999px',
+                    background: '#BCE3D4',
+                    zIndex: -1,
+                  }}
+                />
+              )}
               2. 💳 Bayar ({formatRp(payableTotal)})
             </button>
           </div>
@@ -500,7 +541,9 @@ export default function PaymentModal({
                   {methods.map((m) => {
                     const active = method === m.id;
                     return (
-                      <button
+                      <motion.button
+                        whileHover={{ scale: 1.04 }}
+                        whileTap={{ scale: 0.96 }}
                         key={m.id}
                         type="button"
                         onClick={() => handleMethod(m.id)}
@@ -518,7 +561,7 @@ export default function PaymentModal({
                       >
                         <div className="text-xl mb-1">{m.icon}</div>
                         <div>{m.label}</div>
-                      </button>
+                      </motion.button>
                     );
                   })}
                 </div>
@@ -750,7 +793,7 @@ export default function PaymentModal({
             </>
           )}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
