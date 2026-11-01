@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { getFranchiseHqReport } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 
@@ -93,7 +94,7 @@ export default function FranchiseHqOverview() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-5 rounded-2xl bg-slate-900/90 border border-amber-500/20">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-bold text-white">Kantor Pusat (HQ) — Konsolidasi Multi-Cabang</h3>
+            <h3 className="text-lg font-bold text-white">Kantor Pusat (HQ): Konsolidasi Multi-Cabang</h3>
             <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase">
               Franchise Mode
             </span>
@@ -109,31 +110,47 @@ export default function FranchiseHqOverview() {
 
       {/* KPI Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
+        <motion.div
+          whileHover={{ y: -3, scale: 1.015 }}
+          transition={{ duration: 0.18 }}
+          className="murmura-card-vibrate bg-slate-900/80 border border-slate-800 hover:border-slate-700/80 rounded-2xl p-5 transition-all shadow-sm"
+        >
           <span className="text-slate-400 text-xs uppercase tracking-wider font-semibold">Total Omzet Lintas Cabang</span>
           <div className="text-2xl sm:text-3xl font-black text-amber-400 mt-2 truncate">
             {formatCurrency(summary.total_revenue || 0)}
           </div>
           <span className="text-xs text-slate-500 mt-1 block">Gabungan seluruh cabang</span>
-        </div>
+        </motion.div>
 
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
+        <motion.div
+          whileHover={{ y: -3, scale: 1.015 }}
+          transition={{ duration: 0.18 }}
+          className="murmura-card-vibrate bg-slate-900/80 border border-slate-800 hover:border-slate-700/80 rounded-2xl p-5 transition-all shadow-sm"
+        >
           <span className="text-slate-400 text-xs uppercase tracking-wider font-semibold">Total Transaksi</span>
           <div className="text-2xl sm:text-3xl font-black text-emerald-400 mt-2">
             {summary.total_orders || 0}
           </div>
           <span className="text-xs text-slate-500 mt-1 block">Pesanan terlayani</span>
-        </div>
+        </motion.div>
 
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
+        <motion.div
+          whileHover={{ y: -3, scale: 1.015 }}
+          transition={{ duration: 0.18 }}
+          className="murmura-card-vibrate bg-slate-900/80 border border-slate-800 hover:border-slate-700/80 rounded-2xl p-5 transition-all shadow-sm"
+        >
           <span className="text-slate-400 text-xs uppercase tracking-wider font-semibold">Rata-Rata Nilai Tiket (AOV)</span>
           <div className="text-2xl sm:text-3xl font-black text-sky-400 mt-2 truncate">
             {formatCurrency(summary.avg_ticket || 0)}
           </div>
           <span className="text-xs text-slate-500 mt-1 block">Per transaksi</span>
-        </div>
+        </motion.div>
 
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
+        <motion.div
+          whileHover={{ y: -3, scale: 1.015 }}
+          transition={{ duration: 0.18 }}
+          className="murmura-card-vibrate bg-slate-900/80 border border-slate-800 hover:border-slate-700/80 rounded-2xl p-5 transition-all shadow-sm"
+        >
           <span className="text-slate-400 text-xs uppercase tracking-wider font-semibold">Cabang Terlaris (Bintang)</span>
           <div className="text-lg font-bold text-yellow-300 mt-2 truncate">
             ⭐ {summary.top_branch?.name || '-'}
@@ -141,7 +158,7 @@ export default function FranchiseHqOverview() {
           <span className="text-xs text-slate-400 mt-1 block truncate">
             {summary.top_branch ? formatCurrency(summary.top_branch.revenue) : '-'}
           </span>
-        </div>
+        </motion.div>
       </div>
 
       {/* Branch Performance Comparison Table */}
@@ -210,7 +227,12 @@ export default function FranchiseHqOverview() {
           <h4 className="font-bold text-white text-sm mb-4">Top 5 Produk Terlaris di Seluruh Cabang</h4>
           <div className="grid sm:grid-cols-2 md:grid-cols-5 gap-3">
             {topProducts.map((p, idx) => (
-              <div key={p.id} className="p-4 rounded-xl bg-slate-800/60 border border-slate-700/80">
+              <motion.div
+                key={p.id}
+                whileHover={{ y: -3, scale: 1.02 }}
+                transition={{ duration: 0.18 }}
+                className="murmura-card-vibrate p-4 rounded-xl bg-slate-800/60 border border-slate-700/80 hover:border-slate-600 transition-all shadow-sm"
+              >
                 <div className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">
                   #{idx + 1} Terlaris
                 </div>
@@ -220,7 +242,7 @@ export default function FranchiseHqOverview() {
                   <span className="text-slate-400">{p.total_sold} terjual</span>
                   <span className="font-bold text-emerald-400">{formatCurrency(p.total_sales)}</span>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>

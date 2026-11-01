@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { downloadBusinessAnalysisPdf, getBusinessAnalysis, getTransactionYears } from '@/lib/api';
 import SectionSkeleton from '@/components/ui/SectionSkeleton';
@@ -49,11 +49,15 @@ function MetricCard({ label, value, helper, tone = 'gold' }) {
   };
 
   return (
-    <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-4">
+    <motion.div
+      whileHover={{ y: -3, scale: 1.015 }}
+      transition={{ duration: 0.18 }}
+      className="murmura-card-vibrate bg-slate-900/90 border border-slate-800 hover:border-slate-700/80 rounded-xl p-4 transition-all shadow-sm"
+    >
       <p className="text-slate-400 text-xs uppercase tracking-[0.16em]">{label}</p>
       <p className={`${tones[tone]} text-2xl font-bold mt-2`}>{value}</p>
       {helper && <p className="text-slate-500 text-xs mt-2">{helper}</p>}
-    </div>
+    </motion.div>
   );
 }
 
@@ -277,25 +281,43 @@ export default function ReportsPage() {
           <div>
             <div className="flex items-center gap-3">
               <p className="text-yellow-400 text-xs uppercase tracking-[0.22em] font-bold">Business Intelligence</p>
-              <div className="flex rounded-xl overflow-hidden border border-slate-700 bg-slate-900 p-0.5">
+              <div className="flex rounded-xl border border-slate-700 bg-slate-900 p-0.5 relative">
                 <button
                   type="button"
                   onClick={() => setViewMode('branch')}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
-                    viewMode === 'branch' ? 'bg-amber-400 text-black shadow' : 'text-slate-400 hover:text-white'
+                  className={`relative px-3 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                    viewMode === 'branch' ? 'text-black' : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  Outlet Ini
+                  {viewMode === 'branch' && (
+                    <motion.div
+                      layoutId="reportViewModePill"
+                      className="absolute inset-0 rounded-lg bg-amber-400 shadow"
+                      transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+                    />
+                  )}
+                  <span className="relative z-10">Outlet Ini</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setViewMode('hq')}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-                    viewMode === 'hq' ? 'bg-amber-400 text-black shadow' : 'text-slate-400 hover:text-white'
+                  className={`relative px-3 py-1 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    viewMode === 'hq' ? 'text-black' : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <span>Kantor Pusat HQ</span>
-                  <span className="text-[10px] px-1 rounded bg-amber-500/20 text-amber-300">Franchise</span>
+                  {viewMode === 'hq' && (
+                    <motion.div
+                      layoutId="reportViewModePill"
+                      className="absolute inset-0 rounded-lg bg-amber-400 shadow"
+                      transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+                    />
+                  )}
+                  <span className="relative z-10 flex items-center gap-1.5">
+                    <span>Kantor Pusat HQ</span>
+                    <span className={`text-[10px] px-1 rounded ${viewMode === 'hq' ? 'bg-black/20 text-black font-extrabold' : 'bg-amber-500/20 text-amber-300'}`}>
+                      Franchise
+                    </span>
+                  </span>
                 </button>
               </div>
             </div>
@@ -317,18 +339,29 @@ export default function ReportsPage() {
                 Sinkronisasi laporan...
               </span>
             )}
-            <div data-tour="reports-period-toggle" className="flex rounded-lg overflow-hidden border border-slate-700 bg-slate-900">
-              {['daily', 'monthly'].map((item) => (
-                <button
-                  key={item}
-                  onClick={() => setPeriod(item)}
-                  className={`px-4 py-2 text-sm font-semibold transition ${
-                    period === item ? 'bg-yellow-500 text-slate-950' : 'text-slate-300 hover:bg-slate-800'
-                  }`}
-                >
-                  {item === 'daily' ? 'Harian' : 'Bulanan'}
-                </button>
-              ))}
+            <div data-tour="reports-period-toggle" className="flex rounded-lg border border-slate-700 bg-slate-900 p-0.5 relative">
+              {['daily', 'monthly'].map((item) => {
+                const active = period === item;
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => setPeriod(item)}
+                    className={`relative px-4 py-2 text-sm font-semibold transition-colors cursor-pointer rounded-md ${
+                      active ? 'text-slate-950 font-bold' : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    {active && (
+                      <motion.div
+                        layoutId="reportPeriodPill"
+                        className="absolute inset-0 rounded-md bg-yellow-500 shadow-sm"
+                        transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+                      />
+                    )}
+                    <span className="relative z-10">{item === 'daily' ? 'Harian' : 'Bulanan'}</span>
+                  </button>
+                );
+              })}
             </div>
 
             {period === 'daily' && (
@@ -341,15 +374,17 @@ export default function ReportsPage() {
               {years.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
 
-            <button
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.95 }}
               data-tour="reports-export-pdf"
               onClick={handleDownloadPdf}
               disabled={!analysis || pdfLoading}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition cursor-pointer shadow-sm"
             >
               <DownloadIcon />
               {pdfLoading ? 'Membuat PDF...' : 'Export PDF'}
-            </button>
+            </motion.button>
           </div>
           )}
         </div>
@@ -400,7 +435,7 @@ export default function ReportsPage() {
                 <h2 className="text-white font-bold mb-4">Insight Evaluasi</h2>
                 <div className="space-y-3">
                   {analysis.insights.map((insight, index) => (
-                    <div key={`${insight.title}-${index}`} className="border border-slate-800 rounded-lg p-3 bg-slate-950/40">
+                    <div key={`${insight.title}-${index}`} className="border border-slate-800 hover:border-slate-700/80 rounded-lg p-3 bg-slate-950/40 transition-colors">
                       <div className="flex items-center justify-between gap-3">
                         <h3 className="text-white text-sm font-semibold">{insight.title}</h3>
                         <InsightTone severity={insight.severity} />
