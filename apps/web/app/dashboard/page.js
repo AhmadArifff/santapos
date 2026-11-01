@@ -1,6 +1,7 @@
 'use client';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   getTodayStats, getSalesReport, getYearlyStats,
   getBestSelling, getLowStock, getTransactionYears,
@@ -446,7 +447,7 @@ function MultiLineChart({ xLabels = [], series = [], height = 180 }) {
 // ── Chart Card ────────────────────────────────────────────────
 function ChartCard({ title, stats, tabs, activeTab, onTabChange, children, tourId }) {
   return (
-    <div data-tour={tourId} className="bg-slate-800/80 rounded-2xl p-4 sm:p-5 border border-slate-700/60">
+    <div data-tour={tourId} className="bg-slate-800/80 rounded-2xl p-4 sm:p-5 border border-slate-700/60 hover:border-slate-600/80 transition-all">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
         <div>
           <h2 className="text-white font-bold text-sm sm:text-base">{title}</h2>
@@ -462,15 +463,26 @@ function ChartCard({ title, stats, tabs, activeTab, onTabChange, children, tourI
           </div>
         </div>
         {tabs && (
-          <div className="flex gap-1 bg-slate-700/50 rounded-xl p-1 self-start shrink-0">
+          <div className="flex gap-1 bg-slate-700/50 rounded-xl p-1 self-start shrink-0 relative">
             {tabs.map(tab => (
-              <button key={tab.key} onClick={() => onTabChange(tab.key)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => onTabChange(tab.key)}
+                className={`relative px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                   activeTab === tab.key
-                    ? 'bg-orange-500 text-white shadow-md'
+                    ? 'text-white'
                     : 'text-slate-400 hover:text-white'
-                }`}>
-                {tab.label}
+                }`}
+              >
+                {activeTab === tab.key && (
+                  <motion.div
+                    layoutId={`chartTab-${title}`}
+                    className="absolute inset-0 rounded-lg bg-orange-500 shadow-md"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">{tab.label}</span>
               </button>
             ))}
           </div>
@@ -687,16 +699,19 @@ function Avatar({ name, size = 40, active = false }) {
         {initials}
       </div>
       {active && (
-        <div style={{
-          position:     'absolute',
-          bottom:       1,
-          right:        1,
-          width:        10,
-          height:       10,
-          borderRadius: '50%',
-          background:   '#22c55e',
-          border:       '2px solid #1e293b',
-        }} />
+        <div
+          className="murmura-radar-pulse"
+          style={{
+            position:     'absolute',
+            bottom:       1,
+            right:        1,
+            width:        10,
+            height:       10,
+            borderRadius: '50%',
+            background:   '#22c55e',
+            border:       '2px solid #1e293b',
+          }}
+        />
       )}
     </div>
   );
@@ -1007,8 +1022,12 @@ const filteredBestSelling = bestSelling.filter(p => {
                   sub:`Rata-rata ${Number(discountSummary.today?.avg_discount_rate || 0)}% | ${discountSummary.today?.total_orders || 0} klaim`,
                   color:'text-emerald-400', glow:'bg-emerald-500', icon:'\u2605' },
               ].map((s,i) => (
-                <div key={i} className="relative bg-slate-800/80 rounded-2xl p-4
-                  border border-slate-700/60 hover:border-slate-600 transition-all overflow-hidden group">
+                <motion.div
+                  key={i}
+                  whileHover={{ y: -4, scale: 1.015 }}
+                  transition={{ duration: 0.2 }}
+                  className="murmura-card-vibrate relative bg-slate-800/80 rounded-2xl p-4 border border-slate-700/60 hover:border-slate-600 transition-all overflow-hidden group"
+                >
                   <div className={`absolute top-0 right-0 w-20 h-20 rounded-full
                     blur-2xl opacity-10 group-hover:opacity-20 transition-opacity ${s.glow}`}/>
                   <div className="relative">
@@ -1019,7 +1038,7 @@ const filteredBestSelling = bestSelling.filter(p => {
                     <p className={`text-xl sm:text-2xl font-black truncate ${s.color}`}>{s.value}</p>
                     <p className="text-slate-500 text-xs mt-1 truncate">{s.sub}</p>
                   </div>
-                </div>
+                </motion.div>
               ))}
               </div>
               </div>
@@ -1049,8 +1068,12 @@ const filteredBestSelling = bestSelling.filter(p => {
                       sub:`Rata-rata ${Number(discountSummary.month?.avg_discount_rate || 0)}% | ${discountSummary.month?.total_orders || 0} klaim`,
                       color:'text-emerald-400', glow:'bg-emerald-500', icon:'\u2605' },
                   ].map((s,i) => (
-                    <div key={i} className="relative bg-slate-800/80 rounded-2xl p-4
-                      border border-slate-700/60 hover:border-slate-600 transition-all overflow-hidden group">
+                    <motion.div
+                      key={i}
+                      whileHover={{ y: -4, scale: 1.015 }}
+                      transition={{ duration: 0.2 }}
+                      className="murmura-card-vibrate relative bg-slate-800/80 rounded-2xl p-4 border border-slate-700/60 hover:border-slate-600 transition-all overflow-hidden group"
+                    >
                       <div className={`absolute top-0 right-0 w-20 h-20 rounded-full
                         blur-2xl opacity-10 group-hover:opacity-20 transition-opacity ${s.glow}`}/>
                       <div className="relative">
@@ -1061,7 +1084,7 @@ const filteredBestSelling = bestSelling.filter(p => {
                         <p className={`text-xl sm:text-2xl font-black truncate ${s.color}`}>{s.value}</p>
                         <p className="text-slate-500 text-xs mt-1 truncate">{s.sub}</p>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               </div>
@@ -1091,8 +1114,12 @@ const filteredBestSelling = bestSelling.filter(p => {
                       sub:`Rata-rata ${Number(discountSummary.year?.avg_discount_rate || 0)}% | ${discountSummary.year?.total_orders || 0} klaim`,
                       color:'text-emerald-400', glow:'bg-emerald-500', icon:'\u2605' },
                   ].map((s,i) => (
-                    <div key={i} className="relative bg-slate-800/80 rounded-2xl p-4
-                      border border-slate-700/60 hover:border-slate-600 transition-all overflow-hidden group">
+                    <motion.div
+                      key={i}
+                      whileHover={{ y: -4, scale: 1.015 }}
+                      transition={{ duration: 0.2 }}
+                      className="murmura-card-vibrate relative bg-slate-800/80 rounded-2xl p-4 border border-slate-700/60 hover:border-slate-600 transition-all overflow-hidden group"
+                    >
                       <div className={`absolute top-0 right-0 w-20 h-20 rounded-full
                         blur-2xl opacity-10 group-hover:opacity-20 transition-opacity ${s.glow}`}/>
                       <div className="relative">
@@ -1103,7 +1130,7 @@ const filteredBestSelling = bestSelling.filter(p => {
                         <p className={`text-xl sm:text-2xl font-black truncate ${s.color}`}>{s.value}</p>
                         <p className="text-slate-500 text-xs mt-1 truncate">{s.sub}</p>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               </div>
@@ -1212,18 +1239,29 @@ const filteredBestSelling = bestSelling.filter(p => {
                   <div className="flex items-center justify-between">
                     <h2 className="text-white font-bold text-sm sm:text-base">🏆 Produk Terlaris</h2>
                     {/* Tab filter qty/margin */}
-                    <div className="flex gap-1 bg-slate-700/50 rounded-xl p-1 shrink-0">
+                    <div className="flex gap-1 bg-slate-700/50 rounded-xl p-1 shrink-0 relative">
                       {[
                         { key: 'qty',    label: 'Terjual' },
                         { key: 'margin', label: 'Margin'  },
                       ].map(t => (
-                        <button key={t.key} onClick={() => setBestTab(t.key)}
-                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                        <button
+                          key={t.key}
+                          type="button"
+                          onClick={() => setBestTab(t.key)}
+                          className={`relative px-3 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                             bestTab === t.key
-                              ? 'bg-orange-500 text-white shadow-md'
+                              ? 'text-white'
                               : 'text-slate-400 hover:text-white'
-                          }`}>
-                          {t.label}
+                          }`}
+                        >
+                          {bestTab === t.key && (
+                            <motion.div
+                              layoutId="bestTabPill"
+                              className="absolute inset-0 rounded-lg bg-orange-500 shadow-md"
+                              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                            />
+                          )}
+                          <span className="relative z-10">{t.label}</span>
                         </button>
                       ))}
                     </div>
@@ -1410,7 +1448,7 @@ const filteredBestSelling = bestSelling.filter(p => {
                 {activeUsers.length > 0 && (
                   <div data-tour="dashboard-active-users" className="mb-5">
                     <p className="text-slate-500 text-xs font-medium mb-3">
-                      Sedang online hari ini — {activeUsers.length} orang
+                      Sedang online hari ini ({activeUsers.length} orang)
                     </p>
                     <div className="flex flex-wrap gap-3">
                       {activeUsers.map(u => {
@@ -1419,8 +1457,12 @@ const filteredBestSelling = bestSelling.filter(p => {
                         // Cari tanggal hadir hari ini dari attendance
                         const today = new Date().toISOString().split('T')[0];
                         return (
-                          <div key={u.id} className="flex items-center gap-3
-                            bg-slate-700/50 rounded-2xl px-4 py-3 border border-slate-600/50">
+                          <motion.div
+                            key={u.id}
+                            whileHover={{ y: -3, scale: 1.02 }}
+                            transition={{ duration: 0.18 }}
+                            className="murmura-card-vibrate flex items-center gap-3 bg-slate-700/50 rounded-2xl px-4 py-3 border border-slate-600/50"
+                          >
                             <Avatar name={u.name} size={44} active />
                             <div>
                               <p className="text-white text-sm font-semibold">{u.name}</p>
@@ -1434,7 +1476,7 @@ const filteredBestSelling = bestSelling.filter(p => {
                                 })}
                               </p>
                             </div>
-                          </div>
+                          </motion.div>
                         );
                       })}
                     </div>
@@ -1464,7 +1506,7 @@ const filteredBestSelling = bestSelling.filter(p => {
                   return (
                     <div data-tour="dashboard-attendance-chart">
                       <p className="text-slate-500 text-xs font-medium mb-3">
-                        Rekap kehadiran bulan ini — {allWeeks.length} minggu
+                        Rekap kehadiran bulan ini ({allWeeks.length} minggu)
                       </p>
                       <FilterChips
                         items={series.map(s => ({ label: s.label, color: s.color }))}
@@ -1544,7 +1586,7 @@ const filteredBestSelling = bestSelling.filter(p => {
               const totalRevenue = staffPerf.reduce((s, u) => s + u.total_revenue, 0);
               const totalMargin  = staffPerf.reduce((s, u) => s + (u.total_margin || 0), 0);
 
-              // Active sets per tab — semua aktif by default
+              // Active sets per tab (semua aktif by default)
               const omzetMarginActive = new Set(omzetMarginSeries.map((_, i) => i));
               const trxActive         = new Set(trxSeries.map((_, i) => i));
               const prodActive        = new Set(prodSeries.map((_, i) => i));
@@ -1571,9 +1613,12 @@ const filteredBestSelling = bestSelling.filter(p => {
                     {[...new Map(staffPerf.map(u => [u.user_id, u])).values()]
                       .sort((a, b) => b.total_trx - a.total_trx)
                       .map(u => (
-                        <div key={u.user_id}
-                          className="flex items-center gap-3 bg-slate-700/50 rounded-xl
-                            px-3 py-2.5 border border-slate-600/40">
+                        <motion.div
+                          key={u.user_id}
+                          whileHover={{ y: -3, scale: 1.02 }}
+                          transition={{ duration: 0.18 }}
+                          className="murmura-card-vibrate flex items-center gap-3 bg-slate-700/50 rounded-xl px-3 py-2.5 border border-slate-600/40"
+                        >
                           <Avatar name={u.name} size={36} />
                           <div>
                             <p className="text-white text-xs font-semibold">{u.name}</p>
@@ -1585,7 +1630,7 @@ const filteredBestSelling = bestSelling.filter(p => {
                               Margin: Rp {Number(u.total_margin || 0).toLocaleString('id-ID')}
                             </p>
                           </div>
-                        </div>
+                        </motion.div>
                       ))
                     }
                   </div>

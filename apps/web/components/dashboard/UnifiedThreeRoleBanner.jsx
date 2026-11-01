@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
 
@@ -105,7 +106,7 @@ export default function UnifiedThreeRoleBanner() {
           {/* Right Mode Switcher Pills + Back to Superadmin CRM */}
           <div className="flex items-center gap-2 flex-wrap">
             {/* Segmented Switcher: Admin Overview | Live Kasir POS | Live Kitchen KDS */}
-            <div className="inline-flex bg-slate-900/90 p-1 rounded-xl border border-white/10 flex-wrap">
+            <div className="inline-flex bg-slate-900/90 p-1 rounded-xl border border-white/10 flex-wrap relative">
               {[
                 { id: 'overview', label: '🛡️ Dashboard Admin & 3-Role' },
                 { id: 'kasir_live', label: '💳 Live Kasir POS + Floor' },
@@ -117,13 +118,20 @@ export default function UnifiedThreeRoleBanner() {
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveWorkspaceTab(tab.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    className={`relative px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                       active
-                        ? 'bg-amber-400 text-slate-950 shadow-md'
+                        ? 'text-slate-950 font-extrabold'
                         : 'text-slate-300 hover:text-white'
                     }`}
                   >
-                    {tab.label}
+                    {active && (
+                      <motion.div
+                        layoutId="unifiedRoleTabPill"
+                        className="absolute inset-0 rounded-lg bg-amber-400 shadow-md"
+                        transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+                      />
+                    )}
+                    <span className="relative z-10">{tab.label}</span>
                   </button>
                 );
               })}
@@ -155,66 +163,76 @@ export default function UnifiedThreeRoleBanner() {
         </div>
 
         {/* 3-ROLE QUICK LAUNCH MATRIX (Admin, Kasir, Kitchen) */}
-        {showRoleMatrix && activeWorkspaceTab === 'overview' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 mt-4 pt-4 border-t border-white/10">
-            {ROLE_CARDS.map((role) => (
-              <div
-                key={role.id}
-                className="rounded-xl p-3.5 flex flex-col justify-between gap-3 transition-all"
-                style={{
-                  background: role.softBg,
-                  border: `1px solid ${role.border}`,
-                }}
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span
-                      className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full"
-                      style={{
-                        background: 'rgba(15, 23, 42, 0.65)',
-                        color: role.accent,
-                      }}
-                    >
-                      {role.badge}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setActiveWorkspaceTab(
-                          role.id === 'kasir'
-                            ? 'kasir_live'
-                            : role.id === 'kitchen'
-                            ? 'kitchen_live'
-                            : 'overview'
-                        )
-                      }
-                      className="text-[11px] font-bold underline cursor-pointer"
-                      style={{ color: role.accent }}
-                    >
-                      {role.id === 'admin' ? 'Aktif di Bawah ↓' : 'Buka Live View →'}
-                    </button>
+        <AnimatePresence>
+          {showRoleMatrix && activeWorkspaceTab === 'overview' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.24 }}
+              className="grid grid-cols-1 md:grid-cols-3 gap-3.5 mt-4 pt-4 border-t border-white/10 overflow-hidden"
+            >
+              {ROLE_CARDS.map((role) => (
+                <motion.div
+                  key={role.id}
+                  whileHover={{ y: -3, scale: 1.015 }}
+                  transition={{ duration: 0.18 }}
+                  className="murmura-card-vibrate rounded-xl p-3.5 flex flex-col justify-between gap-3 transition-all"
+                  style={{
+                    background: role.softBg,
+                    border: `1px solid ${role.border}`,
+                  }}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span
+                        className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                        style={{
+                          background: 'rgba(15, 23, 42, 0.65)',
+                          color: role.accent,
+                        }}
+                      >
+                        {role.badge}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveWorkspaceTab(
+                            role.id === 'kasir'
+                              ? 'kasir_live'
+                              : role.id === 'kitchen'
+                              ? 'kitchen_live'
+                              : 'overview'
+                          )
+                        }
+                        className="text-[11px] font-bold underline cursor-pointer"
+                        style={{ color: role.accent }}
+                      >
+                        {role.id === 'admin' ? 'Aktif di Bawah ↓' : 'Buka Live View →'}
+                      </button>
+                    </div>
+                    <h3 className="text-white font-bold text-sm">{role.title}</h3>
+                    <p className="text-slate-300/80 text-[11.5px] leading-relaxed mt-0.5">
+                      {role.subtitle}
+                    </p>
                   </div>
-                  <h3 className="text-white font-bold text-sm">{role.title}</h3>
-                  <p className="text-slate-300/80 text-[11.5px] leading-relaxed mt-0.5">
-                    {role.subtitle}
-                  </p>
-                </div>
 
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {role.links.map((lk) => (
-                    <Link
-                      key={lk.href + lk.label}
-                      href={lk.href}
-                      className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-950/70 hover:bg-slate-900 text-white border border-white/10 transition"
-                    >
-                      {lk.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {role.links.map((lk) => (
+                      <Link
+                        key={lk.href + lk.label}
+                        href={lk.href}
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-950/70 hover:bg-slate-900 text-white border border-white/10 transition"
+                      >
+                        {lk.label}
+                      </Link>
+                    ))}
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* LIVE EMBEDDED VIEWPORT WHEN USER CLICKS "Live Kasir POS" OR "Live Kitchen Orders" */}
@@ -225,8 +243,8 @@ export default function UnifiedThreeRoleBanner() {
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-xs font-bold text-white">
                 {activeWorkspaceTab === 'kasir_live'
-                  ? '💳 Mode Live Role Kasir — POS + Interactive Floor Plan Selector'
-                  : '🍳 Mode Live Role Kitchen — Tavola Orders Kanban + Floor Plan'}
+                  ? '💳 Mode Live Role Kasir: POS + Interactive Floor Plan Selector'
+                  : '🍳 Mode Live Role Kitchen: Tavola Orders Kanban + Floor Plan'}
               </span>
             </div>
             <div className="flex items-center gap-2">
