@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import AdminLayout from '@/components/layout/AdminLayout';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import { TableSkeleton } from '@/components/ui/SectionSkeleton';
@@ -274,7 +275,9 @@ export default function UsersPage() {
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row" data-tour="users-actions">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               type="button"
               onClick={() => openScheduleModal()}
               className="rounded-xl border border-orange-500/35 bg-orange-500/10 px-5 py-3 text-sm font-black text-orange-200 transition hover:bg-orange-500/20"
@@ -282,16 +285,18 @@ export default function UsersPage() {
               data-tour-action="users-open-schedule-modal"
             >
               + Tambah Jadwal
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               type="button"
               onClick={() => setUserModal(true)}
-              className="rounded-xl bg-orange-500 px-5 py-3 text-sm font-black text-white transition hover:bg-orange-600"
+              className="rounded-xl bg-orange-500 px-5 py-3 text-sm font-black text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600"
               data-tour="users-add-button"
               data-tour-action="users-open-user-modal"
             >
               + Tambah Kasir
-            </button>
+            </motion.button>
           </div>
         </div>
 
@@ -309,21 +314,33 @@ export default function UsersPage() {
         )}
 
         <div className="grid gap-4 md:grid-cols-3" data-tour="users-stats">
-          <div className="rounded-2xl border border-slate-700 bg-slate-900/70 p-5">
+          <motion.div
+            whileHover={{ y: -3, scale: 1.015 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+            className="murmura-card-vibrate rounded-2xl border border-slate-700 bg-slate-900/70 p-5 shadow-lg transition-all duration-300 hover:border-orange-500/40"
+          >
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Total User</p>
             <p className="mt-3 text-3xl font-black text-white">{users.length}</p>
             <p className="mt-1 text-sm text-slate-500">Admin dan kasir global</p>
-          </div>
-          <div className="rounded-2xl border border-slate-700 bg-slate-900/70 p-5">
+          </motion.div>
+          <motion.div
+            whileHover={{ y: -3, scale: 1.015 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+            className="murmura-card-vibrate rounded-2xl border border-slate-700 bg-slate-900/70 p-5 shadow-lg transition-all duration-300 hover:border-blue-500/40"
+          >
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Kasir</p>
             <p className="mt-3 text-3xl font-black text-blue-300">{cashiers.length}</p>
             <p className="mt-1 text-sm text-slate-500">Akun kasir aktif di sistem</p>
-          </div>
-          <div className="rounded-2xl border border-slate-700 bg-slate-900/70 p-5">
+          </motion.div>
+          <motion.div
+            whileHover={{ y: -3, scale: 1.015 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+            className="murmura-card-vibrate rounded-2xl border border-slate-700 bg-slate-900/70 p-5 shadow-lg transition-all duration-300 hover:border-orange-500/40"
+          >
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Jadwal Range</p>
             <p className="mt-3 text-3xl font-black text-orange-300">{activeSchedules.length}</p>
             <p className="mt-1 text-sm text-slate-500">Shift terjadwal pada filter</p>
-          </div>
+          </motion.div>
         </div>
 
         <section className="rounded-3xl border border-slate-700 bg-slate-900/70 p-5" data-tour="users-schedule-panel">
@@ -354,7 +371,12 @@ export default function UsersPage() {
             ) : calendarDays.map((day) => {
               const daySchedules = schedulesByDate[day] || [];
               return (
-                <article key={day} className="min-h-52 rounded-2xl border border-slate-700 bg-slate-950/60 p-4">
+                <motion.article
+                  key={day}
+                  whileHover={{ y: -2 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                  className="murmura-card-vibrate min-h-52 rounded-2xl border border-slate-700 bg-slate-950/60 p-4 transition-colors hover:border-slate-600"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">{formatDayName(day)}</p>
@@ -373,7 +395,11 @@ export default function UsersPage() {
                     {daySchedules.length ? daySchedules.map((schedule) => {
                       const statusMeta = getStatusMeta(schedule.status);
                       return (
-                        <div key={schedule.id} className="rounded-2xl border border-orange-500/20 bg-orange-500/10 p-3">
+                        <motion.div
+                          key={schedule.id}
+                          whileHover={{ scale: 1.01 }}
+                          className="rounded-2xl border border-orange-500/20 bg-orange-500/10 p-3 transition-colors hover:border-orange-500/35"
+                        >
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
                               <p className="truncate text-sm font-black text-white">{schedule.user_name}</p>
@@ -401,7 +427,7 @@ export default function UsersPage() {
                               Hapus
                             </button>
                           </div>
-                        </div>
+                        </motion.div>
                       );
                     }) : (
                       <p className="rounded-2xl border border-dashed border-slate-700 px-3 py-6 text-center text-sm text-slate-500">
@@ -409,7 +435,7 @@ export default function UsersPage() {
                       </p>
                     )}
                   </div>
-                </article>
+                </motion.article>
               );
             })}
           </div>
@@ -468,9 +494,22 @@ export default function UsersPage() {
         </section>
       </div>
 
-      {userModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-900 p-6" data-tour="users-add-modal">
+      <AnimatePresence>
+        {userModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className="w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl"
+              data-tour="users-add-modal"
+            >
             <div className="mb-5 flex items-center justify-between gap-3">
               <h2 className="text-xl font-black text-white">Tambah Kasir</h2>
               <button type="button" onClick={() => setUserModal(false)} className="text-2xl text-slate-500 hover:text-white" data-tour-action="users-close-user-modal">x</button>
@@ -513,13 +552,27 @@ export default function UsersPage() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {scheduleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
-          <div className="w-full max-w-lg rounded-3xl border border-slate-700 bg-slate-900 p-6" data-tour="users-schedule-modal">
+      <AnimatePresence>
+        {scheduleModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className="w-full max-w-lg rounded-3xl border border-slate-700 bg-slate-900 p-6 shadow-2xl"
+              data-tour="users-schedule-modal"
+            >
             <div className="mb-5 flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-400">Schedule Form</p>
@@ -636,13 +689,26 @@ export default function UsersPage() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
-          <div className="w-full max-w-sm rounded-3xl border border-red-500/25 bg-slate-900 p-6">
+      <AnimatePresence>
+        {deleteTarget && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className="w-full max-w-sm rounded-3xl border border-red-500/25 bg-slate-900 p-6 shadow-2xl"
+            >
             <h2 className="text-xl font-black text-white">Hapus Jadwal?</h2>
             <p className="mt-3 text-sm leading-6 text-slate-400">
               Jadwal {deleteTarget.user_name} pada {formatDate(deleteTarget.work_date)} akan dihapus permanen.
@@ -655,9 +721,10 @@ export default function UsersPage() {
                 Hapus
               </button>
             </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AdminLayout>
   );
 }

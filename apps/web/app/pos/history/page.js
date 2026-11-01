@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { TableSkeleton } from '@/components/ui/SectionSkeleton';
 import DateRangePicker from '@/components/ui/DateRangePicker';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function TransactionHistoryPage() {
   const { user } = useAuthStore();
@@ -253,20 +254,24 @@ export default function TransactionHistoryPage() {
 
               {/* Buttons */}
               <div data-tour="pos-history-filter-actions" className="flex min-h-[58px] gap-2">
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={handleApplyFilter}
                   disabled={loading || refreshing}
-                  className="flex-1 rounded-xl bg-orange-500 px-4 py-2 font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 rounded-xl bg-orange-500 px-4 py-2 font-semibold text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   🔎 Cari
-                </button>
-                <button
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={handleResetFilter}
                   disabled={loading || refreshing}
                   className="flex-1 rounded-xl bg-slate-600 px-4 py-2 font-semibold text-white transition hover:bg-slate-500 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   ↻ Reset
-                </button>
+                </motion.button>
               </div>
             </div>
           </div>
@@ -283,7 +288,12 @@ export default function TransactionHistoryPage() {
                   }).format(new Date(stat.year, stat.month - 1));
                   
                   return (
-                    <div key={idx} className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 rounded-xl p-5 hover:border-orange-500/50 transition shadow-lg">
+                    <motion.div
+                      key={idx}
+                      whileHover={{ y: -4, scale: 1.015 }}
+                      transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+                      className="murmura-card-vibrate bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 rounded-xl p-5 hover:border-orange-500/50 transition shadow-lg"
+                    >
                       {/* Header */}
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-base font-bold text-white capitalize">{monthName}</h3>
@@ -312,7 +322,7 @@ export default function TransactionHistoryPage() {
                         <p className="text-2xl font-black text-green-400">{formatCurrency(stat.margin)}</p>
                         <p className="text-xs text-slate-500 mt-1">dari omzet</p>
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
@@ -328,29 +338,46 @@ export default function TransactionHistoryPage() {
 
           {/* Summary Overall */}
           <div data-tour="pos-history-summary" className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
-              <p className="text-slate-400 text-sm">Total Transaksi</p>
-              <p className="text-2xl font-black text-white">{transactions.length}</p>
-            </div>
-            <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
-              <p className="text-slate-400 text-sm">Total Penjualan (Omzet)</p>
-              <p className="text-2xl font-black text-orange-400">
+            <motion.div
+              whileHover={{ y: -3, scale: 1.01 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+              className="murmura-card-vibrate bg-slate-800 border border-slate-700 rounded-xl p-4 transition-all duration-300 hover:border-slate-600 shadow-md"
+            >
+              <p className="text-slate-400 text-sm font-semibold">Total Transaksi</p>
+              <p className="mt-1 text-2xl font-black text-white">{transactions.length}</p>
+            </motion.div>
+            <motion.div
+              whileHover={{ y: -3, scale: 1.01 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+              className="murmura-card-vibrate bg-slate-800 border border-slate-700 rounded-xl p-4 transition-all duration-300 hover:border-orange-500/40 shadow-md"
+            >
+              <p className="text-slate-400 text-sm font-semibold">Total Penjualan (Omzet)</p>
+              <p className="mt-1 text-2xl font-black text-orange-400">
                 {formatCurrency(totalOmzet)}
               </p>
-            </div>
-            <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
-              <p className="text-slate-400 text-sm">Total Margin (35%)</p>
-              <p className="text-2xl font-black text-green-400">
+            </motion.div>
+            <motion.div
+              whileHover={{ y: -3, scale: 1.01 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+              className="murmura-card-vibrate bg-slate-800 border border-slate-700 rounded-xl p-4 transition-all duration-300 hover:border-green-500/40 shadow-md"
+            >
+              <p className="text-slate-400 text-sm font-semibold">Total Margin (35%)</p>
+              <p className="mt-1 text-2xl font-black text-green-400">
                 {formatCurrency(totalMargin)}
               </p>
-            </div>
-            <div data-tour="pos-history-discount-summary" className="bg-slate-800 border border-emerald-500/25 rounded-xl p-4">
-              <p className="text-slate-400 text-sm">Total Distribusi Diskon</p>
-              <p className="text-2xl font-black text-emerald-400">
+            </motion.div>
+            <motion.div
+              whileHover={{ y: -3, scale: 1.01 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+              data-tour="pos-history-discount-summary"
+              className="murmura-card-vibrate bg-slate-800 border border-emerald-500/25 rounded-xl p-4 transition-all duration-300 hover:border-emerald-500/50 shadow-md"
+            >
+              <p className="text-slate-400 text-sm font-semibold">Total Distribusi Diskon</p>
+              <p className="mt-1 text-2xl font-black text-emerald-400">
                 {formatCurrency(totalDiscount)}
               </p>
               <p className="mt-1 text-xs text-slate-500">Rata-rata {avgDiscountRate}% | {discountCount} transaksi</p>
-            </div>
+            </motion.div>
           </div>
 
           {/* Table */}
@@ -492,7 +519,12 @@ export default function TransactionHistoryPage() {
                     const stat = paymentStats[method.key];
                     const percentage = stat ? Math.round((stat.total / totalOmzet) * 100) : 0;
                     return (
-                      <div key={method.key} className="bg-gradient-to-br from-slate-700 to-slate-800 rounded-xl p-5 border border-slate-600 hover:border-orange-500/30 transition transform hover:scale-105">
+                      <motion.div
+                        key={method.key}
+                        whileHover={{ y: -3, scale: 1.02 }}
+                        transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+                        className="murmura-card-vibrate bg-gradient-to-br from-slate-700 to-slate-800 rounded-xl p-5 border border-slate-600 hover:border-orange-500/40 transition shadow-md"
+                      >
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-2xl">{method.label.split(' ')[0]}</span>
                           <span className="text-xs bg-slate-900 px-2 py-1 rounded-full text-orange-400 font-semibold">{stat?.count || 0}x</span>
@@ -502,7 +534,7 @@ export default function TransactionHistoryPage() {
                         </div>
                         <p className="text-lg font-bold text-white mb-1">{formatCurrency(stat?.total || 0)}</p>
                         <p className="text-xs text-slate-400">{percentage}% dari total</p>
-                      </div>
+                      </motion.div>
                     );
                   });
                 })()}
@@ -687,9 +719,22 @@ export default function TransactionHistoryPage() {
             </p>
           </div>
 
-          {deleteModal.open && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-              <div data-tour="pos-history-delete-modal" className="w-full max-w-lg rounded-2xl border border-red-400/25 bg-slate-900 shadow-2xl">
+          <AnimatePresence>
+            {deleteModal.open && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+              >
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0, y: 15 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.95, opacity: 0, y: 15 }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                  data-tour="pos-history-delete-modal"
+                  className="w-full max-w-lg rounded-2xl border border-red-400/25 bg-slate-900 shadow-2xl"
+                >
                 <div className="border-b border-slate-700 px-5 py-4">
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-red-300">Konfirmasi void transaksi</p>
                   <h2 className="mt-2 text-xl font-black text-white">Hapus & Kembalikan Stok</h2>
@@ -731,9 +776,10 @@ export default function TransactionHistoryPage() {
                     {deleteModal.submitting ? 'Memproses...' : 'Ya, Hapus & Kembalikan Stok'}
                   </button>
                 </div>
-              </div>
-            </div>
-          )}
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </AdminLayout>
     </AuthGuard>
