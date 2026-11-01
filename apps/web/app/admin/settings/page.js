@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { useWebsiteSettings, DEFAULT_THEME_COLORS, DEFAULT_SETTINGS } from '@/store/settingsStore';
 import { uploadWebsiteImage, bulkUpdateWebsiteSettings } from '@/lib/api';
@@ -258,7 +259,12 @@ export default function SettingsPage() {
         )}
 
         <div className="space-y-6" data-tour="settings-form">
-          <div className="bg-slate-800/80 rounded-2xl p-6 border border-slate-700/60" data-tour="settings-store-section">
+          <motion.div
+            whileHover={{ y: -2 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+            className="murmura-card-vibrate bg-slate-800/80 rounded-2xl p-6 border border-slate-700/60 transition-all duration-300 hover:border-slate-600 shadow-md"
+            data-tour="settings-store-section"
+          >
             <h2 className="text-white font-bold text-lg mb-4">Informasi Toko</h2>
             <div className="space-y-5">
               <div data-tour="settings-store-name-field">
@@ -295,9 +301,14 @@ export default function SettingsPage() {
                 {fieldErrors.browser_title && <p className="text-red-400 text-xs mt-1.5">{fieldErrors.browser_title}</p>}
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-slate-800/80 rounded-2xl p-6 border border-slate-700/60" data-tour="settings-branding-section">
+          <motion.div
+            whileHover={{ y: -2 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+            className="murmura-card-vibrate bg-slate-800/80 rounded-2xl p-6 border border-slate-700/60 transition-all duration-300 hover:border-slate-600 shadow-md"
+            data-tour="settings-branding-section"
+          >
             <h2 className="text-white font-bold text-lg mb-4">Branding</h2>
             <div className="space-y-5">
               <div data-tour="settings-logo-field">
@@ -358,9 +369,14 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-slate-800/80 rounded-2xl p-6 border border-slate-700/60" data-tour="settings-theme-section">
+          <motion.div
+            whileHover={{ y: -2 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+            className="murmura-card-vibrate bg-slate-800/80 rounded-2xl p-6 border border-slate-700/60 transition-all duration-300 hover:border-slate-600 shadow-md"
+            data-tour="settings-theme-section"
+          >
             <h2 className="text-white font-bold text-lg mb-1">Tema Warna</h2>
             <p className="text-slate-400 text-sm mb-4">
               Total warna tema saat ini: <span className="text-white font-semibold">{THEME_FIELDS.length}</span>
@@ -387,19 +403,21 @@ export default function SettingsPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
 
           <div className="flex gap-3" data-tour="settings-actions">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={handleSaveSettings}
               disabled={saving || hasFieldError}
               data-tour="settings-save-button"
-              className={`flex-1 px-6 py-3 font-semibold rounded-lg transition-all ${
-                saving || hasFieldError ? 'bg-orange-500/50 text-white/70 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600 text-white'
+              className={`flex-1 rounded-xl px-6 py-3 font-semibold shadow-lg shadow-orange-500/20 transition-all ${
+                saving || hasFieldError ? 'cursor-not-allowed bg-orange-500/50 text-white/70' : 'bg-orange-500 text-white hover:bg-orange-600'
               }`}
             >
               {saving ? 'Menyimpan...' : 'Simpan Pengaturan'}
-            </button>
+            </motion.button>
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { motion } from 'framer-motion';
 import AccordionSection from '../form/AccordionSection';
 import DynamicArray from '../form/DynamicArray';
 import ImageUpload from '../form/ImageUpload';
@@ -60,22 +61,26 @@ export default function LoginPageSettingsLayout() {
         )}
 
         <div data-tour="login-settings-actions" className="flex flex-wrap gap-3 mb-6">
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             data-tour="login-save-button"
             onClick={saveSettings}
             disabled={!isDirty || isSaving}
-            className="px-4 py-2 bg-yellow-500 text-slate-950 font-semibold rounded hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="px-4 py-2 bg-yellow-500 text-slate-950 font-semibold rounded hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition"
           >
             {isSaving ? 'Saving...' : 'Save Changes'}
-          </button>
-          <button
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             data-tour="login-reset-button"
             onClick={resetSettings}
             disabled={isSaving}
             className="px-4 py-2 bg-slate-800 text-cream border border-slate-600 rounded hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             Reset to Default
-          </button>
+          </motion.button>
           {isLoading && hasLoaded && (
             <div className="flex items-center rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1 text-sm font-semibold text-sky-200">
               Sinkronisasi login page...
