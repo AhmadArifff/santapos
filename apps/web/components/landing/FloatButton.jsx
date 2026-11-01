@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { ctaContent } from '@/data/landing/ctaContent';
 
 const chatBubbleIcon = (
@@ -20,7 +21,10 @@ export default function FloatButton({ content = { whatsappUrl: ctaContent.whatsa
   const showChatIcon = !icon || icon === 'Chat' || icon === '💬';
 
   return (
-    <a
+    <motion.a
+      whileHover={{ scale: 1.12 }}
+      whileTap={{ scale: 0.92 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
       href={data.whatsappUrl}
       className="float-btn"
       target="_blank"
@@ -31,6 +35,6 @@ export default function FloatButton({ content = { whatsappUrl: ctaContent.whatsa
       }}
     >
       {showChatIcon ? chatBubbleIcon : icon}
-    </a>
+    </motion.a>
   );
 }

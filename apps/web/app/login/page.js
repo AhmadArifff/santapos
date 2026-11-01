@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { login } from '@/lib/api';
@@ -762,7 +763,9 @@ export default function LoginPage() {
                 </div>
 
                 {/* Submit */}
-                <button
+                <motion.button
+                  whileHover={!loading ? { scale: 1.02 } : {}}
+                  whileTap={!loading ? { scale: 0.98 } : {}}
                   type="submit"
                   disabled={loading}
                   className="btn-shimmer"
@@ -777,6 +780,8 @@ export default function LoginPage() {
                     textTransform:  'uppercase',
                     fontWeight:     700,
                     border:         'none',
+                    borderRadius:   '8px',
+                    boxShadow:      '0 8px 24px rgba(201,168,76,0.25)',
                     cursor:         loading ? 'not-allowed' : 'pointer',
                     position:       'relative',
                     overflow:       'hidden',
@@ -799,7 +804,47 @@ export default function LoginPage() {
                     }} />
                   )}
                   {loading ? (loginForm.loadingLabel || 'Memverifikasi...') : (loginForm.submitLabel || 'Masuk ke Dashboard')}
-                </button>
+                </motion.button>
+
+                {/* Role quick selector helper */}
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.2rem' }}>
+                  {[
+                    { label: 'Admin', email: 'admin@sultankebab.com', pass: 'admin123' },
+                    { label: 'Kasir', email: 'kasir@sultankebab.com', pass: 'kasir123' },
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => {
+                        setForm({ email: preset.email, password: preset.pass });
+                        setFieldErr({ email: '', password: '' });
+                        setError('');
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '0.45rem',
+                        background: 'rgba(201,168,76,0.08)',
+                        border: '1px solid rgba(201,168,76,0.25)',
+                        borderRadius: '6px',
+                        color: 'var(--gold)',
+                        fontSize: '0.72rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(201,168,76,0.18)';
+                        e.currentTarget.style.borderColor = 'rgba(201,168,76,0.45)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(201,168,76,0.08)';
+                        e.currentTarget.style.borderColor = 'rgba(201,168,76,0.25)';
+                      }}
+                    >
+                      Demo {preset.label}
+                    </button>
+                  ))}
+                </div>
 
                 {/* Divider */}
                 <div style={{ display:'flex', alignItems:'center', gap:'1rem', color:'var(--text-muted)', fontSize:'0.75rem', letterSpacing:'1px' }}>

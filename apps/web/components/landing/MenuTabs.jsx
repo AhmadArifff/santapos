@@ -125,12 +125,19 @@ export default function MenuTabs({ content = menuContent, previewMode = false })
                 type="button"
                 role="tab"
                 aria-selected={isActive}
-                className={`menu-tab ${isActive ? 'active' : ''}`}
+                className={`menu-tab relative ${isActive ? 'active' : ''}`}
                 onClick={() => setActiveCategory(category.id)}
               >
-                <span className="menu-tab-icon">{parsed.icon}</span>
-                <span className="menu-tab-text">{parsed.text || category.label}</span>
-                <span className="menu-tab-count">{category.items?.length || 0}</span>
+                {isActive && (
+                  <motion.div
+                    layoutId="landingMenuTabPill"
+                    className="absolute inset-0 rounded-full border border-[var(--gold)] bg-[var(--gold)]/15 shadow-sm"
+                    transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
+                  />
+                )}
+                <span className="menu-tab-icon relative z-10">{parsed.icon}</span>
+                <span className="menu-tab-text relative z-10">{parsed.text || category.label}</span>
+                <span className="menu-tab-count relative z-10">{category.items?.length || 0}</span>
               </button>
             );
           })}
