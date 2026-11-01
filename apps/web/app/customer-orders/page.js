@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { playOrderNotificationSound } from '@/lib/soundNotification';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import AdminLayout from '@/components/layout/AdminLayout';
 import AuthGuard from '@/components/ui/AuthGuard';
 import QRCodeCard from '@/components/customer/QRCodeCard';
@@ -664,23 +664,34 @@ export default function CustomerOrdersPage() {
                 Pantau order pelanggan dari QR meja, approve proses dapur, dan kelola meja yang tampil di landing page.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2" data-tour="customer-orders-status-filters">
-              {statusFilters.map((item) => (
-                <button
-                  key={item.value}
-                  onClick={() => setStatus(item.value)}
-                  className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition ${
-                    status === item.value ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  {item.label}
-                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-                    status === item.value ? 'bg-white/20 text-white' : 'bg-slate-700 text-slate-300'
-                  }`}>
-                    {statusCounts[item.value] || 0}
-                  </span>
-                </button>
-              ))}
+            <div className="flex flex-wrap gap-2 relative" data-tour="customer-orders-status-filters">
+              {statusFilters.map((item) => {
+                const active = status === item.value;
+                return (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => setStatus(item.value)}
+                    className={`relative inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-colors cursor-pointer ${
+                      active ? 'text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {active && (
+                      <motion.div
+                        layoutId="customerOrderStatusPill"
+                        className="absolute inset-0 rounded-xl bg-orange-500 shadow-md"
+                        transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+                      />
+                    )}
+                    <span className="relative z-10">{item.label}</span>
+                    <span className={`relative z-10 rounded-full px-1.5 py-0.5 text-[10px] ${
+                      active ? 'bg-white/20 text-white' : 'bg-slate-700 text-slate-300'
+                    }`}>
+                      {statusCounts[item.value] || 0}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -752,7 +763,8 @@ export default function CustomerOrdersPage() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.04 }}
-                className="rounded-2xl border border-slate-700 bg-slate-800 p-4"
+                whileHover={{ y: -3, scale: 1.015 }}
+                className="murmura-card-vibrate rounded-2xl border border-slate-700 bg-slate-800 hover:border-slate-600/80 p-4 transition-all shadow-sm"
               >
                 <p className="text-xs text-slate-500">{label}</p>
                 <strong className="mt-2 block text-2xl text-white">{value}</strong>
@@ -774,6 +786,7 @@ export default function CustomerOrdersPage() {
                 </div>
               )}
               <CustomerOrdersTutorialDemo isAdmin={isAdmin} />
+              <AnimatePresence mode="popLayout">
               {visibleOrders.map((order) => {
                 const discountComponents = getDiscountComponents(order);
                 const canSelectOrder = !['completed', 'cancelled'].includes(order.status);
@@ -781,7 +794,9 @@ export default function CustomerOrdersPage() {
                 <div key={order.id} className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-start" data-tour="customer-order-row">
                 <motion.article
                   layout
-                  className="rounded-3xl border border-slate-700 bg-slate-800 p-5 shadow-xl shadow-black/10"
+                  whileHover={{ y: -2, scale: 1.006 }}
+                  transition={{ duration: 0.18 }}
+                  className="murmura-card-vibrate rounded-3xl border border-slate-700 bg-slate-800 hover:border-slate-600/80 p-5 shadow-xl shadow-black/10 transition-all"
                   data-tour="customer-order-card"
                 >
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -790,7 +805,10 @@ export default function CustomerOrdersPage() {
                         <span className="rounded-full bg-orange-500/15 px-3 py-1 text-xs font-black uppercase text-orange-300">
                           Meja {order.table_number}
                         </span>
-                        <span className="rounded-full bg-slate-700 px-3 py-1 text-xs font-black uppercase text-slate-300">
+                        <span className="rounded-full bg-slate-700 px-3 py-1 text-xs font-black uppercase text-slate-300 inline-flex items-center gap-1.5">
+                          {order.status === 'pending' && (
+                            <span className="murmura-radar-pulse w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                          )}
                           {statusLabels[order.status] || order.status}
                         </span>
                         {discountComponents.map((component) => (
@@ -959,6 +977,7 @@ export default function CustomerOrdersPage() {
                 </div>
               );
               })}
+              </AnimatePresence>
             </section>
 
             {isAdmin && (
@@ -1052,9 +1071,16 @@ export default function CustomerOrdersPage() {
               </aside>
             )}
           </div>
+          <AnimatePresence>
           {proofModal && (
             <div className="fixed inset-0 z-[90] grid place-items-center bg-black/75 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" data-tour="customer-orders-proof-modal">
-              <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-slate-700 bg-slate-900 p-4 shadow-2xl shadow-black/50">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.94, y: 16 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.94, y: 16 }}
+                transition={{ type: 'spring', stiffness: 360, damping: 28 }}
+                className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-slate-700 bg-slate-900 p-4 shadow-2xl shadow-black/50"
+              >
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">Bukti Pembayaran</p>
@@ -1074,9 +1100,9 @@ export default function CustomerOrdersPage() {
                 ) : (
                   <img src={proofModal.url} alt="Bukti pembayaran" className="mt-4 max-h-[70vh] w-full rounded-2xl bg-white object-contain" />
                 )}
-              </div>
+              </motion.div>
             </div>
-          )}
+          )}</AnimatePresence>
           <style jsx global>{`
             .customer-orders-tutorial-demo {
               display: none;
