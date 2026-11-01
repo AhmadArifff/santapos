@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState, useRef } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getProducts, getCategories, deleteProduct, getStockItems } from '@/lib/api';
 import api from '@/lib/axios';
 import { resolveAssetUrl } from '@/lib/assetUrl';
@@ -293,23 +294,54 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        <div data-tour="product-filters" className="grid gap-3 md:grid-cols-[1fr_240px]">
-          <input data-tour="product-search" value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Cari produk..."
-            className="w-full bg-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 border border-slate-700"/>
-          <select
-            data-tour="product-category-filter"
-            value={categoryFilter}
-            onChange={e => setCategoryFilter(e.target.value)}
-            className="w-full bg-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 border border-slate-700"
-          >
-            <option value="all">Semua kategori</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
+        <div data-tour="product-filters" className="space-y-3">
+          <div className="grid gap-3 md:grid-cols-[1fr_240px]">
+            <input data-tour="product-search" value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Cari produk..."
+              className="w-full bg-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 border border-slate-700"/>
+            <select
+              data-tour="product-category-filter"
+              value={categoryFilter}
+              onChange={e => setCategoryFilter(e.target.value)}
+              className="w-full bg-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 border border-slate-700"
+            >
+              <option value="all">Semua kategori</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Quick Category Capsule Filter */}
+          <div className="flex flex-wrap gap-1.5 items-center">
+            {[
+              { id: 'all', name: 'Semua Kategori' },
+              ...categories.map(c => ({ id: String(c.id), name: c.name }))
+            ].map(chip => {
+              const active = String(categoryFilter) === String(chip.id);
+              return (
+                <button
+                  key={chip.id}
+                  type="button"
+                  onClick={() => setCategoryFilter(chip.id)}
+                  className={`relative px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                    active ? 'text-white font-bold' : 'bg-slate-800/80 text-slate-400 hover:text-white border border-slate-700/60'
+                  }`}
+                >
+                  {active && (
+                    <motion.div
+                      layoutId="productCategoryPill"
+                      className="absolute inset-0 rounded-xl bg-orange-500 shadow-md"
+                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  <span className="relative z-10">{chip.name}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Grid Produk */}
@@ -317,8 +349,19 @@ export default function ProductsPage() {
           <CardSkeleton count={8} />
         ) : (
           <div data-tour="product-grid" className="product-real-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filtered.map(p => (
-            <div key={p.id} data-tour="product-card" className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+            <AnimatePresence mode="popLayout">
+              {filtered.map(p => (
+                <motion.div
+                  key={p.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.94 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.2 }}
+                  whileHover={{ y: -4, scale: 1.015 }}
+                  data-tour="product-card"
+                  className="murmura-card-vibrate bg-slate-800 rounded-2xl border border-slate-700 hover:border-slate-600 transition-all overflow-hidden"
+                >
               {/* Gambar */}
               <div data-tour="product-card-image" className="w-full h-32 bg-slate-700 flex items-center justify-center overflow-hidden">
                 {p.image_url
@@ -407,7 +450,7 @@ export default function ProductsPage() {
                                 k.can_make === 0 ? 'text-red-400' :
                                 k.can_make <= 3  ? 'text-yellow-400' : 'text-green-400'
                               }`}>
-                                {k.can_make === 0 ? '—' : k.can_make}
+                                {k.can_make === 0 ? '0' : k.can_make}
                               </span>
                             </div>
                           ))}
@@ -428,16 +471,25 @@ export default function ProductsPage() {
                   </button>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
+          </AnimatePresence>
           </div>
         )}
       </div>
 
       {/* Modal Tambah/Edit Produk */}
-      {modal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-hidden bg-black/60 p-4">
-          <div data-tour="product-modal" className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-700 bg-slate-800 p-6 shadow-2xl shadow-black/40">
+      <AnimatePresence>
+        {modal && (
+          <div className="fixed inset-0 z-50 flex items-start justify-center overflow-hidden bg-black/60 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 16 }}
+              transition={{ type: 'spring', stiffness: 360, damping: 28 }}
+              data-tour="product-modal"
+              className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-700 bg-slate-800 p-6 shadow-2xl shadow-black/40"
+            >
             <h2 className="mb-5 text-xl font-bold text-white">
               {editing ? 'Edit Produk' : 'Tambah Produk'}
             </h2>
@@ -687,9 +739,9 @@ export default function ProductsPage() {
                 </button>
               </div>
             </form>
-          </div>
+          </motion.div>
         </div>
-      )}
+      )}</AnimatePresence>
     </AdminLayout>
   );
 }

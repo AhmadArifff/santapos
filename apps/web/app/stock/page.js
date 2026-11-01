@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/authStore';
 import SuccessModal from '@/components/stock/SuccessModal';
 import StockIssuesTab from '@/components/stock/StockIssuesTab';
@@ -400,26 +401,48 @@ function getPercentTrend(percent) {
   return { label: 'Stabil 0.00%', cls: 'text-slate-400', bg: 'bg-slate-700/40 border-slate-600/40', icon: '•' };
 }
 // ── Shared UI ─────────────────────────────────────────────────
-function TabBtn({ active, onClick, children, ...props }) {
+function TabBtn({ active, onClick, children, layoutId = 'stockMainTabPill', ...props }) {
   return (
-    <button onClick={onClick} {...props}
-      className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-        active ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
+    <button
+      type="button"
+      onClick={onClick}
+      {...props}
+      className={`relative px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${
+        active ? 'text-white font-bold'
                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-      }`}>
-      {children}
+      }`}
+    >
+      {active && (
+        <motion.div
+          layoutId={layoutId}
+          className="absolute inset-0 rounded-xl bg-orange-500 shadow-lg shadow-orange-500/25"
+          transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+        />
+      )}
+      <span className="relative z-10">{children}</span>
     </button>
   );
 }
 
-function SubTab({ active, onClick, children, ...props }) {
+function SubTab({ active, onClick, children, layoutId = 'stockSubTabPill', ...props }) {
   return (
-    <button onClick={onClick} {...props}
-      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-        active ? 'bg-orange-500 text-white'
+    <button
+      type="button"
+      onClick={onClick}
+      {...props}
+      className={`relative px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+        active ? 'text-white font-bold'
                : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white hover:border-slate-600'
-      }`}>
-      {children}
+      }`}
+    >
+      {active && (
+        <motion.div
+          layoutId={layoutId}
+          className="absolute inset-0 rounded-xl bg-orange-500 shadow-md"
+          transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+        />
+      )}
+      <span className="relative z-10">{children}</span>
     </button>
   );
 }
@@ -1652,7 +1675,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                             <td className={`${tdC} text-xs`}>
                               {(() => {
                                 const s = summary.find(sm => sm.name === row.item_name);
-                                if (!s || !Number(s.price_per_unit)) return <span className="text-slate-600">—</span>;
+                                if (!s || !Number(s.price_per_unit)) return <span className="text-slate-600">-</span>;
                                 const isHigher = Number(row.cost_per_unit) > Number(s.price_per_unit);
                                 const isLower  = Number(row.cost_per_unit) < Number(s.price_per_unit);
                                 return (
@@ -1664,7 +1687,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                                 );
                               })()}
                             </td>
-                            <td className={`${tdC} text-slate-500 text-xs`}>{row.note || '—'}</td>
+                            <td className={`${tdC} text-slate-500 text-xs`}>{row.note || '-'}</td>
                             <td className={`${tdC} text-slate-400 text-xs`}>{row.created_by_name}</td>
                             <td className={tdC}>
                               <div className="flex gap-2">
@@ -1813,7 +1836,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
 
                               {/* Kolom Sumber Stok */}
                               <td className={`${tdC} text-slate-300 text-xs`}>
-                                {row.stock_owner_name || row.target_user_name || row.created_by_name || '—'}
+                                {row.stock_owner_name || row.target_user_name || row.created_by_name || '-'}
                               </td>
 
                               {/* ✅ SESUDAH */}
@@ -1826,7 +1849,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   ) : (
     // Kasir transaksi sendiri
     <span className="text-xs text-slate-400">
-      {row.created_by_name || '—'}
+      {row.created_by_name || '-'}
     </span>
   )}
 </td>
@@ -1861,7 +1884,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                                 )}
                               </td>
 
-                              <td className={`${tdC} text-slate-500 text-xs`}>{row.note || '—'}</td>
+                              <td className={`${tdC} text-slate-500 text-xs`}>{row.note || '-'}</td>
                             </tr>
                           );
                         })
@@ -3206,7 +3229,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                                 {row.branch_name || 'Cabang aktif'}
                               </td>
                               <td className={`${tdC} text-slate-300 text-xs`}>
-                                {row.stock_owner_name || row.target_user_name || row.created_by_name || '—'}
+                                {row.stock_owner_name || row.target_user_name || row.created_by_name || '-'}
                               </td>
                               {/* ✅ SESUDAH */}
 <td className={`${tdC} text-slate-400 text-xs`}>
@@ -3218,7 +3241,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
   ) : (
     // Kasir itu sendiri yang transaksi
     <span className="text-slate-300">
-      {row.created_by_name || '—'}
+      {row.created_by_name || '-'}
     </span>
   )}
 </td>
@@ -3244,7 +3267,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                                   </span>
                                 )}
                               </td>
-                              <td className={`${tdC} text-slate-500 text-xs`}>{row.note || '—'}</td>
+                              <td className={`${tdC} text-slate-500 text-xs`}>{row.note || '-'}</td>
                             </tr>
                           );
                         })
