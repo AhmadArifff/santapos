@@ -550,82 +550,112 @@ export default function PaymentManagementPage() {
                   Sinkronisasi payment...
                 </div>
               )}
-              <div className="rounded-2xl border border-slate-700 bg-slate-800 p-3.5">
+              <motion.div
+                whileHover={{ y: -2, scale: 1.02 }}
+                className="murmura-card-vibrate rounded-2xl border border-slate-700 bg-slate-800 hover:border-slate-600/80 p-3.5 transition-all shadow-sm"
+              >
                 <p className="text-xs text-slate-500">Metode Aktif</p>
                 <strong className="mt-0.5 block text-xl text-emerald-300">
                   {activeCount + (midtransForm.is_active ? 1 : 0)}
                 </strong>
-              </div>
-              <div className="rounded-2xl border border-slate-700 bg-slate-800 p-3.5">
+              </motion.div>
+              <motion.div
+                whileHover={{ y: -2, scale: 1.02 }}
+                className="murmura-card-vibrate rounded-2xl border border-slate-700 bg-slate-800 hover:border-slate-600/80 p-3.5 transition-all shadow-sm"
+              >
                 <p className="text-xs text-slate-500">Total Audit Log</p>
                 <strong className="mt-0.5 block text-xl text-white">{auditLogs.length}</strong>
-              </div>
+              </motion.div>
             </div>
           </div>
 
           {/* Tab Navigation (4 Tabs) */}
-          <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-2">
+          <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-2 relative">
             <button
+              type="button"
               onClick={() => setActiveTab('manual')}
-              className={`flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black transition ${
-                activeTab === 'manual'
-                  ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
-                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+              className={`relative flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black transition-colors cursor-pointer ${
+                activeTab === 'manual' ? 'text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
               }`}
             >
-              <span>📋</span>
-              <span>Metode Manual (QRIS & Struk)</span>
-              <span className="rounded-full bg-black/25 px-2 py-0.5 text-xs">
+              {activeTab === 'manual' && (
+                <motion.div
+                  layoutId="paymentMainTabPill"
+                  className="absolute inset-0 rounded-2xl bg-orange-500 shadow-lg shadow-orange-500/20"
+                  transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+                />
+              )}
+              <span className="relative z-10">📋</span>
+              <span className="relative z-10">Metode Manual (QRIS & Struk)</span>
+              <span className={`relative z-10 rounded-full px-2 py-0.5 text-xs ${activeTab === 'manual' ? 'bg-black/25 text-white' : 'bg-slate-700 text-slate-300'}`}>
                 {methods.length}
               </span>
             </button>
 
             <button
+              type="button"
               onClick={() => setActiveTab('midtrans')}
-              className={`flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black transition ${
-                activeTab === 'midtrans'
-                  ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
-                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+              className={`relative flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black transition-colors cursor-pointer ${
+                activeTab === 'midtrans' ? 'text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
               }`}
             >
-              <span>⚡</span>
-              <span>Integrasi Midtrans Gateway</span>
+              {activeTab === 'midtrans' && (
+                <motion.div
+                  layoutId="paymentMainTabPill"
+                  className="absolute inset-0 rounded-2xl bg-orange-500 shadow-lg shadow-orange-500/20"
+                  transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+                />
+              )}
+              <span className="relative z-10">⚡</span>
+              <span className="relative z-10">Integrasi Midtrans Gateway</span>
               {midtransForm.is_active && (
-                <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-xs text-black font-extrabold">
+                <span className="relative z-10 rounded-full bg-emerald-500 px-2 py-0.5 text-xs text-black font-extrabold">
                   ON
                 </span>
               )}
             </button>
 
             <button
+              type="button"
               onClick={() => setActiveTab('sync')}
-              className={`flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black transition ${
-                activeTab === 'sync'
-                  ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
-                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+              className={`relative flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black transition-colors cursor-pointer ${
+                activeTab === 'sync' ? 'text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
               }`}
             >
-              <span>🔄</span>
-              <span>Sync & Rekonsiliasi Gateway</span>
+              {activeTab === 'sync' && (
+                <motion.div
+                  layoutId="paymentMainTabPill"
+                  className="absolute inset-0 rounded-2xl bg-orange-500 shadow-lg shadow-orange-500/20"
+                  transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+                />
+              )}
+              <span className="relative z-10">🔄</span>
+              <span className="relative z-10">Sync & Rekonsiliasi Gateway</span>
               {syncResults.length > 0 && (
-                <span className="rounded-full bg-sky-500 px-2 py-0.5 text-xs text-black font-extrabold">
+                <span className="relative z-10 rounded-full bg-sky-500 px-2 py-0.5 text-xs text-black font-extrabold">
                   {syncResults.length}
                 </span>
               )}
             </button>
 
             <button
+              type="button"
               onClick={() => setActiveTab('audit')}
-              className={`flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black transition ${
-                activeTab === 'audit'
-                  ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
-                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+              className={`relative flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black transition-colors cursor-pointer ${
+                activeTab === 'audit' ? 'text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
               }`}
             >
-              <span>🛡️</span>
-              <span>Audit Trail Log Transaksi</span>
+              {activeTab === 'audit' && (
+                <motion.div
+                  layoutId="paymentMainTabPill"
+                  className="absolute inset-0 rounded-2xl bg-orange-500 shadow-lg shadow-orange-500/20"
+                  transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+                />
+              )}
+              <span className="relative z-10">🛡️</span>
+              <span className="relative z-10">Audit Trail Log Transaksi</span>
               {auditLogs.length > 0 && (
-                <span className="rounded-full bg-slate-900 px-2 py-0.5 text-xs text-sky-400">
+                <span className={`relative z-10 rounded-full px-2 py-0.5 text-xs ${activeTab === 'audit' ? 'bg-black/25 text-white' : 'bg-slate-900 text-sky-400'}`}>
                   {auditLogs.length}
                 </span>
               )}

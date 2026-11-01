@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
+import { motion, AnimatePresence } from 'framer-motion';
 import AuthGuard from '@/components/ui/AuthGuard';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import {
@@ -413,18 +414,30 @@ export default function DiscountsPage() {
           </div>
 
           <div data-tour="discount-stats" className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-xl border border-slate-700 bg-slate-800 p-4">
+            <motion.div
+              whileHover={{ y: -3, scale: 1.015 }}
+              transition={{ duration: 0.18 }}
+              className="murmura-card-vibrate rounded-xl border border-slate-700 bg-slate-800 hover:border-slate-600/80 p-4 transition-all shadow-sm"
+            >
               <p className="text-sm text-slate-400">Program aktif</p>
               <p className="mt-2 text-3xl font-black text-white">{stats.active}</p>
-            </div>
-            <div className="rounded-xl border border-emerald-500/25 bg-slate-800 p-4">
+            </motion.div>
+            <motion.div
+              whileHover={{ y: -3, scale: 1.015 }}
+              transition={{ duration: 0.18 }}
+              className="murmura-card-vibrate rounded-xl border border-emerald-500/25 bg-slate-800 hover:border-emerald-500/40 p-4 transition-all shadow-sm"
+            >
               <p className="text-sm text-slate-400">Distribusi diskon</p>
               <p className="mt-2 text-3xl font-black text-emerald-400">{formatCurrency(stats.distributed)}</p>
-            </div>
-            <div className="rounded-xl border border-slate-700 bg-slate-800 p-4">
+            </motion.div>
+            <motion.div
+              whileHover={{ y: -3, scale: 1.015 }}
+              transition={{ duration: 0.18 }}
+              className="murmura-card-vibrate rounded-xl border border-slate-700 bg-slate-800 hover:border-slate-600/80 p-4 transition-all shadow-sm"
+            >
               <p className="text-sm text-slate-400">Total klaim</p>
               <p className="mt-2 text-3xl font-black text-orange-400">{stats.used}</p>
-            </div>
+            </motion.div>
           </div>
 
           <div data-tour="discount-workspace" className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
@@ -646,26 +659,36 @@ export default function DiscountsPage() {
                   Filter ini membaca rentang aktif program. Program tanpa expired tetap ditampilkan karena aktif sampai kuota habis atau dinonaktifkan.
                 </p>
               </div>
-              <div data-tour="discount-type-filters" className="mt-4 flex gap-2 overflow-x-auto pb-1">
-                {typeFilters.map((filter) => (
-                  <button
-                    key={filter.key}
-                    type="button"
-                    onClick={() => setTypeFilter(filter.key)}
-                    className={`shrink-0 rounded-xl border px-3 py-2 text-xs font-black transition ${
-                      typeFilter === filter.key
-                        ? 'border-orange-500 bg-orange-500 text-white shadow-lg shadow-orange-950/30'
-                        : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-orange-500/60 hover:text-orange-300'
-                    }`}
-                  >
-                    {filter.label}
-                    <span className={`ml-2 rounded-full px-2 py-0.5 ${
-                      typeFilter === filter.key ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-300'
-                    }`}>
-                      {filter.count}
-                    </span>
-                  </button>
-                ))}
+              <div data-tour="discount-type-filters" className="mt-4 flex gap-2 overflow-x-auto pb-1 relative">
+                {typeFilters.map((filter) => {
+                  const active = typeFilter === filter.key;
+                  return (
+                    <button
+                      key={filter.key}
+                      type="button"
+                      onClick={() => setTypeFilter(filter.key)}
+                      className={`relative shrink-0 rounded-xl px-3 py-2 text-xs font-black transition-colors cursor-pointer ${
+                        active
+                          ? 'text-white'
+                          : 'border border-slate-700 bg-slate-900 text-slate-400 hover:border-orange-500/60 hover:text-orange-300'
+                      }`}
+                    >
+                      {active && (
+                        <motion.div
+                          layoutId="discountTypePill"
+                          className="absolute inset-0 rounded-xl bg-orange-500 shadow-md"
+                          transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+                        />
+                      )}
+                      <span className="relative z-10">{filter.label}</span>
+                      <span className={`relative z-10 ml-2 rounded-full px-2 py-0.5 ${
+                        active ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-300'
+                      }`}>
+                        {filter.count}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
               <div data-tour="discount-program-list" className="discount-real-program-list mt-4 space-y-3">
                 {loading && programs.length === 0 && <p className="rounded-xl bg-slate-900 p-5 text-slate-400">Memuat data...</p>}
@@ -673,11 +696,22 @@ export default function DiscountsPage() {
                 {!loading && programs.length > 0 && filteredPrograms.length === 0 && (
                   <p className="rounded-xl bg-slate-900 p-5 text-slate-400">Belum ada program untuk filter ini.</p>
                 )}
+                <AnimatePresence mode="popLayout">
                 {filteredPrograms.map((program) => {
                   const programState = getProgramState(program);
                   const bundleItems = getProgramBundleItems(program);
                   return (
-                  <article key={program.id} data-tour="discount-program-card" className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+                  <motion.article
+                    key={program.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.94 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.2 }}
+                    whileHover={{ y: -2, scale: 1.008 }}
+                    data-tour="discount-program-card"
+                    className="murmura-card-vibrate rounded-xl border border-slate-700 bg-slate-900 hover:border-slate-600/80 p-4 transition-all shadow-sm"
+                  >
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                       <div>
                         <div data-tour="discount-program-status" className="flex flex-wrap items-center gap-2">
@@ -722,9 +756,10 @@ export default function DiscountsPage() {
                         </div>
                       </div>
                     </div>
-                  </article>
+                  </motion.article>
                   );
                 })}
+                </AnimatePresence>
               </div>
             </section>
           </div>

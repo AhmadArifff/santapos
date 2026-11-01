@@ -2,6 +2,7 @@
 
 import { Banknote, Copy, CreditCard, Landmark, QrCode, Radio, Zap } from 'lucide-react';
 import { resolveAssetUrl } from '@/lib/assetUrl';
+import { motion } from 'framer-motion';
 
 const maskAccount = (value) => {
   const text = String(value || '').replace(/\s+/g, '');
@@ -27,13 +28,13 @@ export default function PaymentMethodCard({
   const accountName = method.account_name || 'Santapos Resto';
   const accountNumber = isMidtrans ? 'QRIS / VA / E-Wallet' : maskAccount(method.account_number);
   const timeout = Number(method.payment_timeout_minutes || 0);
-  const Wrapper = onClick ? 'button' : 'div';
+  const Wrapper = onClick ? motion.button : motion.div;
 
   return (
     <Wrapper
       type={onClick ? 'button' : undefined}
       onClick={onClick}
-      className={`group relative w-full overflow-hidden rounded-3xl border text-left shadow-xl shadow-black/20 transition ${
+      whileHover={{ y: -3, scale: 1.015 }} transition={{ duration: 0.18 }} className={`murmura-card-vibrate group relative w-full overflow-hidden rounded-3xl border text-left shadow-xl shadow-black/20 transition ${
         active
           ? 'border-orange-500/80 ring-2 ring-orange-500/30'
           : 'border-white/10 hover:border-orange-500/40'
