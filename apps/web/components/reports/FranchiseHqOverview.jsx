@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { getFranchiseHqReport } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
+import RollingNumber from '@/components/ui/RollingNumber';
 
 const formatCurrency = (val) => `Rp ${Number(val || 0).toLocaleString('id-ID')}`;
 
@@ -111,44 +112,44 @@ export default function FranchiseHqOverview() {
       {/* KPI Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <motion.div
-          whileHover={{ y: -3, scale: 1.015 }}
-          transition={{ duration: 0.18 }}
+          whileHover={{ y: -4, scale: 1.02 }}
+          transition={{ type: 'spring', stiffness: 280, damping: 18 }}
           className="murmura-card-vibrate bg-slate-900/80 border border-slate-800 hover:border-slate-700/80 rounded-2xl p-5 transition-all shadow-sm"
         >
           <span className="text-slate-400 text-xs uppercase tracking-wider font-semibold">Total Omzet Lintas Cabang</span>
           <div className="text-2xl sm:text-3xl font-black text-amber-400 mt-2 truncate">
-            {formatCurrency(summary.total_revenue || 0)}
+            <RollingNumber value={Number(summary.total_revenue || 0)} prefix="Rp " />
           </div>
           <span className="text-xs text-slate-500 mt-1 block">Gabungan seluruh cabang</span>
         </motion.div>
 
         <motion.div
-          whileHover={{ y: -3, scale: 1.015 }}
-          transition={{ duration: 0.18 }}
+          whileHover={{ y: -4, scale: 1.02 }}
+          transition={{ type: 'spring', stiffness: 280, damping: 18 }}
           className="murmura-card-vibrate bg-slate-900/80 border border-slate-800 hover:border-slate-700/80 rounded-2xl p-5 transition-all shadow-sm"
         >
           <span className="text-slate-400 text-xs uppercase tracking-wider font-semibold">Total Transaksi</span>
           <div className="text-2xl sm:text-3xl font-black text-emerald-400 mt-2">
-            {summary.total_orders || 0}
+            <RollingNumber value={Number(summary.total_orders || 0)} suffix=" pesanan" format={false} />
           </div>
           <span className="text-xs text-slate-500 mt-1 block">Pesanan terlayani</span>
         </motion.div>
 
         <motion.div
-          whileHover={{ y: -3, scale: 1.015 }}
-          transition={{ duration: 0.18 }}
+          whileHover={{ y: -4, scale: 1.02 }}
+          transition={{ type: 'spring', stiffness: 280, damping: 18 }}
           className="murmura-card-vibrate bg-slate-900/80 border border-slate-800 hover:border-slate-700/80 rounded-2xl p-5 transition-all shadow-sm"
         >
           <span className="text-slate-400 text-xs uppercase tracking-wider font-semibold">Rata-Rata Nilai Tiket (AOV)</span>
           <div className="text-2xl sm:text-3xl font-black text-sky-400 mt-2 truncate">
-            {formatCurrency(summary.avg_ticket || 0)}
+            <RollingNumber value={Number(summary.avg_ticket || 0)} prefix="Rp " />
           </div>
           <span className="text-xs text-slate-500 mt-1 block">Per transaksi</span>
         </motion.div>
 
         <motion.div
-          whileHover={{ y: -3, scale: 1.015 }}
-          transition={{ duration: 0.18 }}
+          whileHover={{ y: -4, scale: 1.02 }}
+          transition={{ type: 'spring', stiffness: 280, damping: 18 }}
           className="murmura-card-vibrate bg-slate-900/80 border border-slate-800 hover:border-slate-700/80 rounded-2xl p-5 transition-all shadow-sm"
         >
           <span className="text-slate-400 text-xs uppercase tracking-wider font-semibold">Cabang Terlaris (Bintang)</span>
@@ -209,9 +210,19 @@ export default function FranchiseHqOverview() {
                       {formatCurrency(b.avg_ticket)}
                     </td>
                     <td className="py-4 px-6 text-right">
-                      <span className="font-mono text-xs font-bold text-emerald-400">
-                        {contrib}%
-                      </span>
+                      <div className="flex items-center justify-end gap-2.5">
+                        <div className="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden hidden sm:block">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${contrib}%` }}
+                            transition={{ duration: 0.85, ease: 'easeOut', delay: index * 0.05 }}
+                            className="h-full bg-emerald-400 rounded-full"
+                          />
+                        </div>
+                        <span className="font-mono text-xs font-bold text-emerald-400">
+                          {contrib}%
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 );

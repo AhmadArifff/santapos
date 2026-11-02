@@ -6,6 +6,7 @@ import AdminLayout from '@/components/layout/AdminLayout';
 import { downloadBusinessAnalysisPdf, getBusinessAnalysis, getTransactionYears } from '@/lib/api';
 import SectionSkeleton from '@/components/ui/SectionSkeleton';
 import FranchiseHqOverview from '@/components/reports/FranchiseHqOverview';
+import RollingNumber from '@/components/ui/RollingNumber';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
@@ -40,7 +41,7 @@ function InsightTone({ severity }) {
   return <span className={`text-[10px] font-bold uppercase tracking-[0.16em] px-2 py-1 rounded border ${tone}`}>{label}</span>;
 }
 
-function MetricCard({ label, value, helper, tone = 'gold' }) {
+function MetricCard({ label, value, helper, tone = 'gold', rawValue, prefix, suffix, format }) {
   const tones = {
     gold: 'text-yellow-400',
     green: 'text-emerald-400',
@@ -50,12 +51,18 @@ function MetricCard({ label, value, helper, tone = 'gold' }) {
 
   return (
     <motion.div
-      whileHover={{ y: -3, scale: 1.015 }}
-      transition={{ duration: 0.18 }}
+      whileHover={{ y: -4, scale: 1.02 }}
+      transition={{ type: 'spring', stiffness: 280, damping: 18 }}
       className="murmura-card-vibrate bg-slate-900/90 border border-slate-800 hover:border-slate-700/80 rounded-xl p-4 transition-all shadow-sm"
     >
       <p className="text-slate-400 text-xs uppercase tracking-[0.16em]">{label}</p>
-      <p className={`${tones[tone]} text-2xl font-bold mt-2`}>{value}</p>
+      <p className={`${tones[tone]} text-2xl font-bold mt-2 truncate`}>
+        {rawValue !== undefined ? (
+          <RollingNumber value={rawValue} prefix={prefix || ''} suffix={suffix || ''} format={format !== false} />
+        ) : (
+          value
+        )}
+      </p>
       {helper && <p className="text-slate-500 text-xs mt-2">{helper}</p>}
     </motion.div>
   );
@@ -216,6 +223,8 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [csvLoading, setCsvLoading] = useState(false);
+  const [csvSuccess, setCsvSuccess] = useState(false);
   const [error, setError] = useState('');
   const analysisRef = useRef(null);
   const loadSeqRef = useRef(0);
@@ -313,15 +322,22 @@ export default function ReportsPage() {
       .map((row) => row.map((cell) => `"${String(cell || '').replace(/"/g, '""')}"`).join(','))
       .join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `laporan-bisnis-${period}-${month}-${year}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
+    setCsvLoading(true);
+    try {
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `laporan-bisnis-${period}-${month}-${year}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      setCsvSuccess(true);
+      setTimeout(() => setCsvSuccess(false), 2500);
+    } finally {
+      setCsvLoading(false);
+    }
   };
 
   return (
@@ -440,11 +456,15 @@ export default function ReportsPage() {
               whileTap={{ scale: 0.95 }}
               data-tour="reports-export-csv"
               onClick={handleDownloadCsv}
-              disabled={!analysis}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition cursor-pointer shadow-sm"
+              disabled={!analysis || csvLoading}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold transition cursor-pointer shadow-sm ${
+                csvSuccess
+                  ? 'bg-emerald-500 shadow-emerald-500/30'
+                  : 'bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed'
+              }`}
             >
               <DownloadIcon />
-              Export CSV / Excel
+              {csvLoading ? 'Mengekspor...' : csvSuccess ? '✓ Terunduh' : 'Export CSV / Excel'}
             </motion.button>
           </div>
           )}
@@ -461,12 +481,52 @@ export default function ReportsPage() {
         ) : analysis ? (
           <>
             <div data-tour="reports-summary-cards" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4">
-              <MetricCard label="Total Omzet" value={formatCurrency(analysis.summary.revenue)} helper={analysis.range.label} />
-              <MetricCard label="Gross Profit" value={formatCurrency(analysis.summary.gross_profit)} helper={`HPP ${formatCurrency(analysis.summary.hpp)}`} tone="green" />
-              <MetricCard label="Margin" value={formatCurrency(analysis.summary.gross_profit)} helper={`${analysis.summary.margin_pct}% gross margin`} tone={analysis.summary.margin_pct >= 45 ? 'green' : 'red'} />
-              <MetricCard label="Transaksi" value={`${formatNumber(analysis.summary.total_trx)} trx`} helper={`AOV ${formatCurrency(analysis.summary.avg_order_value)}`} tone="blue" />
-              <MetricCard label="Growth" value={`${analysis.summary.growth_pct >= 0 ? '+' : ''}${analysis.summary.growth_pct}%`} helper="Vs periode sebelumnya" tone={analysis.summary.growth_pct >= 0 ? 'green' : 'red'} />
-              <MetricCard label="Distribusi Diskon" value={formatCurrency(analysis.discounts?.total_discount || 0)} helper={`Rata-rata ${analysis.discounts?.avg_discount_rate || 0}% | ${formatNumber(analysis.discounts?.total_orders || 0)} klaim`} tone="green" />
+              <MetricCard
+                label="Total Omzet"
+                rawValue={Number(analysis.summary.revenue || 0)}
+                prefix="Rp "
+                value={formatCurrency(analysis.summary.revenue)}
+                helper={analysis.range.label}
+              />
+              <MetricCard
+                label="Gross Profit"
+                rawValue={Number(analysis.summary.gross_profit || 0)}
+                prefix="Rp "
+                value={formatCurrency(analysis.summary.gross_profit)}
+                helper={`HPP ${formatCurrency(analysis.summary.hpp)}`}
+                tone="green"
+              />
+              <MetricCard
+                label="Margin"
+                rawValue={Number(analysis.summary.gross_profit || 0)}
+                prefix="Rp "
+                value={formatCurrency(analysis.summary.gross_profit)}
+                helper={`${analysis.summary.margin_pct}% gross margin`}
+                tone={analysis.summary.margin_pct >= 45 ? 'green' : 'red'}
+              />
+              <MetricCard
+                label="Transaksi"
+                rawValue={Number(analysis.summary.total_trx || 0)}
+                suffix=" trx"
+                format={false}
+                value={`${formatNumber(analysis.summary.total_trx)} trx`}
+                helper={`AOV ${formatCurrency(analysis.summary.avg_order_value)}`}
+                tone="blue"
+              />
+              <MetricCard
+                label="Growth"
+                value={`${analysis.summary.growth_pct >= 0 ? '+' : ''}${analysis.summary.growth_pct}%`}
+                helper="Vs periode sebelumnya"
+                tone={analysis.summary.growth_pct >= 0 ? 'green' : 'red'}
+              />
+              <MetricCard
+                label="Distribusi Diskon"
+                rawValue={Number(analysis.discounts?.total_discount || 0)}
+                prefix="Rp "
+                value={formatCurrency(analysis.discounts?.total_discount || 0)}
+                helper={`Rata-rata ${analysis.discounts?.avg_discount_rate || 0}% | ${formatNumber(analysis.discounts?.total_orders || 0)} klaim`}
+                tone="green"
+              />
             </div>
 
             {analysis.discounts?.by_type?.length > 0 && (
@@ -519,7 +579,12 @@ export default function ReportsPage() {
                         <span className="text-slate-400 shrink-0">{product.total_sold} terjual</span>
                       </div>
                       <div className="mt-2 h-2 bg-slate-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-yellow-500" style={{ width: `${(product.total_sold / maxProductSold) * 100}%` }} />
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(product.total_sold / maxProductSold) * 100}%` }}
+                          transition={{ duration: 0.85, ease: 'easeOut', delay: index * 0.05 }}
+                          className="h-full bg-amber-400 rounded-full"
+                        />
                       </div>
                       <div className="flex justify-between text-xs text-slate-500 mt-1">
                         <span>{formatCurrency(product.revenue)}</span>
@@ -557,7 +622,12 @@ export default function ReportsPage() {
                         <span className="text-slate-400">{payment.total_trx} trx</span>
                       </div>
                       <div className="mt-2 h-2 bg-slate-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-sky-500" style={{ width: `${(payment.revenue / maxPaymentRevenue) * 100}%` }} />
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(payment.revenue / maxPaymentRevenue) * 100}%` }}
+                          transition={{ duration: 0.85, ease: 'easeOut', delay: 0.08 }}
+                          className="h-full bg-sky-400 rounded-full"
+                        />
                       </div>
                       <p className="text-xs text-slate-500 mt-1">{formatCurrency(payment.revenue)}</p>
                     </div>
