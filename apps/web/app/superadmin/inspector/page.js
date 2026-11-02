@@ -2,48 +2,70 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getSuperadminTenants } from '@/lib/api';
 
 const ROLE_VIEWPORTS = [
   {
     id: 'kitchen',
-    label: '🍳 Role Kitchen (KDS Board & Floor Plan)',
-    badge: 'Tavola Kanban + Drag & Drop',
+    label: '🍳 Kitchen KDS',
+    badge: 'Tavola Kanban + Floor Plan',
     defaultPath: '/kitchen',
     description:
-      'Tampilan langsung Kitchen Display System: Kanban 4 kolom (New, Cooking, Ready, Served) & Floor Plan interaktif.',
+      'Tampilan langsung Kitchen Display System: Kanban pesanan realtime, timer durasi memasak, dan alert tiket terlambat.',
     subRoutes: [
-      { label: 'Kitchen Board & Floor Plan', path: '/kitchen' },
+      { label: 'Kitchen Board & Tiket Dapur', path: '/kitchen' },
     ],
   },
   {
     id: 'kasir',
-    label: '💳 Role Kasir (POS + Pilih Meja Sesuai Kapasitas)',
-    badge: 'Interactive Floor Selector + QRIS',
+    label: '💳 Kasir POS',
+    badge: 'Fast POS + QRIS Ready',
     defaultPath: '/pos',
     description:
-      'Tampilan langsung Kasir POS: Pilih produk makanan -> Pilih meja sesuai kapasitas tamu pada peta lantai -> Bayar.',
+      'Tampilan langsung Kasir POS: Katalog menu cepat, kalkulasi subtotal otomatis, cetak thermal, dan audit riwayat transaksi.',
     subRoutes: [
-      { label: 'Kasir POS Terminal', path: '/pos' },
-      { label: 'Riwayat Transaksi Kasir', path: '/orders' },
+      { label: 'Terminal Kasir POS', path: '/pos' },
+      { label: 'Riwayat Transaksi & Void', path: '/pos/history' },
+      { label: 'Pesanan Tamu QR Meja', path: '/customer-orders' },
     ],
   },
   {
     id: 'admin',
-    label: '🛡️ Role Admin Cabang (Backoffice & Master Data)',
+    label: '🛡️ Admin Backoffice',
     badge: 'Full Restaurant Admin',
     defaultPath: '/dashboard',
     description:
-      'Tampilan langsung Admin Restoran: Ringkasan cabang, manajemen menu, stok bahan, meja QR, dan staf.',
+      'Tampilan langsung Backoffice Restoran: Ringkasan omzet, manajemen menu, stok HPP, laporan keuangan, dan staf shift.',
     subRoutes: [
-      { label: 'Dashboard Admin', path: '/dashboard' },
+      { label: 'Dashboard Omzet', path: '/dashboard' },
       { label: 'Menu & Produk', path: '/products' },
-      { label: 'Kategori', path: '/categories' },
-      { label: 'Meja & QR Code', path: '/tables' },
-      { label: 'Staf & Kehadiran', path: '/users' },
-      { label: 'Laporan Order', path: '/orders' },
+      { label: 'Stok Bahan & HPP', path: '/stock' },
+      { label: 'Laporan & Ekspor', path: '/reports' },
+      { label: 'Voucher & Diskon', path: '/discounts' },
+      { label: 'Metode Pembayaran', path: '/payment' },
+      { label: 'Manajemen Staf', path: '/users' },
+      { label: 'AI Business Chat', path: '/admin/ai-chat' },
     ],
   },
+  {
+    id: 'customer',
+    label: '📱 Tamu QR Meja',
+    badge: 'Self-Order & Onboarding',
+    defaultPath: '/order',
+    description:
+      'Tampilan langsung layar tamu restoran saat memindai QR code di meja untuk memesan makanan mandiri.',
+    subRoutes: [
+      { label: 'Portal Menu Tamu', path: '/order' },
+      { label: 'Wizard Onboarding Baru', path: '/onboarding' },
+    ],
+  },
+];
+
+const DEVICE_SIZES = [
+  { id: 'desktop', label: '🖥️ Desktop 100%', val: '100%', hint: 'Full Wide Screen' },
+  { id: 'tablet', label: '📱 Tablet POS 1024px', val: '1024px', hint: 'iPad / Android Tablet' },
+  { id: 'mobile', label: '📲 Mobile 420px', val: '420px', hint: 'Smartphone QR Guest' },
 ];
 
 export default function SuperadminRoleInspectorPage() {
@@ -51,8 +73,9 @@ export default function SuperadminRoleInspectorPage() {
   const [activePath, setActivePath] = useState('/kitchen');
   const [tenants, setTenants] = useState([]);
   const [selectedTenant, setSelectedTenant] = useState('Santapos Resto HQ (Default)');
-  const [deviceSize, setDeviceSize] = useState('100%'); // '100%' | '1280px' | '1024px'
+  const [deviceSize, setDeviceSize] = useState('100%');
   const [reloadKey, setReloadKey] = useState(0);
+  const [isReloading, setIsReloading] = useState(false);
 
   useEffect(() => {
     getSuperadminTenants()
@@ -72,151 +95,85 @@ export default function SuperadminRoleInspectorPage() {
     setActivePath(role.defaultPath);
   };
 
+  const handleReload = () => {
+    setIsReloading(true);
+    setReloadKey((k) => k + 1);
+    setTimeout(() => setIsReloading(false), 500);
+  };
+
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: '#F5F4EE',
-        backgroundImage:
-          'radial-gradient(circle at 12% 8%, rgba(212, 238, 226, 0.85) 0%, rgba(245, 244, 238, 0) 48%)',
-        color: '#14171D',
-        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      {/* TOP CONTROL BAR FOR LIVE MULTI-ROLE INSPECTOR */}
-      <header
+    <div className="min-h-screen bg-[#F5F4EE] text-[#14171D] flex flex-col font-sans selection:bg-amber-400/30 selection:text-black">
+      {/* Background radial subtle ambient */}
+      <div
+        className="fixed inset-0 pointer-events-none opacity-60"
         style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 60,
-          background: 'rgba(255, 255, 255, 0.9)',
-          backdropFilter: 'blur(14px)',
-          borderBottom: '1px solid rgba(20, 23, 29, 0.08)',
-          padding: '12px 24px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '10px',
+          backgroundImage:
+            'radial-gradient(circle at 12% 8%, rgba(212, 238, 226, 0.7) 0%, rgba(245, 244, 238, 0) 50%)',
         }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '14px',
-          }}
-        >
+      />
+
+      {/* TOP CONTROL BAR FOR LIVE MULTI-ROLE INSPECTOR */}
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-black/10 px-5 py-3 flex flex-col gap-2.5 shadow-sm">
+        <div className="flex items-center justify-between flex-wrap gap-3.5">
           {/* Left: Back to Superadmin CRM + Title */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <Link
-              href="/superadmin"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '7px 14px',
-                borderRadius: '999px',
-                background: '#161920',
-                color: '#FFFFFF',
-                textDecoration: 'none',
-                fontSize: '12px',
-                fontWeight: 700,
-              }}
-            >
-              <span>←</span>
-              <span>Kembali ke Superadmin CRM</span>
-            </Link>
+          <div className="flex items-center gap-3.5">
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+              <Link
+                href="/superadmin"
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#161920] text-white text-xs font-bold hover:bg-black transition shadow-sm"
+              >
+                <span>←</span>
+                <span>Kembali ke CRM</span>
+              </Link>
+            </motion.div>
 
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span
-                  style={{
-                    fontFamily: 'Georgia, serif',
-                    fontSize: '19px',
-                    fontWeight: 600,
-                    color: '#14171D',
-                  }}
-                >
-                  Live Multi-Role System Inspector
+              <div className="flex items-center gap-2">
+                <span className="font-serif text-lg font-bold text-[#14171D] tracking-tight">
+                  Live Multi-Role Inspector
                 </span>
-                <span
-                  style={{
-                    padding: '2px 8px',
-                    borderRadius: '999px',
-                    background: '#E3F5EE',
-                    color: '#0E7C5B',
-                    fontSize: '10.5px',
-                    fontWeight: 700,
-                  }}
-                >
-                  ● Live Real-Time Viewport
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10.5px] font-bold border border-emerald-300">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live Viewport
                 </span>
               </div>
-              <div style={{ fontSize: '11.5px', color: '#5A6065' }}>
-                Halaman khusus Superadmin untuk menginspeksi & mengoperasikan langsung role{' '}
-                <strong>Admin</strong>, <strong>Kasir POS</strong>, dan <strong>Kitchen KDS</strong> secara terpisah dari CRM.
+              <div className="text-[11px] text-[#5A6065]">
+                Inspeksi & operasikan langsung modul <strong>Kitchen</strong>, <strong>Kasir</strong>, <strong>Admin</strong>, dan <strong>Tamu QR</strong> secara realtime.
               </div>
             </div>
           </div>
 
-          {/* Center: 3 Role Switcher Pills */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: '#EBEAE2',
-              padding: '4px',
-              borderRadius: '999px',
-              border: '1px solid rgba(20, 23, 29, 0.08)',
-              flexWrap: 'wrap',
-            }}
-          >
+          {/* Center: Role Switcher Pills */}
+          <div className="flex items-center gap-1.5 bg-[#EBEAE2] p-1 rounded-full border border-black/10 shadow-inner flex-wrap">
             {ROLE_VIEWPORTS.map((role) => {
               const active = activeRole === role.id;
               return (
-                <button
+                <motion.button
                   key={role.id}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => handleSelectRole(role)}
-                  style={{
-                    padding: '7px 15px',
-                    borderRadius: '999px',
-                    border: 'none',
-                    background: active ? '#161920' : 'transparent',
-                    color: active ? '#FFFFFF' : '#5A6065',
-                    fontSize: '12px',
-                    fontWeight: active ? 700 : 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.16s ease',
-                  }}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 ${
+                    active
+                      ? 'bg-[#161920] text-white shadow-sm'
+                      : 'text-[#5A6065] hover:text-black hover:bg-black/5'
+                  }`}
                 >
-                  {role.label}
-                </button>
+                  <span>{role.label}</span>
+                </motion.button>
               );
             })}
           </div>
 
-          {/* Right: Tenant Context Selector & Open Fullscreen */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Right: Tenant Context Selector, Device Size & Actions */}
+          <div className="flex items-center gap-2 flex-wrap">
             <select
               value={selectedTenant}
               onChange={(e) => {
                 setSelectedTenant(e.target.value);
-                setReloadKey((k) => k + 1);
+                handleReload();
               }}
-              style={{
-                padding: '7px 12px',
-                borderRadius: '999px',
-                border: '1px solid rgba(20, 23, 29, 0.14)',
-                background: '#FFFFFF',
-                color: '#14171D',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
+              className="px-3 py-1.5 rounded-full border border-black/15 bg-white text-[#14171D] text-xs font-semibold cursor-pointer outline-none hover:border-black/30 transition shadow-sm"
             >
               {tenants.length > 0 ? (
                 tenants.map((t) => (
@@ -226,170 +183,138 @@ export default function SuperadminRoleInspectorPage() {
                 ))
               ) : (
                 <>
-                  <option value="Santapos Resto HQ">🏪 Tenant: Santapos Resto HQ</option>
-                  <option value="Ember & Oak Flagship">🏪 Tenant: Ember & Oak Flagship</option>
-                  <option value="Ramen Ya! Grand Indonesia">🏪 Tenant: Ramen Ya! GI</option>
+                  <option value="Santapos Resto HQ">🏪 Tenant: Santapos Resto HQ (PRO)</option>
+                  <option value="Ember & Oak Flagship">🏪 Tenant: Ember & Oak (FRANCHISE)</option>
+                  <option value="Ramen Ya! Grand Indonesia">🏪 Tenant: Ramen Ya! GI (FRANCHISE)</option>
                 </>
               )}
             </select>
 
-            <button
-              onClick={() => setReloadKey((k) => k + 1)}
-              title="Refresh Role Viewport"
-              style={{
-                padding: '7px 12px',
-                borderRadius: '999px',
-                border: '1px solid rgba(20, 23, 29, 0.12)',
-                background: '#FFFFFF',
-                color: '#14171D',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleReload}
+              title="Refresh Viewport"
+              className="px-3 py-1.5 rounded-full border border-black/15 bg-white text-[#14171D] text-xs font-bold cursor-pointer hover:bg-black/5 transition shadow-sm flex items-center gap-1"
             >
-              ↻ Reload
-            </button>
+              <span className={`text-xs ${isReloading ? 'animate-spin' : ''}`}>↻</span>
+              <span>Reload</span>
+            </motion.button>
 
-            <Link
-              href={activePath}
-              style={{
-                padding: '7px 14px',
-                borderRadius: '999px',
-                background: '#0E7C5B',
-                color: '#FFFFFF',
-                textDecoration: 'none',
-                fontSize: '12px',
-                fontWeight: 700,
-              }}
-            >
-              Buka Fullscreen ({activePath}) ↗
-            </Link>
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+              <Link
+                href={activePath}
+                target="_blank"
+                className="px-3.5 py-1.5 rounded-full bg-[#0E7C5B] text-white text-xs font-bold hover:bg-[#0b6348] transition shadow-sm inline-flex items-center gap-1"
+              >
+                <span>Fullscreen</span>
+                <span>↗</span>
+              </Link>
+            </motion.div>
           </div>
         </div>
 
-        {/* Sub-route Navigation Bar for Active Role */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '10px',
-            paddingTop: '4px',
-            borderTop: '1px dashed rgba(20, 23, 29, 0.08)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <span
-              style={{
-                fontSize: '11px',
-                fontWeight: 700,
-                color: '#8C9196',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-              }}
-            >
-              Sub-Halaman {activeRole.toUpperCase()}:
+        {/* Sub-route Navigation & Device Size Selector */}
+        <div className="flex items-center justify-between flex-wrap gap-2.5 pt-2 border-t border-dashed border-black/10">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10.5px] font-bold text-[#8C9196] uppercase tracking-wider">
+              Sub-Route {activeRole.toUpperCase()}:
             </span>
             {currentRoleObj.subRoutes.map((sr) => {
               const isCurrent = activePath === sr.path;
               return (
-                <button
+                <motion.button
                   key={sr.path}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
                   onClick={() => setActivePath(sr.path)}
-                  style={{
-                    padding: '4px 12px',
-                    borderRadius: '999px',
-                    border: isCurrent
-                      ? '1px solid #0E7C5B'
-                      : '1px solid rgba(20, 23, 29, 0.1)',
-                    background: isCurrent ? '#E3F5EE' : '#FFFFFF',
-                    color: isCurrent ? '#0E7C5B' : '#14171D',
-                    fontSize: '11.5px',
-                    fontWeight: isCurrent ? 700 : 500,
-                    cursor: 'pointer',
-                  }}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition ${
+                    isCurrent
+                      ? 'border border-[#0E7C5B] bg-[#E3F5EE] text-[#0E7C5B] font-bold shadow-xs'
+                      : 'border border-black/10 bg-white text-[#14171D] hover:bg-black/5'
+                  }`}
                 >
-                  {sr.label} ({sr.path})
-                </button>
+                  {sr.label}
+                </motion.button>
               );
             })}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '11.5px', color: '#5A6065' }}>
-              {currentRoleObj.description}
+          {/* Device Size Switcher */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-[#5A6065] hidden md:inline">
+              Ukuran Layar:
             </span>
-            <div
-              style={{
-                display: 'inline-flex',
-                background: '#EBEAE2',
-                borderRadius: '999px',
-                padding: '2px',
-              }}
-            >
-              {[
-                { label: 'Desktop 100%', val: '100%' },
-                { label: 'Tablet POS 1024px', val: '1024px' },
-              ].map((sz) => (
-                <button
-                  key={sz.val}
-                  onClick={() => setDeviceSize(sz.val)}
-                  style={{
-                    padding: '3px 10px',
-                    borderRadius: '999px',
-                    border: 'none',
-                    background: deviceSize === sz.val ? '#FFFFFF' : 'transparent',
-                    color: '#14171D',
-                    fontSize: '10.5px',
-                    fontWeight: deviceSize === sz.val ? 700 : 500,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {sz.label}
-                </button>
-              ))}
+            <div className="inline-flex bg-[#EBEAE2] rounded-full p-0.5 border border-black/10">
+              {DEVICE_SIZES.map((sz) => {
+                const isSelected = deviceSize === sz.val;
+                return (
+                  <motion.button
+                    key={sz.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setDeviceSize(sz.val)}
+                    title={sz.hint}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition ${
+                      isSelected
+                        ? 'bg-white text-black shadow-xs'
+                        : 'text-[#5A6065] hover:text-black'
+                    }`}
+                  >
+                    {sz.label}
+                  </motion.button>
+                );
+              })}
             </div>
           </div>
         </div>
       </header>
 
       {/* LIVE INTERACTIVE ROLE VIEWPORT CONTAINER */}
-      <div
-        style={{
-          flex: 1,
-          padding: '16px 24px 24px 24px',
-          display: 'flex',
-          justifyContent: 'center',
-        }}
-      >
+      <main className="flex-1 p-4 md:p-6 flex flex-col items-center justify-start relative z-10">
         <div
+          className="transition-all duration-300 ease-out flex flex-col items-center"
           style={{
             width: deviceSize,
             maxWidth: '100%',
-            height: 'calc(100vh - 138px)',
-            background: '#0B111E',
-            borderRadius: '20px',
-            overflow: 'hidden',
-            border: '1px solid rgba(20, 23, 29, 0.14)',
-            boxShadow: '0 20px 50px rgba(20, 23, 29, 0.14)',
-            position: 'relative',
           }}
         >
-          <iframe
-            key={`${activePath}-${reloadKey}`}
-            src={activePath}
-            title={`Live Role Viewport - ${activePath}`}
+          {/* Mockup Header Bar if Mobile or Tablet */}
+          {deviceSize !== '100%' && (
+            <div className="w-full bg-[#1A1D24] text-slate-300 px-4 py-2 rounded-t-2xl flex items-center justify-between text-xs border border-b-0 border-black/20 shadow-md">
+              <div className="flex items-center gap-2 font-mono text-[11px]">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                <span className="ml-2 font-sans font-semibold text-white">
+                  {deviceSize === '420px' ? 'iPhone Smartphone (QR Self-Order)' : 'iPad Tablet (POS Kasir)'}
+                </span>
+              </div>
+              <span className="text-[10.5px] text-slate-400 font-mono">
+                {activePath}
+              </span>
+            </div>
+          )}
+
+          {/* Live Viewport iFrame */}
+          <div
+            className={`w-full overflow-hidden border border-black/15 shadow-2xl relative bg-[#0D0B08] ${
+              deviceSize !== '100%' ? 'rounded-b-2xl' : 'rounded-2xl'
+            }`}
             style={{
-              width: '100%',
-              height: '100%',
-              border: 'none',
-              display: 'block',
+              height: deviceSize !== '100%' ? 'calc(100vh - 180px)' : 'calc(100vh - 145px)',
+              minHeight: '620px',
             }}
-          />
+          >
+            <iframe
+              key={`${activePath}-${reloadKey}`}
+              src={activePath}
+              title={`Live Role Viewport - ${activePath}`}
+              className="w-full h-full border-none block"
+            />
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
-
