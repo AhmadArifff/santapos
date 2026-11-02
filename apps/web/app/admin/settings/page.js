@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { useWebsiteSettings, DEFAULT_THEME_COLORS, DEFAULT_SETTINGS } from '@/store/settingsStore';
 import { uploadWebsiteImage, bulkUpdateWebsiteSettings } from '@/lib/api';
@@ -247,16 +247,36 @@ export default function SettingsPage() {
           )}
         </div>
 
-        {error && (
-          <div className="mb-4 p-4 bg-red-500/15 border-l-4 border-red-500 rounded-lg shadow-lg" data-tour="settings-feedback">
-            <p className="text-red-200 text-sm">{error}</p>
-          </div>
-        )}
-        {success && (
-          <div className="mb-4 p-4 bg-green-500/15 border-l-4 border-green-500 rounded-lg shadow-lg" data-tour="settings-feedback">
-            <p className="text-green-200 text-sm">{success}</p>
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+          {error && (
+            <motion.div
+              key="error-banner"
+              initial={{ opacity: 0, y: -12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -12, scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 24 }}
+              className="mb-5 flex items-start gap-3 rounded-2xl border border-red-500/40 bg-red-500/15 p-4 text-red-100 shadow-xl shadow-red-950/30 backdrop-blur"
+              data-tour="settings-feedback"
+            >
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-500/30 text-sm font-black text-red-200">!</span>
+              <p className="text-sm font-medium leading-relaxed">{error}</p>
+            </motion.div>
+          )}
+          {success && (
+            <motion.div
+              key="success-banner"
+              initial={{ opacity: 0, y: -12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -12, scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 24 }}
+              className="mb-5 flex items-start gap-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/15 p-4 text-emerald-100 shadow-xl shadow-emerald-950/30 backdrop-blur"
+              data-tour="settings-feedback"
+            >
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/30 text-sm font-black text-emerald-200">✓</span>
+              <p className="text-sm font-medium leading-relaxed">{success}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="space-y-6" data-tour="settings-form">
           <motion.div
@@ -382,41 +402,67 @@ export default function SettingsPage() {
               Total warna tema saat ini: <span className="text-white font-semibold">{THEME_FIELDS.length}</span>
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5" data-tour="settings-theme-grid">
-              {THEME_FIELDS.map((field) => (
-                <div
-                  key={field.key}
-                  data-tour={field.key === 'gold' ? 'settings-theme-primary-field' : undefined}
-                >
-                  <label className="block text-slate-400 text-sm font-medium mb-2">{field.label}</label>
-                  <div className="flex gap-3 items-center">
-                    <input
-                      type="color"
-                      value={settings[field.key] || field.fallback}
-                      onChange={(e) => handleColorChange(field.key, e.target.value)}
-                      className="w-full h-12 rounded-lg cursor-pointer border border-slate-600/50"
-                    />
-                    <span className="text-slate-400 text-sm font-mono min-w-28 bg-slate-700/50 px-2 py-1 rounded">
-                      {settings[field.key] || field.fallback}
-                    </span>
-                  </div>
-                  {fieldErrors[field.key] && <p className="text-red-400 text-xs mt-1.5">{fieldErrors[field.key]}</p>}
-                </div>
-              ))}
+              {THEME_FIELDS.map((field) => {
+                const currentColor = settings[field.key] || field.fallback;
+                return (
+                  <motion.div
+                    key={field.key}
+                    whileHover={{ scale: 1.01 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    className="rounded-2xl border border-slate-700/60 bg-slate-900/60 p-4 transition-colors hover:border-slate-500/60"
+                    data-tour={field.key === 'gold' ? 'settings-theme-primary-field' : undefined}
+                  >
+                    <label className="block text-slate-300 text-sm font-bold mb-2.5">{field.label}</label>
+                    <div className="flex gap-3 items-center">
+                      <div className="relative flex-1">
+                        <input
+                          type="color"
+                          value={currentColor}
+                          onChange={(e) => handleColorChange(field.key, e.target.value)}
+                          className="h-12 w-full cursor-pointer rounded-xl border border-slate-600/50 bg-slate-800/80 p-1"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/90 px-3 py-2">
+                        <span
+                          className="h-4 w-4 rounded-full border border-white/20 shadow-inner"
+                          style={{ backgroundColor: currentColor }}
+                        />
+                        <span className="font-mono text-xs font-bold text-slate-200">
+                          {currentColor}
+                        </span>
+                      </div>
+                    </div>
+                    {fieldErrors[field.key] && <p className="text-red-400 text-xs mt-2">{fieldErrors[field.key]}</p>}
+                  </motion.div>
+                );
+              })}
             </div>
           </motion.div>
 
           <div className="flex gap-3" data-tour="settings-actions">
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={!saving && !hasFieldError ? { scale: 1.02 } : {}}
+              whileTap={!saving && !hasFieldError ? { scale: 0.98 } : {}}
               onClick={handleSaveSettings}
               disabled={saving || hasFieldError}
               data-tour="settings-save-button"
-              className={`flex-1 rounded-xl px-6 py-3 font-semibold shadow-lg shadow-orange-500/20 transition-all ${
-                saving || hasFieldError ? 'cursor-not-allowed bg-orange-500/50 text-white/70' : 'bg-orange-500 text-white hover:bg-orange-600'
+              className={`flex-1 flex items-center justify-center gap-2 rounded-xl px-6 py-3.5 font-bold shadow-xl shadow-orange-500/20 transition-all cursor-pointer ${
+                saving || hasFieldError
+                  ? 'cursor-not-allowed bg-orange-500/50 text-white/70'
+                  : 'bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600'
               }`}
             >
-              {saving ? 'Menyimpan...' : 'Simpan Pengaturan'}
+              {saving ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  <span>Menyimpan Pengaturan...</span>
+                </>
+              ) : (
+                <>
+                  <span>💾</span>
+                  <span>Simpan Pengaturan</span>
+                </>
+              )}
             </motion.button>
           </div>
         </div>
