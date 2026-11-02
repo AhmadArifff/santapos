@@ -274,6 +274,56 @@ export default function ReportsPage() {
     }
   };
 
+  const handleDownloadCsv = () => {
+    if (!analysis) return;
+    const rows = [
+      ['Periode', analysis.range?.label || `${period}-${month}-${year}`],
+      ['Total Omzet', analysis.summary?.revenue || 0],
+      ['Gross Profit', analysis.summary?.gross_profit || 0],
+      ['HPP', analysis.summary?.hpp || 0],
+      ['Margin %', `${analysis.summary?.margin_pct || 0}%`],
+      ['Total Transaksi', analysis.summary?.total_trx || 0],
+      ['AOV', analysis.summary?.avg_order_value || 0],
+      [],
+      ['Breakdown Penjualan Produk', 'Qty Terjual', 'Omzet', 'Margin'],
+      ...(analysis.best_products || []).map((p) => [
+        p.name,
+        p.total_sold,
+        p.revenue,
+        `${p.margin} (${p.margin_pct}%)`,
+      ]),
+      [],
+      ['Performa Kasir', 'Total Trx', 'Omzet', 'AOV'],
+      ...(analysis.cashier_performance || []).map((c) => [
+        c.name,
+        c.total_trx,
+        c.revenue,
+        c.avg_order_value,
+      ]),
+      [],
+      ['Metode Pembayaran', 'Total Trx', 'Omzet'],
+      ...(analysis.payment_mix || []).map((m) => [
+        m.payment_method,
+        m.total_trx,
+        m.revenue,
+      ]),
+    ];
+
+    const csvContent = rows
+      .map((row) => row.map((cell) => `"${String(cell || '').replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `laporan-bisnis-${period}-${month}-${year}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <AdminLayout>
       <div className="max-w-7xl mx-auto space-y-6">
@@ -384,6 +434,17 @@ export default function ReportsPage() {
             >
               <DownloadIcon />
               {pdfLoading ? 'Membuat PDF...' : 'Export PDF'}
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.95 }}
+              data-tour="reports-export-csv"
+              onClick={handleDownloadCsv}
+              disabled={!analysis}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition cursor-pointer shadow-sm"
+            >
+              <DownloadIcon />
+              Export CSV / Excel
             </motion.button>
           </div>
           )}

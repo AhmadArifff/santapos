@@ -1,10 +1,10 @@
-const CACHE_NAME = 'sultan-kebab-pos-v2';
+const CACHE_NAME = 'santapos-pwa-v2';
 const STATIC_ASSETS = [
   '/',
   '/login',
 ];
 
-// Install — cache assets
+// Install: cache assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
@@ -12,7 +12,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate — hapus cache lama
+// Activate: hapus cache lama
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -22,7 +22,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch — network first, fallback cache
+// Fetch: network first, fallback cache
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   
