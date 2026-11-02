@@ -91,7 +91,10 @@ export default function ProductsPage() {
   const [stockByKasir, setStockByKasir]   = useState({});
   const [expandedCards, setExpandedCards] = useState({});
   const toggleKasir = (id) =>
-  setExpandedCards(prev => ({ ...prev, [id]: !prev[id] }));
+    setExpandedCards(prev => ({ ...prev, [id]: !prev[id] }));
+  const [expandedRecipes, setExpandedRecipes] = useState({});
+  const toggleRecipe = (id) =>
+    setExpandedRecipes(prev => ({ ...prev, [id]: !prev[id] }));
 
   const load = useCallback(async ({ silent = false } = {}) => {
     const fetchFn = user?.role === 'kasir' ? getMyStockProducts : getProducts;
@@ -119,7 +122,7 @@ export default function ProductsPage() {
   useEffect(() => {
     getCategories().then(r => setCategories(r.data));
     getStockItems().then(r => setStockItems(r.data));
-    // Tambahkan ini — hanya untuk admin
+    // Tambahkan ini - hanya untuk admin
   }, []);
 
   useEffect(() => {
@@ -377,30 +380,66 @@ export default function ProductsPage() {
                 </p>
                 <p className="text-slate-400 text-xs mt-1">{p.category_name || '-'}</p>
 
-                {/* Ingredients badge */}
+                {/* Ingredients badge with interactive accordion breakdown */}
                 {p.ingredients?.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {p.ingredients.slice(0, 3).map((ing, i) => (
-                      <span key={i} className="bg-slate-700 text-slate-300 text-xs px-2 py-0.5 rounded-lg">
-                        {ing.ingredient_name} ×{ing.qty}
-                      </span>
-                    ))}
-                    {p.ingredients.length > 3 && (
-                      <span className="text-slate-500 text-xs">+{p.ingredients.length - 3}</span>
-                    )}
+                  <div className="mt-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-slate-400">Resep Bahan Baku:</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleRecipe(p.id)}
+                        className="text-orange-400 hover:text-orange-300 text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                      >
+                        <span>{expandedRecipes[p.id] ? 'Tutup' : `${p.ingredients.length} Bahan`}</span>
+                        <motion.span
+                          animate={{ rotate: expandedRecipes[p.id] ? 180 : 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="inline-block text-[10px]"
+                        >
+                          ▼
+                        </motion.span>
+                      </button>
+                    </div>
+
+                    <AnimatePresence>
+                      {expandedRecipes[p.id] ? (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.25, ease: 'easeInOut' }}
+                          className="mt-1.5 space-y-1 bg-slate-900/90 rounded-xl p-2 border border-slate-700/80 overflow-hidden"
+                        >
+                          {p.ingredients.map((ing, i) => (
+                            <div key={i} className="flex justify-between items-center text-[11px] text-slate-300 border-b border-slate-800/60 pb-1 last:border-0 last:pb-0">
+                              <span className="truncate">{ing.ingredient_name}</span>
+                              <span className="font-mono font-bold text-amber-300 ml-2 shrink-0">{ing.qty} {ing.unit || ''}</span>
+                            </div>
+                          ))}
+                        </motion.div>
+                      ) : (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {p.ingredients.slice(0, 2).map((ing, i) => (
+                            <span key={i} className="bg-slate-700/80 text-slate-300 text-[11px] px-2 py-0.5 rounded-lg border border-slate-600/40">
+                              {ing.ingredient_name} ×{ing.qty}
+                            </span>
+                          ))}
+                          {p.ingredients.length > 2 && (
+                            <span
+                              onClick={() => toggleRecipe(p.id)}
+                              className="text-slate-400 hover:text-orange-400 text-[11px] px-1.5 py-0.5 rounded-lg bg-slate-800 border border-slate-700 cursor-pointer font-bold"
+                            >
+                              +{p.ingredients.length - 2} lagi
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 )}
 
-                {/* Stok estimasi */}
-                {/* <div className="mt-2 flex items-center justify-between">
-                  <span className={`text-xs font-bold ${
-                    p.stock === 0 ? 'text-red-400' : p.stock <= 5 ? 'text-yellow-400' : 'text-green-400'
-                  }`}>
-                    {p.stock === 0 ? '⚠ Habis' : `Bisa buat: ${p.stock}`}
-                  </span>
-                </div> */}
                 {/* Di card produk, ganti bagian stok */}
-                <div data-tour="product-card-stock" className="mt-2">
+                <div data-tour="product-card-stock" className="mt-2.5">
                   {user?.role === 'kasir' ? (
                     <div className="flex flex-col gap-0.5">
                       <span className={`text-xs font-bold ${
@@ -427,48 +466,68 @@ export default function ProductsPage() {
                         {stockByKasir[p.id]?.length > 0 && (
                           <button
                             onClick={() => toggleKasir(p.id)}
-                            className="text-slate-500 hover:text-orange-400 text-[10px] border border-slate-700 hover:border-orange-500 rounded-md px-1.5 py-0.5 transition-colors flex items-center gap-1"
+                            className="text-slate-500 hover:text-orange-400 text-[10px] border border-slate-700 hover:border-orange-500 rounded-md px-1.5 py-0.5 transition-colors flex items-center gap-1 cursor-pointer"
                           >
-                            <span className={`inline-block transition-transform duration-150 ${
-                              expandedCards[p.id] ? 'rotate-90' : ''
-                            }`}>▶</span>
+                            <motion.span
+                              animate={{ rotate: expandedCards[p.id] ? 90 : 0 }}
+                              transition={{ duration: 0.18 }}
+                              className="inline-block"
+                            >
+                              ▶
+                            </motion.span>
                             per kasir
                           </button>
                         )}
                       </div>
 
                       {/* Breakdown stok per kasir */}
-                      {expandedCards[p.id] && (
-                        <div className="mt-1.5 rounded-lg border border-slate-700 overflow-hidden">
-                          {stockByKasir[p.id].map(k => (
-                            <div key={k.kasir_id}
-                              className="flex justify-between items-center px-2 py-1
-                                        border-b border-slate-800 last:border-b-0
-                                        bg-slate-900 text-xs">
-                              <span className="text-slate-400 truncate">{k.kasir_name}</span>
-                              <span className={`font-bold ml-2 shrink-0 ${
-                                k.can_make === 0 ? 'text-red-400' :
-                                k.can_make <= 3  ? 'text-yellow-400' : 'text-green-400'
-                              }`}>
-                                {k.can_make === 0 ? '0' : k.can_make}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      <AnimatePresence>
+                        {expandedCards[p.id] && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.22, ease: 'easeInOut' }}
+                            className="mt-1.5 rounded-lg border border-slate-700 overflow-hidden"
+                          >
+                            {stockByKasir[p.id].map(k => (
+                              <div key={k.kasir_id}
+                                className="flex justify-between items-center px-2 py-1
+                                          border-b border-slate-800 last:border-b-0
+                                          bg-slate-900 text-xs">
+                                <span className="text-slate-400 truncate">{k.kasir_name}</span>
+                                <span className={`font-bold ml-2 shrink-0 ${
+                                  k.can_make === 0 ? 'text-red-400' :
+                                  k.can_make <= 3  ? 'text-yellow-400' : 'text-green-400'
+                                }`}>
+                                  {k.can_make === 0 ? '0' : k.can_make}
+                                </span>
+                              </div>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   )}
                 </div>
 
                 <div data-tour="product-card-actions" className="flex gap-2 mt-3">
-                  <button onClick={() => openEdit(p)}
-                    className="flex-1 bg-slate-700 hover:bg-slate-600 text-blue-400 text-xs font-medium py-1.5 rounded-lg transition-colors">
+                  <motion.button
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.94 }}
+                    onClick={() => openEdit(p)}
+                    className="flex-1 bg-slate-700 hover:bg-slate-600 text-blue-400 text-xs font-semibold py-1.5 rounded-lg transition-colors cursor-pointer"
+                  >
                     Edit
-                  </button>
-                  <button onClick={() => handleDelete(p.id, p.name)}
-                    className="flex-1 bg-slate-700 hover:bg-slate-600 text-red-400 text-xs font-medium py-1.5 rounded-lg transition-colors">
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.94 }}
+                    onClick={() => handleDelete(p.id, p.name)}
+                    className="flex-1 bg-slate-700 hover:bg-slate-600 text-red-400 text-xs font-semibold py-1.5 rounded-lg transition-colors cursor-pointer"
+                  >
                     Hapus
-                  </button>
+                  </motion.button>
                 </div>
               </div>
             </motion.div>
@@ -626,7 +685,7 @@ export default function ProductsPage() {
                           ))}
                         </select>
 
-                        {/* Input qty — pakai desimal step 0.01 */}
+                        {/* Input qty - pakai desimal step 0.01 */}
                         <input
                           data-tour="product-ingredient-qty"
                           type="number"
@@ -638,9 +697,9 @@ export default function ProductsPage() {
                           placeholder="1"
                         />
 
-                        {/* Satuan dari stock item — bukan hardcode pcs */}
+                        {/* Satuan dari stock item - bukan hardcode pcs */}
                         <span className="text-slate-400 text-xs w-10 shrink-0 text-left">
-                          {selectedStock ? selectedStock.unit : '—'}
+                          {selectedStock ? selectedStock.unit : '-'}
                         </span>
 
                         {/* Tombol hapus */}
@@ -654,7 +713,7 @@ export default function ProductsPage() {
                   })}
                   {/* {form.ingredients.length === 0 && (
                     <p className="text-slate-500 text-xs text-center py-3 bg-slate-700/50 rounded-xl">
-                      Belum ada bahan — klik "+ Tambah Bahan" untuk menambahkan resep
+                      Belum ada bahan - klik "+ Tambah Bahan" untuk menambahkan resep
                     </p>
                   )} */}
                 </div>

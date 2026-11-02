@@ -20,7 +20,7 @@ import {
   updateStockPurchase, deleteStockPurchase, addManualStockOut,
   getUsers, resubmitStockRequest, getProducts
 } from '@/lib/api';
-// Di AdminStockPage — tambah useEffect untuk baca query params dari POS
+// Di AdminStockPage - tambah useEffect untuk baca query params dari POS
 import { useSearchParams } from 'next/navigation';
 const MASTER_TREND_CARD_PAGE_SIZE = 8;
 const STOCK_IN_FILTER_PAGE_SIZE = 10;
@@ -52,7 +52,7 @@ const STOCK_REQUEST_FILTERS = [
   { val: 'approved', label: 'Disetujui' },
   { val: 'rejected', label: 'Ditolak' },
 ];
-// Format qty — tampilkan desimal hanya jika perlu
+// Format qty - tampilkan desimal hanya jika perlu
 function fmtQty(val) {
   const n = Number(val || 0);
   return n % 1 === 0 ? String(Math.round(n)) : n.toFixed(2);
@@ -806,7 +806,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
     setOutItems(buildRecipeOutItemsForSelections(productOptions, nextSelections));
   };
 
-  // // Update loadDaily — tambah type_filter
+  // // Update loadDaily - tambah type_filter
   // const loadDaily = useCallback(() =>
   //   getMainStockDaily({
   //     date_from:   selDate,
@@ -815,7 +815,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   //   }).then(r => setDaily(Array.isArray(r.data) ? r.data : [])),
   //   [selDate, selDateTo, outTypeFilter]);
 
-  // ✅ FIX: sekarang selDateTo sudah dideklarasikan sebelumnya — tidak ada error
+  // ✅ FIX: sekarang selDateTo sudah dideklarasikan sebelumnya - tidak ada error
   const loadDaily = useCallback(() => {
     setDailyLoading(true);
     return getMainStockDaily({
@@ -827,7 +827,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       .finally(() => setDailyLoading(false));
   }, [selDate, selDateTo, outTypeFilter, selectedBranchId]);
 
-  // Definisi filter — sama untuk admin & kasir
+  // Definisi filter - sama untuk admin & kasir
   const OUT_FILTERS = [
     { val: 'all',         label: 'Semua'          },
     { val: 'approved',    label: '✓ Sudah Keluar' },
@@ -979,7 +979,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       .finally(() => setMasterLoading(false));
   }, []);
   // const loadSummary  = useCallback(() => getMainStockSummary().then(r => setSummary(r.data)), []);
-  // Di KasirStockPage — loadSummary sudah ada catch, pastikan seperti ini:
+  // Di KasirStockPage - loadSummary sudah ada catch, pastikan seperti ini:
   const loadSummary = useCallback(() => {
     setSummaryLoading(true);
     return getMainStockSummary()
@@ -1030,7 +1030,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   //   }
   // }, [tab, selMonth, selYear, selDate]);
 
-  // Di AdminStockPage — useEffect yang sudah ada, tambah chain:
+  // Di AdminStockPage - useEffect yang sudah ada, tambah chain:
   useEffect(() => {
     if (tab === 'main') {
       loadMonthly();
@@ -2047,7 +2047,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                             <td className="py-1.5 pr-4">
                               {item.qty_approved != null
                                 ? <span className="text-green-400 font-semibold">{Number(item.qty_approved).toFixed(2)}</span>
-                                : <span className="text-slate-700">—</span>}
+                                : <span className="text-slate-700">-</span>}
                             </td>
                             <td className="py-1.5 pr-4 text-slate-400">
                               Rp {Number(item.cost_per_unit).toLocaleString('id-ID')}
@@ -2060,7 +2060,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                                 ? <span className="text-green-400 font-semibold">
                                     Rp {(Number(item.qty_approved) * Number(item.cost_per_unit)).toLocaleString('id-ID')}
                                   </span>
-                                : <span className="text-slate-700">—</span>}
+                                : <span className="text-slate-700">-</span>}
                             </td>
                           </tr>
                         ))}
@@ -2092,212 +2092,260 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       {tab==='issues' && <StockIssuesTab />}
 
       {/* ══ MODAL: TAMBAH/EDIT BAHAN BAKU ══ */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div data-tour="stock-master-modal" className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-white font-bold text-lg">{editId?'Edit':'Tambah'} Bahan Baku</h2>
-              <button data-tour-action="stock-close-master-modal" onClick={resetForm} className="text-slate-500 hover:text-white p-1 rounded-lg hover:bg-slate-700">✕</button>
-            </div>
-            {!editId && (
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mb-4">
-                <p className="text-blue-400 text-xs">💡 Hanya daftarkan nama & satuan. Tambah stok via <strong>Stok Gudang → Catat Pembelian</strong>.</p>
+      <AnimatePresence>
+        {showForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={resetForm}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 12 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 24 }}
+              data-tour="stock-master-modal"
+              className="relative z-10 bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700 max-h-[90vh] overflow-y-auto shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-white font-bold text-lg">{editId?'Edit':'Tambah'} Bahan Baku</h2>
+                <button data-tour-action="stock-close-master-modal" onClick={resetForm} className="text-slate-500 hover:text-white p-1 rounded-lg hover:bg-slate-700 cursor-pointer">✕</button>
               </div>
-            )}
-            <div className="space-y-4">
-              <div data-tour="stock-master-name-field">
-                <label className="text-slate-400 text-sm block mb-1">Nama Bahan <span className="text-red-400">*</span></label>
-                <input value={formData.name} onChange={e => setFormData(p=>({...p,name:e.target.value}))}
-                  placeholder="contoh: Slice Beef, Cup, Saus Sambal..."
-                  className="w-full bg-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 border border-slate-600 placeholder:text-slate-500" />
-              </div>
-              <div data-tour="stock-master-unit-field">
-                <label className="text-slate-400 text-sm block mb-1">Satuan <span className="text-red-400">*</span></label>
-                <select value={formData.unit} onChange={e => setFormData(p=>({...p,unit:e.target.value}))}
-                  className="w-full bg-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 border border-slate-600">
-                  {UNIT_GROUPS.map(g => (
-                    <optgroup key={g.label} label={`── ${g.label} ──`}>
-                      {g.units.map(u => <option key={u} value={u}>{u}</option>)}
-                    </optgroup>
-                  ))}
-                </select>
-              </div>
-              <div data-tour="stock-master-min-field">
-                <label className="text-slate-400 text-sm block mb-1">Min. Stok Alert <span className="text-slate-600 text-xs">(opsional)</span></label>
-                <div className="relative">
-                  <input type="number" min="0" value={formData.min_stock}
-                    onChange={e => setFormData(p=>({...p,min_stock:e.target.value}))}
-                    placeholder="0"
-                    className="w-full bg-slate-700 text-white rounded-xl px-4 py-3 pr-16 outline-none focus:ring-2 focus:ring-orange-500 border border-slate-600" />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs pointer-events-none">{formData.unit}</span>
+              {!editId && (
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mb-4">
+                  <p className="text-blue-400 text-xs">💡 Hanya daftarkan nama & satuan. Tambah stok via <strong>Stok Gudang → Catat Pembelian</strong>.</p>
+                </div>
+              )}
+              <div className="space-y-4">
+                <div data-tour="stock-master-name-field">
+                  <label className="text-slate-400 text-sm block mb-1">Nama Bahan <span className="text-red-400">*</span></label>
+                  <input value={formData.name} onChange={e => setFormData(p=>({...p,name:e.target.value}))}
+                    placeholder="contoh: Slice Beef, Cup, Saus Sambal..."
+                    className="w-full bg-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 border border-slate-600 placeholder:text-slate-500" />
+                </div>
+                <div data-tour="stock-master-unit-field">
+                  <label className="text-slate-400 text-sm block mb-1">Satuan <span className="text-red-400">*</span></label>
+                  <select value={formData.unit} onChange={e => setFormData(p=>({...p,unit:e.target.value}))}
+                    className="w-full bg-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 border border-slate-600">
+                    {UNIT_GROUPS.map(g => (
+                      <optgroup key={g.label} label={`── ${g.label} ──`}>
+                        {g.units.map(u => <option key={u} value={u}>{u}</option>)}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+                <div data-tour="stock-master-min-field">
+                  <label className="text-slate-400 text-sm block mb-1">Min. Stok Alert <span className="text-slate-600 text-xs">(opsional)</span></label>
+                  <div className="relative">
+                    <input type="number" min="0" value={formData.min_stock}
+                      onChange={e => setFormData(p=>({...p,min_stock:e.target.value}))}
+                      placeholder="0"
+                      className="w-full bg-slate-700 text-white rounded-xl px-4 py-3 pr-16 outline-none focus:ring-2 focus:ring-orange-500 border border-slate-600" />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs pointer-events-none">{formData.unit}</span>
+                  </div>
+                </div>
+                <div data-tour="stock-master-actions-field" className="flex gap-3 pt-2">
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }} onClick={resetForm} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white rounded-xl py-3 text-sm font-semibold cursor-pointer">Batal</motion.button>
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }} data-tour="stock-master-save-button" onClick={handleSaveMaster} disabled={formLoading||!formData.name.trim()}
+                    className="flex-1 bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white font-bold rounded-xl py-3 text-sm cursor-pointer shadow-lg shadow-orange-500/20">
+                    {formLoading?'Menyimpan...':editId?'Update':'Simpan'}
+                  </motion.button>
                 </div>
               </div>
-              <div data-tour="stock-master-actions-field" className="flex gap-3 pt-2">
-                <button onClick={resetForm} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white rounded-xl py-3 text-sm font-semibold">Batal</button>
-                <button data-tour="stock-master-save-button" onClick={handleSaveMaster} disabled={formLoading||!formData.name.trim()}
-                  className="flex-1 bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white font-bold rounded-xl py-3 text-sm">
-                  {formLoading?'Menyimpan...':editId?'Update':'Simpan'}
-                </button>
-              </div>
-            </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* ══ MODAL: CATAT PEMBELIAN ══ */}
-      {showPurchase && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div data-tour="stock-purchase-modal" className="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-5 border-b border-slate-700/60">
-              <div>
-                <h3 className="text-white font-bold">📥 Catat Pembelian Stok</h3>
-                <p className="text-slate-500 text-xs mt-0.5">Stok gudang akan bertambah otomatis</p>
-              </div>
-              <button data-tour-action="stock-close-purchase-modal" onClick={() => setShowPurchase(false)} className="text-slate-500 hover:text-white p-2 rounded-xl hover:bg-slate-700 transition-colors">✕</button>
-            </div>
-            <div className="p-5 space-y-3">
-              {purchItems.map((item, i) => (
-                <div key={i} data-tour="stock-purchase-item" className="bg-slate-700/40 rounded-xl p-4 border border-slate-600/40">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-slate-400 text-xs font-semibold uppercase tracking-wide">Item {i+1}</span>
-                    {purchItems.length>1 && (
-                      <button onClick={() => setPurchItems(p => p.filter((_,j) => j!==i))}
-                        className="text-red-400 hover:text-red-300 text-xs">Hapus</button>
-                    )}
-                  </div>
-                  <div className="space-y-3">
-                    <div data-tour="stock-purchase-select-field">
-                      <label className="text-slate-500 text-xs mb-1 block">Pilih Bahan Baku</label>
-                      <select value={item.stock_item_id}
-                        onChange={e => setPurchItems(p => p.map((x,j) => j===i?{...x,stock_item_id:e.target.value}:x))}
-                        className="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-500/50">
-                        <option value="">-- Pilih bahan --</option>
-                        {stockItems.map(si => <option key={si.id} value={si.id}>{si.name} ({si.unit})</option>)}
-                      </select>
-                    </div>
-                    <div data-tour="stock-purchase-qty-cost-field" className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-slate-500 text-xs mb-1 block">
-                          Jumlah {item.stock_item_id ? `(${stockItems.find(s=>s.id==item.stock_item_id)?.unit||''})` : ''}
-                        </label>
-                        <input type="number" min="0" value={item.qty} placeholder="0"
-                          onChange={e => setPurchItems(p => p.map((x,j) => j===i?{...x,qty:e.target.value}:x))}
-                          className="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-500/50 placeholder:text-slate-600" />
-                      </div>
-                      <div>
-                        <label className="text-slate-500 text-xs mb-1 block">Harga / Satuan (Rp)</label>
-                        <input type="number" min="0" value={item.cost_per_unit} placeholder="0"
-                          onChange={e => setPurchItems(p => p.map((x,j) => j===i?{...x,cost_per_unit:e.target.value}:x))}
-                          className="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-500/50 placeholder:text-slate-600" />
-                      </div>
-                    </div>
-                    {Number(item.qty)>0 && Number(item.cost_per_unit)>0 && (
-                      <div data-tour="stock-purchase-subtotal" className="bg-orange-500/10 rounded-lg px-3 py-2 flex justify-between">
-                        <span className="text-slate-500 text-xs">Subtotal</span>
-                        <span className="text-orange-400 text-xs font-bold">
-                          Rp {(Number(item.qty)*Number(item.cost_per_unit)).toLocaleString('id-ID')}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-              <button data-tour="stock-purchase-add-item" onClick={() => setPurchItems(p => [...p,{stock_item_id:'',qty:'',cost_per_unit:''}])}
-                className="w-full py-2.5 rounded-xl border border-dashed border-slate-600 text-slate-500 hover:text-slate-300 hover:border-slate-500 text-sm transition-all">
-                + Tambah Bahan Lain
-              </button>
-              <div data-tour="stock-purchase-note-field">
-                <label className="text-slate-500 text-xs mb-1 block">Catatan (opsional)</label>
-                <input value={purchNote} onChange={e => setPurchNote(e.target.value)}
-                  placeholder="contoh: Pembelian dari pasar..."
-                  className="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-500/50 placeholder:text-slate-600" />
-              </div>
-              <div data-tour="stock-purchase-total" className="bg-slate-700/60 rounded-xl p-4 border border-slate-600/40 flex justify-between items-center">
+      <AnimatePresence>
+        {showPurchase && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={() => setShowPurchase(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 12 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 24 }}
+              data-tour="stock-purchase-modal"
+              className="relative z-10 bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
+            >
+              <div className="flex items-center justify-between p-5 border-b border-slate-700/60">
                 <div>
-                  <p className="text-slate-400 text-xs">Total Pembelian</p>
-                  <p className="text-slate-600 text-xs">{purchItems.filter(i=>i.stock_item_id).length} item</p>
+                  <h3 className="text-white font-bold">📥 Catat Pembelian Stok</h3>
+                  <p className="text-slate-500 text-xs mt-0.5">Stok gudang akan bertambah otomatis</p>
                 </div>
-                <p className="text-white font-black text-xl">
-                  Rp {purchItems.reduce((s,i) => s+(Number(i.qty)*Number(i.cost_per_unit)||0),0).toLocaleString('id-ID')}
-                </p>
+                <button data-tour-action="stock-close-purchase-modal" onClick={() => setShowPurchase(false)} className="text-slate-500 hover:text-white p-2 rounded-xl hover:bg-slate-700 transition-colors cursor-pointer">✕</button>
               </div>
-            </div>
-            <div data-tour="stock-purchase-actions" className="flex gap-3 p-5 pt-0">
-              <button onClick={() => setShowPurchase(false)}
-                className="flex-1 py-3 rounded-xl bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm font-semibold">Batal</button>
-              <button data-tour="stock-purchase-save-button" onClick={handlePurchase} disabled={purchLoading}
-                className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white text-sm font-bold disabled:opacity-50">
-                {purchLoading?'Menyimpan...':'💾 Simpan Pembelian'}
-              </button>
-            </div>
+              <div className="p-5 space-y-3">
+                {purchItems.map((item, i) => (
+                  <div key={i} data-tour="stock-purchase-item" className="bg-slate-700/40 rounded-xl p-4 border border-slate-600/40">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-slate-400 text-xs font-semibold uppercase tracking-wide">Item {i+1}</span>
+                      {purchItems.length>1 && (
+                        <button onClick={() => setPurchItems(p => p.filter((_,j) => j!==i))}
+                          className="text-red-400 hover:text-red-300 text-xs cursor-pointer">Hapus</button>
+                      )}
+                    </div>
+                    <div className="space-y-3">
+                      <div data-tour="stock-purchase-select-field">
+                        <label className="text-slate-500 text-xs mb-1 block">Pilih Bahan Baku</label>
+                        <select value={item.stock_item_id}
+                          onChange={e => setPurchItems(p => p.map((x,j) => j===i?{...x,stock_item_id:e.target.value}:x))}
+                          className="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-500/50">
+                          <option value="">-- Pilih bahan --</option>
+                          {stockItems.map(si => <option key={si.id} value={si.id}>{si.name} ({si.unit})</option>)}
+                        </select>
+                      </div>
+                      <div data-tour="stock-purchase-qty-cost-field" className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-slate-500 text-xs mb-1 block">
+                            Jumlah {item.stock_item_id ? `(${stockItems.find(s=>s.id==item.stock_item_id)?.unit||''})` : ''}
+                          </label>
+                          <input type="number" min="0" value={item.qty} placeholder="0"
+                            onChange={e => setPurchItems(p => p.map((x,j) => j===i?{...x,qty:e.target.value}:x))}
+                            className="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-500/50 placeholder:text-slate-600" />
+                        </div>
+                        <div>
+                          <label className="text-slate-500 text-xs mb-1 block">Harga / Satuan (Rp)</label>
+                          <input type="number" min="0" value={item.cost_per_unit} placeholder="0"
+                            onChange={e => setPurchItems(p => p.map((x,j) => j===i?{...x,cost_per_unit:e.target.value}:x))}
+                            className="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-500/50 placeholder:text-slate-600" />
+                        </div>
+                      </div>
+                      {Number(item.qty)>0 && Number(item.cost_per_unit)>0 && (
+                        <div data-tour="stock-purchase-subtotal" className="bg-orange-500/10 rounded-lg px-3 py-2 flex justify-between">
+                          <span className="text-slate-500 text-xs">Subtotal</span>
+                          <span className="text-orange-400 text-xs font-bold">
+                            Rp {(Number(item.qty)*Number(item.cost_per_unit)).toLocaleString('id-ID')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <button data-tour="stock-purchase-add-item" onClick={() => setPurchItems(p => [...p,{stock_item_id:'',qty:'',cost_per_unit:''}])}
+                  className="w-full py-2.5 rounded-xl border border-dashed border-slate-600 text-slate-500 hover:text-slate-300 hover:border-slate-500 text-sm transition-all cursor-pointer">
+                  + Tambah Bahan Lain
+                </button>
+                <div data-tour="stock-purchase-note-field">
+                  <label className="text-slate-500 text-xs mb-1 block">Catatan (opsional)</label>
+                  <input value={purchNote} onChange={e => setPurchNote(e.target.value)}
+                    placeholder="contoh: Pembelian dari pasar..."
+                    className="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-500/50 placeholder:text-slate-600" />
+                </div>
+                <div data-tour="stock-purchase-total" className="bg-slate-700/60 rounded-xl p-4 border border-slate-600/40 flex justify-between items-center">
+                  <div>
+                    <p className="text-slate-400 text-xs">Total Pembelian</p>
+                    <p className="text-slate-600 text-xs">{purchItems.filter(i=>i.stock_item_id).length} item</p>
+                  </div>
+                  <p className="text-white font-black text-xl">
+                    Rp {purchItems.reduce((s,i) => s+(Number(i.qty)*Number(i.cost_per_unit)||0),0).toLocaleString('id-ID')}
+                  </p>
+                </div>
+              </div>
+              <div data-tour="stock-purchase-actions" className="flex gap-3 p-5 pt-0">
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }} onClick={() => setShowPurchase(false)}
+                  className="flex-1 py-3 rounded-xl bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm font-semibold cursor-pointer">Batal</motion.button>
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }} data-tour="stock-purchase-save-button" onClick={handlePurchase} disabled={purchLoading}
+                  className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white text-sm font-bold disabled:opacity-50 cursor-pointer shadow-lg shadow-orange-500/20">
+                  {purchLoading?'Menyimpan...':'💾 Simpan Pembelian'}
+                </motion.button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* ══ MODAL: EDIT PEMBELIAN ══ */}
-      {editPurchase && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-md">
-            <div className="flex items-center justify-between p-5 border-b border-slate-700/60">
-              <div>
-                <h3 className="text-white font-bold">✏️ Edit Pembelian</h3>
-                <p className="text-slate-500 text-xs mt-0.5">{editPurchase.item_name}</p>
+      <AnimatePresence>
+        {editPurchase && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={() => setEditPurchase(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 12 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 24 }}
+              className="relative z-10 bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-md shadow-2xl"
+            >
+              <div className="flex items-center justify-between p-5 border-b border-slate-700/60">
+                <div>
+                  <h3 className="text-white font-bold">✏️ Edit Pembelian</h3>
+                  <p className="text-slate-500 text-xs mt-0.5">{editPurchase.item_name}</p>
+                </div>
+                <button onClick={() => setEditPurchase(null)}
+                  className="text-slate-500 hover:text-white p-2 rounded-xl hover:bg-slate-700 cursor-pointer">✕</button>
               </div>
-              <button onClick={() => setEditPurchase(null)}
-                className="text-slate-500 hover:text-white p-2 rounded-xl hover:bg-slate-700">✕</button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="text-slate-400 text-xs block mb-1">Jumlah ({editPurchase.unit})</label>
-                <input type="number" min="0"
-                  defaultValue={fmtQty(editPurchase.qty)}
-                  id="edit-qty"
-                  className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3
-                    outline-none focus:ring-2 focus:ring-orange-500/50" />
+              <div className="p-5 space-y-4">
+                <div>
+                  <label className="text-slate-400 text-xs block mb-1">Jumlah ({editPurchase.unit})</label>
+                  <input type="number" min="0"
+                    defaultValue={fmtQty(editPurchase.qty)}
+                    id="edit-qty"
+                    className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3
+                      outline-none focus:ring-2 focus:ring-orange-500/50" />
+                </div>
+                <div>
+                  <label className="text-slate-400 text-xs block mb-1">Harga / Satuan (Rp)</label>
+                  <input type="number" min="0"
+                    defaultValue={fmtQty(editPurchase.cost_per_unit)}
+                    id="edit-cost"
+                    className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3
+                      outline-none focus:ring-2 focus:ring-orange-500/50" />
+                </div>
+                <div>
+                  <label className="text-slate-400 text-xs block mb-1">Catatan (opsional)</label>
+                  <input type="text"
+                    defaultValue={editPurchase.note || ''}
+                    id="edit-note"
+                    className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3
+                      outline-none focus:ring-2 focus:ring-orange-500/50 placeholder:text-slate-600"
+                    placeholder="Catatan pembelian..." />
+                </div>
               </div>
-              <div>
-                <label className="text-slate-400 text-xs block mb-1">Harga / Satuan (Rp)</label>
-                <input type="number" min="0"
-                  defaultValue={fmtQty(editPurchase.cost_per_unit)}
-                  id="edit-cost"
-                  className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3
-                    outline-none focus:ring-2 focus:ring-orange-500/50" />
+              <div className="flex gap-3 p-5 pt-0">
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }} onClick={() => setEditPurchase(null)}
+                  className="flex-1 py-3 rounded-xl bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm font-semibold cursor-pointer">
+                  Batal
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }}
+                  data-tour="stock-out-save-button"
+                  onClick={async () => {
+                    const qty  = Number(document.getElementById('edit-qty').value);
+                    const cost = Number(document.getElementById('edit-cost').value);
+                    const note = document.getElementById('edit-note').value;
+                    if (!qty || !cost) return alert('Jumlah dan harga wajib diisi');
+                    try {
+                      await updateStockPurchase(editPurchase.id, { qty, cost_per_unit: cost, note });
+                      setEditPurchase(null);
+                      loadMonthly(); loadSummary(); loadMaster();
+                    } catch(e) { alert(e.response?.data?.message || 'Gagal'); }
+                  }}
+                  className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white text-sm font-bold cursor-pointer shadow-lg shadow-orange-500/20">
+                  Simpan Perubahan
+                </motion.button>
               </div>
-              <div>
-                <label className="text-slate-400 text-xs block mb-1">Catatan (opsional)</label>
-                <input type="text"
-                  defaultValue={editPurchase.note || ''}
-                  id="edit-note"
-                  className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3
-                    outline-none focus:ring-2 focus:ring-orange-500/50 placeholder:text-slate-600"
-                  placeholder="Catatan pembelian..." />
-              </div>
-            </div>
-            <div className="flex gap-3 p-5 pt-0">
-              <button onClick={() => setEditPurchase(null)}
-                className="flex-1 py-3 rounded-xl bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm font-semibold">
-                Batal
-              </button>
-              <button
-                data-tour="stock-out-save-button"
-                onClick={async () => {
-                  const qty  = Number(document.getElementById('edit-qty').value);
-                  const cost = Number(document.getElementById('edit-cost').value);
-                  const note = document.getElementById('edit-note').value;
-                  if (!qty || !cost) return alert('Jumlah dan harga wajib diisi');
-                  try {
-                    await updateStockPurchase(editPurchase.id, { qty, cost_per_unit: cost, note });
-                    setEditPurchase(null);
-                    loadMonthly(); loadSummary(); loadMaster();
-                  } catch(e) { alert(e.response?.data?.message || 'Gagal'); }
-                }}
-                className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white text-sm font-bold">
-                Simpan Perubahan
-              </button>
-            </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* ══ MODAL: CATAT PENGELUARAN MANUAL ══ */}
       {showOutForm && (
@@ -2382,7 +2430,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                   const maxStok = si ? Number(si.current_stock) : 0;
                   // Pakai latest_cost_per_unit kalau price_per_unit belum diupdate
                   // const harga   = Number(si?.latest_cost_per_unit || si?.price_per_unit || 0);
-                  // SESUDAH — selalu pakai moving average
+                  // SESUDAH - selalu pakai moving average
                   const harga = Number(si?.price_per_unit || 0);
                   const isOver  = si && Number(item.qty) > maxStok;
                   const nilaiOut = Number(item.qty) * harga;
@@ -2646,9 +2694,23 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       )}
 
       {/* ══ MODAL: APPROVE PENGAJUAN ══ */}
-      {approveModal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <AnimatePresence>
+        {approveModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={() => setApproveModal(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 12 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 24 }}
+              className="relative z-10 bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
+            >
             <div className="p-5 border-b border-slate-700/60">
               <h3 className="text-white font-bold text-base">Proses Pengajuan Stok</h3>
               <div className="flex items-center gap-2 mt-2">
@@ -2761,15 +2823,16 @@ function AdminStockPage({ successModal, setSuccessModal }) {
             </div>
 
             <div className="flex gap-3 p-5 pt-0">
-              <button onClick={() => setApproveModal(null)}
-                className="flex-1 py-3 rounded-xl bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm font-semibold">
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }} onClick={() => setApproveModal(null)}
+                className="flex-1 py-3 rounded-xl bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm font-semibold cursor-pointer">
                 Batal
-              </button>
-              <button onClick={() => handleApprove('reject')}
-                className="px-5 py-3 rounded-xl bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/25 text-sm font-semibold transition-colors">
+              </motion.button>
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }} onClick={() => handleApprove('reject')}
+                className="px-5 py-3 rounded-xl bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/25 text-sm font-semibold transition-colors cursor-pointer">
                 ✕ Tolak
-              </button>
-              <button
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }}
                 onClick={() => {
                   const hasOver = approveItems.some(item => {
                     const si = summary.find(s => s.id === item.stock_item_id);
@@ -2778,13 +2841,14 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                   if (hasOver) return alert('Ada item yang melebihi stok gudang');
                   handleApprove('approve');
                 }}
-                className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white text-sm font-bold">
+                className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white text-sm font-bold cursor-pointer shadow-lg shadow-orange-500/20">
                 ✓ Setujui
-              </button>
+              </motion.button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
+    </AnimatePresence>
     </>
   );
 }
@@ -2886,7 +2950,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
   }, []);
 
   // Filter daily hanya milik user ini
-  // Di KasirStockPage — loadDaily sudah benar kirim user_id
+  // Di KasirStockPage - loadDaily sudah benar kirim user_id
   // const loadDaily = useCallback(() =>
   //   getMainStockDaily({
   //     date_from: selDate,
@@ -2915,7 +2979,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
     if (tab === 'gudang' && mainTab === 'out') loadDaily();
   }, [outTypeFilter]);
 
-  // Definisi filter — sama untuk admin & kasir
+  // Definisi filter - sama untuk admin & kasir
   const OUT_FILTERS = [
     { val: 'all',         label: 'Semua'          },
     { val: 'approved',    label: '✓ Sudah Keluar' },
@@ -2968,7 +3032,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
   // }, [tab, selDate, selDateTo]);
   useEffect(() => {
     if (tab === 'gudang') {
-      // FIX: chain — summary selesai dulu baru daily
+      // FIX: chain - summary selesai dulu baru daily
       loadSummary().then(() => {
         if (mainTab === 'out') loadDaily();
       });
@@ -3146,7 +3210,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                 </div>
               </div>
 
-              {/* Filter pills kasir — tanpa 'manual' karena kasir sudah filter by user sendiri */}
+              {/* Filter pills kasir - tanpa 'manual' karena kasir sudah filter by user sendiri */}
               <div data-tour="stock-out-pills" className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap gap-1.5 items-center">
                   {[
@@ -3182,7 +3246,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
               <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-3 flex gap-2.5">
                 <span className="text-yellow-400 shrink-0">ℹ</span>
                 <p className="text-slate-500 text-xs">
-                  Pengeluaran atas nama <span className="text-white font-medium">{user?.name}</span> — termasuk dari transaksi POS dan pengajuan manual.
+                  Pengeluaran atas nama <span className="text-white font-medium">{user?.name}</span> - termasuk dari transaksi POS dan pengajuan manual.
                 </p>
               </div>
 
@@ -3403,7 +3467,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                             <td className="py-1.5 pr-4">
                               {item.qty_approved != null
                                 ? <span className="text-green-400 font-semibold">{Number(item.qty_approved).toFixed(2)}</span>
-                                : <span className="text-slate-700">—</span>}
+                                : <span className="text-slate-700">-</span>}
                             </td>
                             <td className="py-1.5 pr-4 text-slate-400">Rp {Number(item.cost_per_unit).toLocaleString('id-ID')}</td>
                             <td className="py-1.5 text-orange-400">
@@ -3414,7 +3478,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                                 ? <span className="text-green-400 font-semibold">
                                     Rp {(Number(item.qty_approved) * Number(item.cost_per_unit)).toLocaleString('id-ID')}
                                   </span>
-                                : <span className="text-slate-700">—</span>}
+                                : <span className="text-slate-700">-</span>}
                             </td>
                           </tr>
                         ))}
@@ -3446,9 +3510,28 @@ function KasirStockPage({ successModal, setSuccessModal }) {
       {tab === 'issues' && <StockIssuesTab />}
 
       {/* ══ MODAL: CATAT PENGELUARAN (KASIR) ══ */}
-      {showOutForm && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div data-tour="stock-out-modal" className="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <AnimatePresence>
+        {showOutForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={() => {
+                setShowOutForm(false);
+                setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
+                setOutMenuSelections([createEmptyRecipeSelection()]);
+              }}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 12 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 24 }}
+              data-tour="stock-out-modal"
+              className="relative z-10 bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
+            >
             <button
               type="button"
               data-tour-action="stock-close-out-modal"
@@ -3696,13 +3779,14 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                   })
                 }
                 className="flex-1 py-3 rounded-xl bg-red-500 hover:bg-red-400 text-white
-                  text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-lg shadow-red-500/20">
                 {outLoading ? 'Menyimpan...' : '📤 Kirim Pengajuan'}
               </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
+    </AnimatePresence>
     </>
   );
 }
@@ -3712,7 +3796,7 @@ export default function StockPage() {
   const { user } = useAuthStore();
   const isAdmin  = user?.role === 'admin';
 
-  // ✅ Success Modal State — MOVED TO PARENT LEVEL
+  // ✅ Success Modal State - MOVED TO PARENT LEVEL
   const [successModal, setSuccessModal] = useState({
     isOpen: false,
     title: 'Sukses',

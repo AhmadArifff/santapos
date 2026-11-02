@@ -36,7 +36,7 @@ export default function SuccessModal({
 
   return (
     <>
-      {/* Backdrop — tema #0D0A06 */}
+      {/* Backdrop - tema #0D0A06 */}
       <div
         className={`
           fixed inset-0 flex items-center justify-center px-4
@@ -47,7 +47,7 @@ export default function SuccessModal({
         onClick={handleClose}
       />
 
-      {/* Modal — center */}
+      {/* Modal - center */}
       <div
         className="fixed inset-0 flex items-center justify-center px-4 pointer-events-none"
         style={{ zIndex: 9999 }}
