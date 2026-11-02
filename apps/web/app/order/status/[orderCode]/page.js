@@ -126,9 +126,15 @@ export default function OrderStatusPage() {
               <h1 className="mt-3 font-serif text-4xl font-black">{order.order_code}</h1>
               <p className="mt-2 text-[#EDE0C4]/70">Meja {order.table_number} · {order.customer_name || 'Pelanggan'}</p>
             </div>
-            <div className="rounded-2xl bg-[#C9A84C]/15 px-4 py-3 text-left md:text-right">
-              <p className="text-xs uppercase tracking-[0.2em] text-[#C9A84C]">Status Saat Ini</p>
-              <strong className="mt-1 block text-xl text-[#F5EDD8]">{statusLabels[order.status] || order.status}</strong>
+            <div className="relative overflow-hidden rounded-2xl border border-[#C9A84C]/30 bg-[#C9A84C]/15 px-4 py-3 text-left md:text-right">
+              <div className="flex items-center gap-2 md:justify-end">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#C9A84C] opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#C9A84C]" />
+                </span>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#C9A84C]">Status Saat Ini</p>
+              </div>
+              <strong className="mt-1 block text-xl font-black text-[#F5EDD8]">{statusLabels[order.status] || order.status}</strong>
             </div>
           </div>
 
@@ -141,22 +147,47 @@ export default function OrderStatusPage() {
             <div className="mt-7 grid gap-3">
               {statusSteps.map((step, index) => {
                 const active = index <= currentIndex;
+                const isCurrent = step.key === order.status;
                 return (
-                  <div key={step.key} className={`rounded-3xl border p-4 transition ${
-                    active ? 'border-[#C9A84C]/55 bg-[#C9A84C]/12' : 'border-[#C9A84C]/12 bg-[#0D0A06]/45'
-                  }`}>
-                    <div className="flex gap-3">
-                      <span className={`relative mt-1 flex h-5 w-5 items-center justify-center rounded-full border ${active ? 'border-[#C9A84C] bg-[#C9A84C]' : 'border-[#C9A84C]/30'}`}>
-                        {step.key === order.status && (
-                          <span className="murmura-radar-pulse absolute -inset-1 rounded-full bg-[#C9A84C]/40" />
-                        )}
-                      </span>
-                      <div>
-                        <p className="font-black">{step.label}</p>
-                        <p className="mt-1 text-sm text-[#EDE0C4]/62">{step.desc}</p>
+                  <motion.div
+                    key={step.key}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.08 }}
+                    className={`rounded-3xl border p-4 transition-all duration-300 ${
+                      isCurrent
+                        ? 'border-[#C9A84C] bg-[#C9A84C]/20 shadow-lg shadow-[#C9A84C]/10 ring-1 ring-[#C9A84C]/40'
+                        : active
+                        ? 'border-[#C9A84C]/40 bg-[#C9A84C]/10'
+                        : 'border-white/5 bg-[#0D0A06]/40 opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <span className={`relative mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-black ${
+                          isCurrent
+                            ? 'border-[#C9A84C] bg-[#C9A84C] text-[#0D0A06]'
+                            : active
+                            ? 'border-[#C9A84C] bg-[#C9A84C]/40 text-[#EDE0C4]'
+                            : 'border-white/20 bg-white/5 text-white/40'
+                        }`}>
+                          {active && !isCurrent ? '✓' : index + 1}
+                          {isCurrent && (
+                            <span className="pointer-events-none absolute -inset-1 animate-ping rounded-full bg-[#C9A84C]/40" />
+                          )}
+                        </span>
+                        <div>
+                          <p className={`font-black ${isCurrent ? 'text-base text-[#F5EDD8]' : 'text-[#EDE0C4]'}`}>{step.label}</p>
+                          <p className="mt-0.5 text-xs leading-relaxed text-[#EDE0C4]/65">{step.desc}</p>
+                        </div>
                       </div>
+                      {isCurrent && (
+                        <span className="shrink-0 rounded-full bg-[#C9A84C] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#0D0A06]">
+                          Sedang Berjalan
+                        </span>
+                      )}
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>

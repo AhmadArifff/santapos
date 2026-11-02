@@ -453,6 +453,7 @@ export default function CustomerOrderPage() {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [skipReviewLoading, setSkipReviewLoading] = useState(false);
   const [orderMessageModal, setOrderMessageModal] = useState(null);
+  const [recentlyAddedId, setRecentlyAddedId] = useState(null);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [tableSession, setTableSession] = useState(null);
   const [leaveCartConfirmOpen, setLeaveCartConfirmOpen] = useState(false);
@@ -915,6 +916,8 @@ export default function CustomerOrderPage() {
       const sessionReady = await ensureCartTableSession();
       if (!sessionReady) return;
     }
+    setRecentlyAddedId(product.id);
+    setTimeout(() => setRecentlyAddedId(null), 1200);
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
@@ -1230,9 +1233,33 @@ export default function CustomerOrderPage() {
                 <p className="text-sm text-[#C9A84C]">{formatRp(item.price)}</p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <button onClick={() => changeQty(item.id, -1)} className="h-8 w-8 rounded-full bg-[#1A1409] font-black">-</button>
-                <span className="w-6 text-center font-black">{item.qty}</span>
-                <button onClick={() => changeQty(item.id, 1)} className="h-8 w-8 rounded-full bg-[#C9A84C] font-black text-[#0D0A06]">+</button>
+                <motion.button
+                  whileHover={{ scale: 1.15 }}
+                  whileTap={{ scale: 0.88 }}
+                  type="button"
+                  onClick={() => changeQty(item.id, -1)}
+                  className="h-8 w-8 rounded-full bg-[#1A1409] font-black text-white cursor-pointer border border-[#C9A84C]/20 flex items-center justify-center transition-colors hover:bg-red-500/20 hover:border-red-500/40"
+                >
+                  -
+                </motion.button>
+                <motion.span
+                  key={item.qty}
+                  initial={{ scale: 0.7 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 420, damping: 20 }}
+                  className="w-6 text-center font-black tabular-nums"
+                >
+                  {item.qty}
+                </motion.span>
+                <motion.button
+                  whileHover={{ scale: 1.15 }}
+                  whileTap={{ scale: 0.88 }}
+                  type="button"
+                  onClick={() => changeQty(item.id, 1)}
+                  className="h-8 w-8 rounded-full bg-[#C9A84C] font-black text-[#0D0A06] cursor-pointer flex items-center justify-center shadow transition-colors hover:bg-amber-300"
+                >
+                  +
+                </motion.button>
               </div>
             </div>
           </div>
@@ -1587,15 +1614,19 @@ export default function CustomerOrderPage() {
                       </span>
                       <motion.button
                         whileHover={!soldOut ? { scale: 1.05 } : {}}
-                        whileTap={!soldOut ? { scale: 0.95 } : {}}
+                        whileTap={!soldOut ? { scale: 0.94 } : {}}
                         onClick={(event) => {
                           event.stopPropagation();
                           addToCart(product);
                         }}
                         disabled={soldOut}
-                        className="min-h-9 min-w-[86px] max-w-full shrink-0 rounded-xl bg-[#C9A84C] px-3 py-2 text-sm font-black text-[#0D0A06] shadow-md shadow-[#C9A84C]/20 transition disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-10 sm:px-4"
+                        className={`min-h-9 min-w-[86px] max-w-full shrink-0 rounded-xl px-3 py-2 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-10 sm:px-4 cursor-pointer ${
+                          recentlyAddedId === product.id
+                            ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/25'
+                            : 'bg-[#C9A84C] text-[#0D0A06] shadow-md shadow-[#C9A84C]/20 hover:bg-[#D9B85C]'
+                        }`}
                       >
-                        Tambah
+                        {recentlyAddedId === product.id ? '✓ Masuk' : 'Tambah'}
                       </motion.button>
                     </div>
                     {!tableBusy && !soldOut && (
@@ -1775,18 +1806,32 @@ export default function CustomerOrderPage() {
           <span className="font-bold tracking-wide text-[#EDE0C4]/70">Santapos</span>
         </a>
       </footer>
-      {!order && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#C9A84C]/20 bg-[#0D0A06]/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur lg:hidden">
-          <button
-            type="button"
-            onClick={() => setShowMobileCart(true)}
-            className="flex w-full items-center justify-between rounded-2xl bg-[#C9A84C] px-4 py-3 font-black text-[#0D0A06] shadow-xl shadow-black/30"
+      <AnimatePresence>
+        {!order && cart.length > 0 && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 26 }}
+            className="fixed inset-x-3 bottom-3 z-40 max-w-lg mx-auto lg:hidden"
           >
-            <span>{itemCount ? `${itemCount} item` : 'Buka Keranjang'}</span>
-            <span>{formatRp(total)}</span>
-          </button>
-        </div>
-      )}
+            <motion.button
+              whileTap={{ scale: 0.96 }}
+              type="button"
+              onClick={() => setShowMobileCart(true)}
+              className="flex w-full items-center justify-between rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 px-5 py-3.5 font-black text-[#0D0A06] shadow-2xl shadow-amber-500/30 border border-amber-300/40 cursor-pointer"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-[#0D0A06] px-2 text-xs font-black text-amber-400 shadow">
+                  {itemCount}
+                </span>
+                <span className="text-sm font-black tracking-wide">Lihat Keranjang</span>
+              </div>
+              <span className="text-base font-black font-mono">{formatRp(total)}</span>
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {!order && showMobileCart && (
           <>
