@@ -10,7 +10,7 @@
     "build": "node -e \"console.log('API build ready')\"",
     "migrate": "node src/migrate.js",
     "migrate:fresh": "node src/migrate.js --fresh",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node tests/gtm-readiness.test.js && node tests/midtrans-security.test.js && node tests/tenant-isolation.test.js",
     "schema:supabase": "node scripts/apply-supabase-schema.js",
     "db:setup": "node scripts/setup-supabase-full.js",
     "migrate:supabase": "node scripts/migrate-mysql-to-supabase.js",
