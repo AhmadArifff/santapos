@@ -22,7 +22,7 @@ const CAMPAIGN_BARS = [
     bg: '#0E7C5B',
     textColor: '#FFFFFF',
     spanCols: 7, // spans Mon 26 -> Sun 1
-    periodText: 'Oct 12 – Nov 8',
+    periodText: 'Oct 12 - Nov 8',
   },
   {
     id: 'bar-autumn',
@@ -32,7 +32,7 @@ const CAMPAIGN_BARS = [
     bg: '#C84B31',
     textColor: '#FFFFFF',
     spanCols: 6.4, // spans Mon 26 -> Sat 31
-    periodText: 'Oct 20 – Nov 19',
+    periodText: 'Oct 20 - Nov 19',
   },
   {
     id: 'bar-november',
@@ -42,7 +42,7 @@ const CAMPAIGN_BARS = [
     bg: '#181C23',
     textColor: '#FFFFFF',
     spanCols: 5.8, // spans Mon 26 -> Sat 31
-    periodText: 'Oct 24 – Nov 15',
+    periodText: 'Oct 24 - Nov 15',
   },
   {
     id: 'bar-secondetto',
@@ -52,7 +52,7 @@ const CAMPAIGN_BARS = [
     bg: '#E6AA3E',
     textColor: '#181C23',
     spanCols: 5.0, // spans Mon 26 -> Fri 30
-    periodText: 'Oct 26 – Nov 23',
+    periodText: 'Oct 26 - Nov 23',
   },
 ];
 
@@ -409,7 +409,7 @@ export default function MurmuraCalendarView({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', fontFamily: fontBody }}>
       {/* =====================================================================
-          ROW 1: "Publishing calendar" + 4 KPI METRICS (Exact Match to Screenshots 2–4)
+          ROW 1: "Publishing calendar" + 4 KPI METRICS (Exact Match to Screenshots 2-4)
          ===================================================================== */}
       <div
         style={{
@@ -827,7 +827,7 @@ export default function MurmuraCalendarView({
               : '0 14px 36px rgba(0, 0, 0, 0.35)',
           }}
         >
-          {/* Top Calendar Header: "Oct 26 – Nov 1, 2026" (Week) or "October 2026" (Month) */}
+          {/* Top Calendar Header: "Oct 26 - Nov 1, 2026" (Week) or "October 2026" (Month) */}
           <div
             style={{
               display: 'flex',
@@ -840,7 +840,7 @@ export default function MurmuraCalendarView({
           >
             <div>
               <div style={{ fontSize: '16px', fontWeight: 700, color: textPrimary }}>
-                {calendarMode === 'Week' ? 'Oct 26 – Nov 1, 2026' : 'October 2026'}
+                {calendarMode === 'Week' ? 'Oct 26 - Nov 1, 2026' : 'October 2026'}
               </div>
               <div style={{ fontSize: '11.5px', color: textMuted, marginTop: '2px' }}>
                 {calendarMode === 'Week' ? '19 posts · 5 brands' : '78 posts · 5 brands'}

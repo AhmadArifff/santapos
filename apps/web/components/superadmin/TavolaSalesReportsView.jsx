@@ -1398,7 +1398,7 @@ export default function TavolaSalesReportsView({
                 <strong style={{ color: textPrimary, fontWeight: 650 }}>
                   {hoveredHeatmapCell.day} at {hoveredHeatmapCell.hour}
                 </strong>{' '}
-                — ~<strong>{hoveredHeatmapCell.covers} covers</strong> (
+                - ~<strong>{hoveredHeatmapCell.covers} covers</strong> (
                 {hoveredHeatmapCell.level === 3
                   ? 'Packed'
                   : hoveredHeatmapCell.level === 2
@@ -1410,7 +1410,7 @@ export default function TavolaSalesReportsView({
               </span>
             ) : (
               <span>
-                Peak: <strong style={{ color: textPrimary, fontWeight: 650 }}>Fri 8 PM–9 PM</strong>, about{' '}
+                Peak: <strong style={{ color: textPrimary, fontWeight: 650 }}>Fri 8 PM-9 PM</strong>, about{' '}
                 <strong style={{ color: textPrimary, fontWeight: 650 }}>63 covers</strong> · Quietest day:{' '}
                 <strong style={{ color: textPrimary, fontWeight: 650 }}>Mon</strong>
               </span>
@@ -1538,7 +1538,7 @@ export default function TavolaSalesReportsView({
               </span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                 <span style={{ width: '10px', height: '6px', borderRadius: '2px', background: 'rgba(156,226,198,0.35)' }} />
-                Target 55–60%
+                Target 55-60%
               </span>
             </div>
           </div>

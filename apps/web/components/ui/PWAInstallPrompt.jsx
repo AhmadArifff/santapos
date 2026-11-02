@@ -23,7 +23,7 @@ export default function PWAInstallPrompt({ autoShow = true, delayMs = 1500 }) {
       return;
     }
 
-    // ✅ Fix: hapus "as any" — pakai optional chaining biasa
+    // ✅ Fix: hapus "as any" - pakai optional chaining biasa
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
     setIsIOS(ios);
 

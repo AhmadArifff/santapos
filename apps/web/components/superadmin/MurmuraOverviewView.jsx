@@ -150,7 +150,7 @@ const INITIAL_NEEDS_YOU = [
     id: 'ny-4',
     type: 'alert',
     title: 'A Vantage Garage post / webhook failed',
-    meta: 'Midtrans QRIS webhook disconnected — reconnect Vantage Garage to retry',
+    meta: 'Midtrans QRIS webhook disconnected - reconnect Vantage Garage to retry',
     tenantBrand: 'Vantage Garage Bistro',
     planDetail: 'Endpoint: POST /api/payments/midtrans-notification · HTTP 504 Timeout',
     status: 'failed',
@@ -285,7 +285,7 @@ export default function MurmuraOverviewView({
       brand: item.subtitle.split('·')[0].trim(),
       status: item.status === 'Scheduled' ? 'Scheduled · Next' : 'Awaiting approval',
       schedule: item.schedule,
-      description: `${item.title} — ${item.description}`,
+      description: `${item.title} - ${item.description}`,
       channels: item.channels,
     });
     if (onTriggerToast) {
