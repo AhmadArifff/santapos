@@ -26,7 +26,7 @@ import SuccessModal from '@/components/stock/SuccessModal';
 // ── Skeleton ──────────────────────────────────────────────────
 function ProductSkeleton() {
   return (
-    <div className="bg-slate-800/60 rounded-2xl overflow-hidden border border-slate-700/50 animate-pulse">
+    <div className="bg-slate-800/60 rounded-2xl overflow-hidden border border-slate-700/50 skeleton-shimmer-gold">
       <div className="h-28 bg-slate-700/60" />
       <div className="p-3 space-y-2">
         <div className="h-3.5 bg-slate-700 rounded-full w-3/4" />
@@ -40,11 +40,17 @@ function ProductSkeleton() {
 function CartBadge({ count }) {
   if (!count) return null;
   return (
-    <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1
+    <motion.span
+      key={count}
+      initial={{ scale: 0.5, rotate: -12 }}
+      animate={{ scale: [1.3, 0.92, 1], rotate: [0, 6, 0] }}
+      transition={{ duration: 0.38, ease: 'easeOut' }}
+      className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1
       bg-orange-500 text-white text-xs font-black rounded-full
-      flex items-center justify-center shadow-lg shadow-orange-500/40">
+      flex items-center justify-center shadow-lg shadow-orange-500/40"
+    >
       {count > 99 ? '99+' : count}
-    </span>
+    </motion.span>
   );
 }
 
@@ -190,6 +196,7 @@ export default function PosPage() {
 
   // Admin: sumber stok yang dipilih
   const [selectedSourceUser, setSelectedSourceUser] = useState(null);
+  const [cartJiggling, setCartJiggling] = useState(false);
 
   const { items, addItem, clearCart } = useCartStore();
   const { user, selectedBranchId }     = useAuthStore();
@@ -397,6 +404,8 @@ export default function PosPage() {
       _sourceUserId: isAdmin ? selectedSourceUser?.user_id : user?.id,
       _availableStock: stock,
     });
+    setCartJiggling(true);
+    setTimeout(() => setCartJiggling(false), 500);
   };
 
   // ── Redirect ke form pengajuan stok ───────────────────────
@@ -828,8 +837,8 @@ export default function PosPage() {
               {/* Mobile cart */}
               <button onClick={() => setShowMobileCart(true)}
                 data-tour="pos-mobile-cart-button"
-                className="relative lg:hidden p-2 text-slate-400 hover:text-white
-                  bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 transition-all shrink-0">
+                className={`relative lg:hidden p-2 text-slate-400 hover:text-white
+                  bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 transition-all shrink-0 ${cartJiggling ? 'cart-jiggle-active' : ''}`}>
                 <CartIcon />
                 <CartBadge count={itemCount} />
               </button>
@@ -1112,7 +1121,7 @@ export default function PosPage() {
           </div>
 
           {/* ── DESKTOP CART ── */}
-          <div className="hidden lg:flex" data-tour="pos-desktop-cart">
+          <div className={`hidden lg:flex transition-transform duration-300 ${cartJiggling ? 'cart-jiggle-active' : ''}`} data-tour="pos-desktop-cart">
             <Cart onCheckout={openPaymentModal} selectedTableLabel={selectedTableLabel} />
           </div>
 

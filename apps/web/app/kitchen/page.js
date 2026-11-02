@@ -293,6 +293,7 @@ export default function KitchenDisplayPage() {
   const [draggedTicket, setDraggedTicket] = useState(null);
   const [dragOverStage, setDragOverStage] = useState(null);
   const [elevatedTicketId, setElevatedTicketId] = useState('k-1062');
+  const [newlyDroppedTicketId, setNewlyDroppedTicketId] = useState(null);
   const [checkedItems, setCheckedItems] = useState({});
 
   // Clock, Sound, Fullscreen, Modals, Toast
@@ -502,7 +503,10 @@ export default function KitchenDisplayPage() {
     e.preventDefault();
     setDragOverStage(null);
     if (draggedTicket) {
+      const droppedId = draggedTicket.id;
       moveTicketToStage(draggedTicket, targetStage);
+      setNewlyDroppedTicketId(droppedId);
+      setTimeout(() => setNewlyDroppedTicketId(null), 2500);
       setDraggedTicket(null);
     }
   };
@@ -1439,6 +1443,7 @@ export default function KitchenDisplayPage() {
                           {col.tickets.map((ticket) => {
                             const isBeingDragged = draggedTicket?.id === ticket.id;
                             const isElevated = elevatedTicketId === ticket.id && col.stageKey === 'ready';
+                            const isNewlyDropped = newlyDroppedTicketId === ticket.id;
 
                             return (
                               <motion.div
@@ -1477,6 +1482,8 @@ export default function KitchenDisplayPage() {
                                   boxShadow:
                                     isBeingDragged || isElevated
                                       ? '0 26px 55px rgba(0,0,0,0.65), 0 0 0 2px #FFF'
+                                      : isNewlyDropped
+                                      ? '0 0 0 2.5px #9CE2C6, 0 16px 36px rgba(156,226,198,0.36)'
                                       : '0 10px 24px rgba(0,0,0,0.22)',
                                   transform: isBeingDragged
                                     ? 'rotate(-2deg) scale(1.03)'
@@ -1668,18 +1675,38 @@ export default function KitchenDisplayPage() {
                                     {col.btnLabel}
                                   </motion.button>
                                 ) : (
-                                  <span
-                                    style={{
-                                      background: col.btnBg,
-                                      color: col.btnColor,
-                                      borderRadius: '999px',
-                                      padding: '5px 12px',
-                                      fontSize: '11px',
-                                      fontWeight: 700,
-                                    }}
-                                  >
-                                    ✓ {ticket.payment_status}
-                                  </span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span
+                                      className="kds-stamp-served"
+                                      style={{
+                                        border: '1.5px solid #9CE2C6',
+                                        color: '#9CE2C6',
+                                        borderRadius: '999px',
+                                        padding: '4px 10px',
+                                        fontSize: '10px',
+                                        fontWeight: 800,
+                                        letterSpacing: '0.04em',
+                                        background: 'rgba(156,226,198,0.12)',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                      }}
+                                    >
+                                      ✓ SERVED
+                                    </span>
+                                    <span
+                                      style={{
+                                        background: col.btnBg,
+                                        color: col.btnColor,
+                                        borderRadius: '999px',
+                                        padding: '5px 12px',
+                                        fontSize: '11px',
+                                        fontWeight: 700,
+                                      }}
+                                    >
+                                      ✓ {ticket.payment_status}
+                                    </span>
+                                  </div>
                                 )}
                               </div>
                             </motion.div>

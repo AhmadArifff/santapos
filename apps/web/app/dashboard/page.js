@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { motion, AnimatePresence } from 'framer-motion';
+import RollingNumber from '@/components/ui/RollingNumber';
 import {
   getTodayStats, getSalesReport, getYearlyStats,
   getBestSelling, getLowStock, getTransactionYears,
@@ -858,7 +859,7 @@ const daysInMonth = Array.from({ length: totalDaysInMonth }, (_, i) => {
 
 const monthLabels = MONTHS; // 12 bulan untuk grafik tahunan
 
-// ── Series Bulan — Omzet & Margin ────────────────────────────
+// ── Series Bulan - Omzet & Margin ────────────────────────────
 // Data di-map ke SEMUA tanggal (hari tanpa transaksi = 0)
 const monthOmzetSeries = [
   {
@@ -879,7 +880,7 @@ const monthOmzetSeries = [
   },
 ];
 
-// ── Series Bulan — Per Produk ─────────────────────────────────
+// ── Series Bulan - Per Produk ─────────────────────────────────
 const monthProductSeries = uniqueProductsM.map((prod, i) => ({
   label:   prod.name,
   color:   COLORS[i % COLORS.length],
@@ -897,7 +898,7 @@ const monthProductSeries = uniqueProductsM.map((prod, i) => ({
   }),
 }));
 
-// ── Series Tahun — Omzet & Margin ────────────────────────────
+// ── Series Tahun - Omzet & Margin ────────────────────────────
 // salesYear sudah 12 bulan lengkap dari backend (index = bulan - 1)
 const yearOmzetSeries = [
   {
@@ -912,7 +913,7 @@ const yearOmzetSeries = [
   },
 ];
 
-// ── Series Tahun — Per Produk ─────────────────────────────────
+// ── Series Tahun - Per Produk ─────────────────────────────────
 const yearProductSeries = uniqueProductsY.map((prod, i) => ({
   label:   prod.name,
   color:   COLORS[i % COLORS.length],
@@ -998,15 +999,22 @@ const filteredBestSelling = bestSelling.filter(p => {
                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
                   {[
                     { label:'Omzet Hari Ini',
+                      rawValue: todayStats.revenue,
+                      prefix: 'Rp ',
                       value:`Rp ${todayStats.revenue.toLocaleString('id-ID')}`,
                       sub:`HPP: Rp ${todayStats.hpp.toLocaleString('id-ID')}`,
                       color:'text-orange-400', glow:'bg-orange-500', icon:'💰' },
                     { label:'Margin Keuntungan',
+                      rawValue: todayStats.margin,
+                      prefix: 'Rp ',
                       value:`Rp ${todayStats.margin.toLocaleString('id-ID')}`,
                       sub:`${todayStats.margin_pct}% dari omzet`,
                       color: todayStats.margin>=0 ? 'text-green-400':'text-red-400',
                       glow: todayStats.margin>=0 ? 'bg-green-500':'bg-red-500', icon:'📈' },
                     { label:'Transaksi Hari Ini',
+                      rawValue: todayStats.total_trx,
+                      suffix: ' Transaksi',
+                      format: false,
                       value: todayStats.total_trx,
                       sub: todayStats.total_trx > 0
                         ? `Avg Rp ${Math.round(todayStats.revenue/todayStats.total_trx).toLocaleString('id-ID')}`
@@ -1018,6 +1026,8 @@ const filteredBestSelling = bestSelling.filter(p => {
                   color: lowStock.length > 0 ? 'text-red-400':'text-green-400',
                   glow:  lowStock.length > 0 ? 'bg-red-500':'bg-green-500', icon: lowStock.length>0?'⚠️':'✅' },
                 { label:'Distribusi Diskon',
+                  rawValue: Number(discountSummary.today?.total_discount || 0),
+                  prefix: 'Rp ',
                   value:`Rp ${Number(discountSummary.today?.total_discount || 0).toLocaleString('id-ID')}`,
                   sub:`Rata-rata ${Number(discountSummary.today?.avg_discount_rate || 0)}% | ${discountSummary.today?.total_orders || 0} klaim`,
                   color:'text-emerald-400', glow:'bg-emerald-500', icon:'\u2605' },
@@ -1035,7 +1045,13 @@ const filteredBestSelling = bestSelling.filter(p => {
                       <p className="text-slate-400 text-xs font-medium leading-tight">{s.label}</p>
                       <span className="text-xl">{s.icon}</span>
                     </div>
-                    <p className={`text-xl sm:text-2xl font-black truncate ${s.color}`}>{s.value}</p>
+                    <p className={`text-xl sm:text-2xl font-black truncate ${s.color}`}>
+                      {s.rawValue !== undefined ? (
+                        <RollingNumber value={s.rawValue} prefix={s.prefix || ''} suffix={s.suffix || ''} format={s.format !== false} />
+                      ) : (
+                        s.value
+                      )}
+                    </p>
                     <p className="text-slate-500 text-xs mt-1 truncate">{s.sub}</p>
                   </div>
                 </motion.div>
@@ -1049,21 +1065,30 @@ const filteredBestSelling = bestSelling.filter(p => {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {[
                     { label:`Omzet ${MONTHS[currentMonth - 1]}`,
+                      rawValue: totalMonthRevenue,
+                      prefix: 'Rp ',
                       value:`Rp ${totalMonthRevenue.toLocaleString('id-ID')}`,
                       sub:`${totalMonthTrx} transaksi`,
                       color:'text-orange-400', glow:'bg-orange-500', icon:'💰' },
                     { label:`Margin ${MONTHS[currentMonth - 1]}`,
+                      rawValue: totalMonthMargin,
+                      prefix: 'Rp ',
                       value:`Rp ${totalMonthMargin.toLocaleString('id-ID')}`,
                       sub: totalMonthRevenue > 0 ? `${Math.round((totalMonthMargin / totalMonthRevenue) * 100)}% dari omzet` : '0% dari omzet',
                       color: totalMonthMargin>=0 ? 'text-green-400':'text-red-400',
                       glow: totalMonthMargin>=0 ? 'bg-green-500':'bg-red-500', icon:'📈' },
                     { label:`Transaksi ${MONTHS[currentMonth - 1]}`,
+                      rawValue: totalMonthTrx,
+                      suffix: ' Transaksi',
+                      format: false,
                       value: totalMonthTrx,
                       sub: totalMonthTrx > 0
                         ? `Avg Rp ${Math.round(totalMonthRevenue/totalMonthTrx).toLocaleString('id-ID')}`
                         : 'Belum ada',
                       color:'text-blue-400', glow:'bg-blue-500', icon:'🧾' },
                     { label:`Diskon Review ${MONTHS[currentMonth - 1]}`,
+                      rawValue: Number(discountSummary.month?.total_discount || 0),
+                      prefix: 'Rp ',
                       value:`Rp ${Number(discountSummary.month?.total_discount || 0).toLocaleString('id-ID')}`,
                       sub:`Rata-rata ${Number(discountSummary.month?.avg_discount_rate || 0)}% | ${discountSummary.month?.total_orders || 0} klaim`,
                       color:'text-emerald-400', glow:'bg-emerald-500', icon:'\u2605' },
@@ -1081,7 +1106,13 @@ const filteredBestSelling = bestSelling.filter(p => {
                           <p className="text-slate-400 text-xs font-medium leading-tight">{s.label}</p>
                           <span className="text-xl">{s.icon}</span>
                         </div>
-                        <p className={`text-xl sm:text-2xl font-black truncate ${s.color}`}>{s.value}</p>
+                        <p className={`text-xl sm:text-2xl font-black truncate ${s.color}`}>
+                          {s.rawValue !== undefined ? (
+                            <RollingNumber value={s.rawValue} prefix={s.prefix || ''} suffix={s.suffix || ''} format={s.format !== false} />
+                          ) : (
+                            s.value
+                          )}
+                        </p>
                         <p className="text-slate-500 text-xs mt-1 truncate">{s.sub}</p>
                       </div>
                     </motion.div>
@@ -1095,21 +1126,30 @@ const filteredBestSelling = bestSelling.filter(p => {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {[
                     { label:`Omzet Tahun ${year}`,
+                      rawValue: totalYearRevenue,
+                      prefix: 'Rp ',
                       value:`Rp ${totalYearRevenue.toLocaleString('id-ID')}`,
                       sub:`${totalYearTrx} transaksi`,
                       color:'text-orange-400', glow:'bg-orange-500', icon:'💰' },
                     { label:`Margin Tahun ${year}`,
+                      rawValue: totalYearMargin,
+                      prefix: 'Rp ',
                       value:`Rp ${totalYearMargin.toLocaleString('id-ID')}`,
                       sub: totalYearRevenue > 0 ? `${Math.round((totalYearMargin / totalYearRevenue) * 100)}% dari omzet` : '0% dari omzet',
                       color: totalYearMargin>=0 ? 'text-green-400':'text-red-400',
                       glow: totalYearMargin>=0 ? 'bg-green-500':'bg-red-500', icon:'📈' },
                     { label:`Transaksi Tahun ${year}`,
+                      rawValue: totalYearTrx,
+                      suffix: ' Transaksi',
+                      format: false,
                       value: totalYearTrx,
                       sub: totalYearTrx > 0
                         ? `Avg Rp ${Math.round(totalYearRevenue/totalYearTrx).toLocaleString('id-ID')}`
                         : 'Belum ada',
                       color:'text-blue-400', glow:'bg-blue-500', icon:'🧾' },
                     { label:`Diskon Review Tahun ${year}`,
+                      rawValue: Number(discountSummary.year?.total_discount || 0),
+                      prefix: 'Rp ',
                       value:`Rp ${Number(discountSummary.year?.total_discount || 0).toLocaleString('id-ID')}`,
                       sub:`Rata-rata ${Number(discountSummary.year?.avg_discount_rate || 0)}% | ${discountSummary.year?.total_orders || 0} klaim`,
                       color:'text-emerald-400', glow:'bg-emerald-500', icon:'\u2605' },
@@ -1127,7 +1167,13 @@ const filteredBestSelling = bestSelling.filter(p => {
                           <p className="text-slate-400 text-xs font-medium leading-tight">{s.label}</p>
                           <span className="text-xl">{s.icon}</span>
                         </div>
-                        <p className={`text-xl sm:text-2xl font-black truncate ${s.color}`}>{s.value}</p>
+                        <p className={`text-xl sm:text-2xl font-black truncate ${s.color}`}>
+                          {s.rawValue !== undefined ? (
+                            <RollingNumber value={s.rawValue} prefix={s.prefix || ''} suffix={s.suffix || ''} format={s.format !== false} />
+                          ) : (
+                            s.value
+                          )}
+                        </p>
                         <p className="text-slate-500 text-xs mt-1 truncate">{s.sub}</p>
                       </div>
                     </motion.div>
@@ -1635,7 +1681,7 @@ const filteredBestSelling = bestSelling.filter(p => {
                     }
                   </div>
 
-                  {/* Grafik — pakai key supaya re-mount saat tab ganti */}
+                  {/* Grafik - pakai key supaya re-mount saat tab ganti */}
                   {perfTab === 'omzet' && (
                     <MultiLineChart
                       key={`perf-omzet-${omzetMarginSeries.length}`}

@@ -126,9 +126,9 @@ export default function PrintReceiptModal({
             </div>
           )}
 
-          {/* Live Receipt Paper Preview in Container */}
+          {/* Live Receipt Paper Preview in Container with Thermal Unfold Animation */}
           <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex justify-center max-h-72 overflow-y-auto shadow-inner">
-            <div className="bg-white p-3 rounded-lg shadow-md text-black transition-all">
+            <div className="bg-white p-3 rounded-lg shadow-md text-black transition-all thermal-receipt-unfold">
               <Receipt
                 ref={receiptRef}
                 transaction={transaction}
