@@ -80,7 +80,7 @@ const INITIAL_INBOX_MESSAGES = [
     sender: 'Freya Lindqvist',
     subject: 'Penambahan zona Terrace 8 meja pada Interactive Floor Plan Kasir',
     snippet:
-      'Apakah kapasitas kursi untuk meja Terrace T1–T8 bisa disetel 6 pax per meja?',
+      'Apakah kapasitas kursi untuk meja Terrace T1-T8 bisa disetel 6 pax per meja?',
     time: '1h ago',
     channel: 'Email CRM',
     unread: false,
@@ -576,6 +576,10 @@ export default function SuperadminPage() {
       )
     );
 
+    // Highlight dropped card with celebratory glow so user can savor the landing!
+    setNewlyInsertedDealId(deal.id);
+    setTimeout(() => setNewlyInsertedDealId(null), 2500);
+
     // Bump destination counter and link activity notification with ringing bell!
     setRecentlyUpdatedStage(targetStage);
     setTimeout(() => setRecentlyUpdatedStage(null), 1200);
@@ -790,7 +794,7 @@ export default function SuperadminPage() {
       `}</style>
 
       {/* =====================================================================
-          TOP FLOATING NAVIGATION BAR (Exact Restoration of Murmura Screenshots 1–4)
+          TOP FLOATING NAVIGATION BAR (Exact Restoration of Murmura Screenshots 1-4)
          ===================================================================== */}
       <header
         style={{
@@ -944,7 +948,7 @@ export default function SuperadminPage() {
             position: 'relative',
           }}
         >
-          {/* All brands / tenants pill selector (Constrained width — Exact Match to Screenshots 1–4) */}
+          {/* All brands / tenants pill selector (Constrained width - Exact Match to Screenshots 1-4) */}
           <div
             style={{
               display: 'inline-flex',
@@ -1353,7 +1357,7 @@ export default function SuperadminPage() {
             {currency === 'USD' ? '$ USD' : 'Rp IDR'}
           </button>
 
-          {/* Notification Bell with Red Dot — Standalone Popover (Detached from Inbox tab) */}
+          {/* Notification Bell with Red Dot - Standalone Popover (Detached from Inbox tab) */}
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => {
@@ -2058,7 +2062,7 @@ export default function SuperadminPage() {
       </header>
 
       {/* =====================================================================
-          LEFT VERTICAL CHARCOAL PILL DOCK (Monochrome Stroke SVGs — Exact Match to Screenshots 1–4)
+          LEFT VERTICAL CHARCOAL PILL DOCK (Monochrome Stroke SVGs - Exact Match to Screenshots 1-4)
          ===================================================================== */}
       <aside
         style={{
@@ -2105,7 +2109,7 @@ export default function SuperadminPage() {
           </svg>
         </button>
 
-        {/* 2. Prominent Warm Amber "+" Action Button (Exact Match to Screenshots 1–4) */}
+        {/* 2. Prominent Warm Amber "+" Action Button (Exact Match to Screenshots 1-4) */}
         <button
           onClick={() => setShowNewDealModal(true)}
           title="Create New Tenant Deal / Post"
@@ -2250,7 +2254,7 @@ export default function SuperadminPage() {
           </svg>
         </button>
 
-        {/* 8. Theme Switcher (Moon / Sun — exact bottom icon in Screenshots 1–4) */}
+        {/* 8. Theme Switcher (Moon / Sun - exact bottom icon in Screenshots 1-4) */}
         <button
           onClick={() => {
             const nextTheme = theme === 'murmura' ? 'tavola' : 'murmura';
@@ -2313,7 +2317,7 @@ export default function SuperadminPage() {
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           >
             {/* ===================================================================
-                TAB 1: OVERVIEW (Exact REA of Gambar 1 — Murmura Executive CRM)
+                TAB 1: OVERVIEW (Exact REA of Gambar 1 - Murmura Executive CRM)
                =================================================================== */}
             {activeTab === 'overview' && (
               <MurmuraOverviewView
@@ -2330,7 +2334,7 @@ export default function SuperadminPage() {
             )}
 
             {/* ===================================================================
-                TAB 2: CALENDAR (Exact REA of Gambar 2, 3, 4 — Before/After Animation + Drag & Drop)
+                TAB 2: CALENDAR (Exact REA of Gambar 2, 3, 4 - Before/After Animation + Drag & Drop)
                =================================================================== */}
             {activeTab === 'calendar' && (
               <MurmuraCalendarView
@@ -2730,7 +2734,8 @@ export default function SuperadminPage() {
                         flexDirection: 'column',
                         gap: '12px',
                         minHeight: '420px',
-                        transition: 'background 0.2s ease, border 0.2s ease',
+                        transform: isDropOver ? 'scale(1.012)' : 'scale(1)',
+                        transition: 'background 0.35s ease, border 0.35s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
                       }}
                     >
                       <div
@@ -2803,11 +2808,18 @@ export default function SuperadminPage() {
                               layoutId={String(deal.id)}
                               initial={{ opacity: 0, y: -20, scale: 0.95 }}
                               animate={{ opacity: 1, y: 0, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.16 } }}
+                              exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.22 } }}
                               transition={{
-                                layout: { type: 'spring', stiffness: 360, damping: 28 },
-                                opacity: { duration: 0.18 },
+                                layout: { type: 'spring', stiffness: 130, damping: 18, mass: 0.85 },
+                                opacity: { duration: 0.35, ease: 'easeOut' },
+                                scale: { type: 'spring', stiffness: 140, damping: 18 },
                               }}
+                              whileHover={{
+                                y: -6,
+                                scale: 1.02,
+                                transition: { type: 'spring', stiffness: 220, damping: 16 },
+                              }}
+                              whileTap={{ scale: 0.985 }}
                               draggable
                               onDragStart={() => setDraggedDeal(deal)}
                               onDragEnd={() => {
@@ -2823,13 +2835,14 @@ export default function SuperadminPage() {
                                 borderRadius: '16px',
                                 padding: '14px',
                                 boxShadow: draggedDeal?.id === deal.id
-                                  ? '0 24px 48px rgba(0,0,0,0.3)'
+                                  ? '0 28px 56px rgba(0,0,0,0.35), 0 0 0 2px rgba(242, 178, 73, 0.5)'
                                   : '0 8px 20px rgba(0,0,0,0.12)',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 gap: '10px',
                                 cursor: draggedDeal?.id === deal.id ? 'grabbing' : 'grab',
                                 userSelect: 'none',
+                                transition: 'box-shadow 0.35s ease, border-color 0.35s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
                               }}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

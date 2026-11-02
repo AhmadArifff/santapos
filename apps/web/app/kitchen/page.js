@@ -310,7 +310,7 @@ export default function KitchenDisplayPage() {
   });
   const [toastInfo, setToastInfo] = useState({
     visible: true,
-    message: '#1062 · Table 7 is ready — tarik (drag & drop) kartu antar kolom atau klik tombol aksi',
+    message: '#1062 · Table 7 is ready - tarik (drag & drop) kartu antar kolom atau klik tombol aksi',
     undoAction: null,
   });
 
@@ -1446,7 +1446,17 @@ export default function KitchenDisplayPage() {
                                 initial={{ opacity: 0, scale: 0.94, y: 12 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.9, y: -10 }}
-                                transition={{ duration: 0.22 }}
+                                transition={{
+                                  layout: { type: 'spring', stiffness: 130, damping: 18, mass: 0.85 },
+                                  opacity: { duration: 0.35 },
+                                  scale: { duration: 0.35 },
+                                }}
+                                whileHover={{
+                                  y: -5,
+                                  scale: 1.018,
+                                  transition: { type: 'spring', stiffness: 220, damping: 16 },
+                                }}
+                                whileTap={{ scale: 0.985 }}
                                 className="murmura-card-vibrate"
                                 key={ticket.id}
                                 draggable
@@ -1475,7 +1485,7 @@ export default function KitchenDisplayPage() {
                                     : 'none',
                                   opacity: isBeingDragged ? 0.88 : 1,
                                   cursor: 'grab',
-                                  transition: 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease',
+                                  transition: 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease',
                                   zIndex: isBeingDragged || isElevated ? 30 : 2,
                                   display: 'flex',
                                   flexDirection: 'column',

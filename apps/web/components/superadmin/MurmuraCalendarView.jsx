@@ -1628,8 +1628,9 @@ export default function MurmuraCalendarView({
                     initial={{ opacity: 0, scale: 0.92 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8, height: 0, marginBottom: 0 }}
-                    transition={{ type: 'spring', stiffness: 420, damping: 28 }}
-                    whileHover={{ scale: 1.025, x: 2 }}
+                    transition={{ type: 'spring', stiffness: 140, damping: 18, mass: 0.85 }}
+                    whileHover={{ scale: 1.03, y: -3, transition: { duration: 0.25 } }}
+                    whileTap={{ scale: 0.98 }}
                     className="murmura-card-vibrate"
                     draggable
                     onDragStart={() =>
